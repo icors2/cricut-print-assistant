@@ -137,6 +137,8 @@ node docs_shots.js                   # regenerate docs/images/*.png when the UI 
 | D19 | Modules load in the same script as `app.js`, after `window.CST` is assigned | `bus.js` needs `CST` immediately, and `PRISTINE` is already captured at the top of `app.js` |
 | D20 | The canvas budget and import downscale apply only on a coarse pointer or when big targets are on | Desktop exports stay byte-identical; an iPad gets a lower dpi instead of a crashed tab |
 | D21 | Kid mode is on by default only for a coarse pointer, and it only hides tabs | Layout, Calibrate and How to come back after a 2 second hold. It is a guardrail, not a lock |
+| D22 | Remote pack sync (`remote_packs.js`) is off unless the build sets `<meta name="cpa-pack-index">` (`build.py --pack-index`) or localStorage `cst.packIndex`; same-origin only; skips packs by id + version; verifies bytes/sha256; imports through the normal pack import | Lets a private deployment (deploy/cloudflare-pages) auto-load family packs behind a sign-in, while the public build makes no extra requests |
+| D23 | The service worker reloads the page on `controllerchange` only when a previous worker controlled it | The first install's `clients.claim()` also fires it, which reloaded the first visit mid-use (and raced the headless tests) |
 
 Add new rows when you make a design decision, with the reason, and never rewrite old rows. If you reverse a decision, add a new row that refers to the old one.
 
@@ -149,7 +151,8 @@ Add new rows when you make a design decision, with the reason, and never rewrite
   - saves.
 - The milestone tests for P1–P4 pass in headless Chrome. Re-run `test/run_all.sh` on a machine with Pillow, NumPy and poppler before a release.
 - BUILD.md §14: P1–P4 code is done. Still open: at least 30 real catalog assets, a full avatar set, and the physical iPad checklist (§12.3).
-- `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, and the three UI modules.
+- `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, the three UI modules, and `remote_packs.js` (optional pack sync, off in the public build).
+- `deploy/cloudflare-pages/` has an optional private deployment (Pages + private R2 bucket + Access, with a fail-closed `/packs` Function) and `scripts/upload_pack.sh` adds packs to it. Never commit real pack files, bucket contents, emails or account IDs.
 - `assets/` holds five original CC0 placeholders, palettes, and a few avatar parts. `sw.js` is generated. Do not hand-edit `index.html`, `app/*.html`, `sw.js`, or `assets/thumbs/`.
 
 ## 7. Where to start

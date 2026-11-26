@@ -36,6 +36,8 @@ run node assets_loader_test.js
 run node assets_ui_test.js
 run node assets_add_test.js
 run node packs_test.js
+run node remote_packs_test.js
+run node pages_function_test.mjs
 run node recolor_test.js
 run node color_ui_test.js
 run node avatar_compose_test.js

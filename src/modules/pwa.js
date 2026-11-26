@@ -14,8 +14,11 @@
         if (w.state === 'installed' && navigator.serviceWorker.controller) C.bus.emit('pwa:update', () => w.postMessage('skipWaiting'));
       });
     });
+    // Reload only when a new worker replaces an old one. The first install's clients.claim()
+    // also fires controllerchange, and reloading then would interrupt the first visit.
     let reloading = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloading) { reloading = true; location.reload(); } });
     return reg;
   }
   function toastUpdate(reload) {

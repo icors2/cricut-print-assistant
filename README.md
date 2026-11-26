@@ -84,6 +84,13 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
 5. Print the PDF at **100% / Actual size**: no "Fit", no borderless. The corner marks should measure 8.000 × 10.500 in on Letter.
 6. Cut in Design Space (below).
 
+### Private family packs (optional)
+
+Want your own sticker packs to load automatically on every device, behind a sign-in? See
+[deploy/cloudflare-pages/README.md](deploy/cloudflare-pages/README.md): Cloudflare Pages for the
+app, a private R2 bucket for packs, and Cloudflare Access for the sign-in. The public build
+doesn't use it.
+
 ## Design Space workflow
 
 ![Design Space steps (illustration)](docs/images/12_design_space_steps.png)

@@ -1,0 +1,12 @@
+# Copy to wrangler.toml next to your built site and fill in the values. Do not commit the filled copy.
+name = "YOUR-PAGES-PROJECT"
+pages_build_output_dir = "site"
+compatibility_date = "2026-11-01"
+
+[[r2_buckets]]
+binding = "PACKS"
+bucket_name = "YOUR-PRIVATE-BUCKET"
+
+[vars]
+ACCESS_TEAM_DOMAIN = "YOURTEAM.cloudflareaccess.com"
+ACCESS_AUD = "YOUR-ACCESS-APP-AUD-TAG"

@@ -26,6 +26,13 @@ mods = '\n'.join(read(mod_dir / n) for n in order)
 assert '</script' not in mods.lower(), '/*MODULES*/'
 t = t.replace('/*MODULES*/', mods, 1)
 t = t.replace('<!--HOWTO-->', read(R / 'src/howto.html'), 1)
+# Optional remote pack index for a private deployment (off in the public build):
+#   python3 build.py --pack-index /packs/index.json
+if '--pack-index' in sys.argv:
+    import html
+    i = sys.argv.index('--pack-index'); url = sys.argv[i + 1] if i + 1 < len(sys.argv) else ''
+    if not url or url.startswith('-'): raise SystemExit('--pack-index needs a URL')
+    t = t.replace('<meta name="cpa-pack-index" content="">', f'<meta name="cpa-pack-index" content="{html.escape(url, quote=True)}">', 1)
 (R / 'app').mkdir(exist_ok=True)
 if len(t.encode('utf-8')) > 800 * 1024:
     raise SystemExit(f'index.html is {len(t.encode("utf-8"))} bytes, over the 800 KB budget')
