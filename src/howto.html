@@ -1,0 +1,43 @@
+<h2 style="margin-top:0">How the full-sheet method works</h2>
+<p>Design Space can't see a page printed outside Print Then Cut, so this tool makes the cut file land in a <b>known place</b>:</p>
+<ul>
+<li>The cut SVG's canvas is exactly the sheet minus <b>0.25 in</b> on every side, and it has 4 tiny (1 mm) corner squares at the corners of that box. Design Space always puts an uploaded design <b>0.25 in from the mat's top-left</b>, so when the paper's corner sits on the mat's 0,0 corner, every cut lands where its image was printed.</li>
+<li>Everything is one compound path, so Design Space keeps it as <b>one layer</b> and can't rearrange the pieces on the mat.</li>
+<li>Each image gets a <b>bleed</b> (its edge colours stretched about 1.3 mm past the cut), so small drift doesn't show white slivers.</li>
+<li>The <b>calibration</b> removes your machine's and printer's consistent error. What's left is the random load-to-load error.</li>
+</ul>
+<div class="callout"><b>Realistic accuracy:</b> after calibration, about ±0.5–1 mm on most sheets, sometimes up to 1.5–2 mm when the mat loads crooked. Print Then Cut's sensor marks are tighter (about 0.5 mm) but give up a lot of the page. Designs with a bleed or a small white border (about 1.5–3 mm) hide the drift; thin printed borders right on the cut line won't.</div>
+
+<h2>1 · Lay out</h2>
+<ol><li>Choose the paper. Letter and A4 use a 12×12 mat; Legal needs a 12×24 mat; 12×12 cardstock fills the whole 12×12 mat.</li>
+<li>Drop in images, then set each one's width (the height follows the image's shape), quantity and cut shape. Transparent PNG/SVG art can use a <b>Contour</b> cut, and its offset adds a white sticker border.</li>
+<li>Pieces pack automatically and spill onto more sheets if needed. Check the preview: pink lines are the cuts, and the blue dashed box is the area Design Space will place.</li></ol>
+
+<h2>2 · Print (most important step)</h2>
+<ol><li>Click <b>Print PDF</b> and open it in Adobe Acrobat Reader or your browser's PDF viewer.</li>
+<li>In the print dialog, set <b>Scale: 100%</b> / <b>Actual size</b>. <b>Don't</b> use “Fit”, “Shrink oversized pages” or “Fit to printable area”.</li>
+<li>Paper size must match the sheet (Letter / A4 / Legal). Turn <b>borderless printing off</b>, because borderless enlarges the page by a few percent and ruins the 1:1 scale.</li>
+<li>Use the best quality setting and the right paper type (sticker / matte photo / cardstock). Let the ink dry for a few minutes.</li>
+<li>Check the scale: the outer corners of the four tiny printed corner squares should be exactly <b class="ds-size"></b> apart. If they're off by more than about 0.5 mm, the printer scaled the page; fix that before cutting.</li></ol>
+
+<h2>3 · Design Space</h2>
+<ol><li>New Project → <b>Upload</b> → Upload Image → pick the <code>…-CUT.svg</code> for this sheet → Upload, then add it to the canvas.</li>
+<li>Select it and check the <b>size in the Edit bar</b>: it must read <b class="ds-size"></b>. If not, unlock the size and type the exact numbers.</li>
+<li>Leave the Operation as <b>Basic Cut</b> (not Print Then Cut), and don't move, resize, flip or rotate it. If it ever shows as several layers (for example with the frame anchor option), <b>Select All → Attach</b>.</li>
+<li>Click <b>Make</b> → On Mat → mat size <b class="mat-size"></b>. On the mat preview the design sits in the top-left corner (0.25 in in from each edge). <b>Don't drag it.</b> Keep Mirror off.</li>
+<li>Choose the material (e.g. Printable Sticker Paper, Cardstock). Use a fresh mat or extra grip and smooth the sheet flat.</li></ol>
+
+<h2>4 · Place the sheet and cut</h2>
+<ol><li>Put the printed sheet <b>print side up</b>, top of the page toward the top of the mat (the end that feeds in first).</li>
+<li>Line up the paper's <b>top-left corner exactly on the mat grid's top-left corner (0, 0)</b>, with the top edge on the top grid line and the left edge on the left grid line. This placement is the alignment, so take your time and use a ruler or a straightedge jig.</li>
+<li>Press it down firmly; tape the far corners if the mat is tired.</li>
+<li>Load the mat <b>straight and snug against both guides</b>, press Go, and don't unload until it's done.</li>
+<li>Before unloading, look at the four corner squares: the small cut squares should sit on the printed marks. (They show the <i>raw</i> machine error; the pieces themselves have the calibration correction built in.)</li></ol>
+
+<h2>Troubleshooting</h2>
+<ul><li><b>Everything is off by the same amount:</b> run the calibration (Calibrate tab), or check the paper really sat at 0,0.</li>
+<li><b>Cut is 2–3% bigger than the print (errors grow toward the edges):</b> the printer is almost always shrinking the page to its printable area. Measure the printed corner marks with a ruler (Letter: 8.000 × 10.500 in = 203.2 × 266.7 mm). If they're short, look for "Fit to printable area", "Scale to fit" or "Auto fit" in the printer's own Preferences/Properties and turn it off. Or print from Adobe Acrobat Reader with <i>Actual size</i>. If it still shrinks at Actual size (the shrink is in the printer driver, as with some inkjet printers), use the Calibrate tab's <b>(a) Compensate for true size</b>: the print PDF is enlarged by exactly the shrink, so pieces print at the size you set and the cut file only fixes rotation and shift. Choose (b) Keep only if you'd rather leave the print as is; the cut then follows the slightly small print.</li>
+<li><b>Error grows across the page:</b> the page printed scaled (check 100% / Actual size), or the mat loaded crooked. Calibration also fixes a consistent scale error.</li>
+<li><b>Design Space shows the wrong size:</b> type in the exact size shown above. Never use the size handles.</li>
+<li><b>Design Space moved the design:</b> undo, or use Make again. It should sit at the 0.25 in default spot.</li>
+<li><b>“Too large for 12×12 mat”:</b> choose 12×24 (Legal) or check the sheet setting.</li></ul>

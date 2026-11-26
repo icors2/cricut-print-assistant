@@ -1,0 +1,15 @@
+{
+  "name": "cricut-print-assistant-tests",
+  "version": "1.0.0",
+  "description": "Headless Chrome tests for Cricut Print Assistant",
+  "scripts": {
+    "test": "./run_all.sh",
+    "docs": "node docs_shots.js"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer-core": "^24.43.1"
+  },
+  "private": true
+}

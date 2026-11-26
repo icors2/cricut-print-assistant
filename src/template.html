@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cricut Print Assistant – full-sheet print &amp; cut</title>
+<style>
+:root{--b:#d6dbe3;--fg:#1d2733;--mut:#68758a;--acc:#e0115f;--blu:#1f6feb}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:#f4f6f9}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--b)}header h1{font-size:17px;margin:0}
+.tabs button{border:1px solid var(--b);background:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;margin-right:4px}.tabs button.on{background:var(--fg);color:#fff;border-color:var(--fg)}
+main{display:flex;gap:14px;padding:14px;align-items:flex-start}.side{width:400px;flex:none;display:flex;flex-direction:column;gap:12px}
+.panel{background:#fff;border:1px solid var(--b);border-radius:8px;padding:12px}.panel h2{font-size:14px;margin:0 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}.row label{flex:1 1 150px;font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+input[type=number],select{padding:4px 6px;border:1px solid var(--b);border-radius:5px;font:inherit;width:100%}
+.chk{flex-direction:row!important;align-items:center;gap:6px!important;color:var(--fg)!important}
+#drop{border:2px dashed var(--b);border-radius:8px;padding:18px;text-align:center;color:var(--mut);cursor:pointer}#drop.over{border-color:var(--blu);background:#eef4ff}
+.item{border:1px solid var(--b);border-radius:7px;padding:8px;margin-top:8px}.ihead{display:flex;align-items:center;gap:8px}.ihead img{width:40px;height:40px;object-fit:contain;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/10px 10px;border-radius:4px}
+.iname{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.x{border:none;background:none;cursor:pointer;font-size:15px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}.grid label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:2px}.grid label:nth-child(n+4){grid-column:span 3}
+@media(min-width:0){.grid label:nth-child(4),.grid label:nth-child(5){grid-column:span 3}}
+.hint{font-size:10px;color:var(--mut);font-weight:400}.pctrow{display:flex;gap:4px;align-items:center}.pctrow input{width:80px!important;flex:none}.pp{border:1px solid var(--b);background:#fff;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer}.pp:hover{background:#eef4ff}
+.imeta{font-size:11px;color:var(--mut);margin-top:4px}.empty{color:var(--mut);font-size:13px;padding:8px 0}
+button.btn{background:var(--fg);color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600}button.btn.sec{background:#fff;color:var(--fg);border:1px solid var(--b)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}.stage{flex:1;min-width:0;position:sticky;top:10px}.stagebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:13px}
+#sheettabs button{border:1px solid var(--b);background:#fff;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px}#sheettabs button.on{background:var(--blu);color:#fff;border-color:var(--blu)}
+.canvasbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center}#preview{box-shadow:0 2px 10px rgba(0,0,0,.25);max-width:100%}
+#status{font-size:13px}.muted{color:var(--mut)}.warn{color:#a35200;margin-top:3px}#busy{color:var(--blu);font-weight:600}
+.doc{max-width:900px;background:#fff;border:1px solid var(--b);border-radius:8px;padding:18px 24px;margin:14px auto}.doc h2{margin-top:22px}.doc li{margin:4px 0}.doc code{background:#f1f3f6;padding:1px 4px;border-radius:3px}
+.callout{background:#fff6e5;border:1px solid #f0d49c;border-radius:6px;padding:8px 12px}
+table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;text-align:left}#caltable input{width:90px}.badres{color:#b3261e;font-weight:700}#caltable input.over{border-color:#e0a000;background:#fff4d6}.vbox{border:1px solid var(--b);border-radius:8px;padding:10px 14px;margin:10px 0;background:#fafbfd}.vbox.ok{border-color:#7cc492;background:#effaf2}.vbox.bad{border-color:#e39a93;background:#fdf1f0}.vbox.warnbox{border-color:#f0c36d;background:#fff8e8}.wizhead{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.passbadge{background:var(--fg);color:#fff;border-radius:12px;padding:2px 10px;font-weight:700}.wsteps li{margin:6px 0}
+.item.sel{border-color:var(--blu);box-shadow:0 0 0 2px rgba(31,111,235,.25)}.item.collapsed{padding:5px 8px;margin-top:5px}.item.collapsed .ibody{display:none}.item.collapsed .ihead img{width:28px;height:28px}
+.ihead{cursor:pointer}.ititle{flex:1;min-width:0}.isum{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev,.pchev{border:none;background:none;cursor:pointer;font-size:14px;color:var(--mut);padding:2px 4px;transition:transform .15s}.item.collapsed .chev,.panel.collapsed .pchev{transform:rotate(-90deg)}
+.panel h2.ph{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}.panel h2.ph .grow{flex:1}.psum{font-size:11px;font-weight:400;color:var(--mut)}.panel.collapsed{padding-bottom:4px}.panel.collapsed>:not(h2){display:none}
+.wrow,.qrow{display:flex;gap:3px;align-items:center}.wrow input,.qrow input{min-width:0}.link{border:1px solid var(--b);background:#fff;border-radius:4px;cursor:pointer;padding:1px 3px;font-size:12px;opacity:.55}.link.on{opacity:1;background:#eef4ff;border-color:#9bbcf5}
+.imgtools{display:flex;gap:6px;align-items:center;margin-top:8px}.imgtools input{flex:1;min-width:0;padding:4px 6px;border:1px solid var(--b);border-radius:5px;font:inherit}.mini{border:1px solid var(--b);background:#fff;border-radius:5px;padding:3px 7px;font-size:12px;cursor:pointer;white-space:nowrap}.mini:hover:not(:disabled){background:#eef4ff}.mini:disabled{opacity:.4;cursor:default}
+#chips{display:flex;gap:6px;position:relative}.chip{border:1px solid var(--b);background:#fff;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer;white-space:nowrap}.chip.ok{border-color:#7cc492;background:#effaf2;color:#17602d}.chip.off{color:var(--mut)}.chip.man{border-color:#9bbcf5;background:#eef4ff;color:#1a4fa8}
+.pop{position:absolute;z-index:20;top:100%;right:0;margin-top:6px;width:min(560px,80vw);background:#fff;border:1px solid var(--b);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:10px 14px;font-size:12px;text-align:left}
+#warnline{margin:-2px 0 6px;font-size:12px}#warnline .warn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.toolbar2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12px}.toolbar2 .sep{width:1px;height:18px;background:var(--b);margin:0 4px}
+#selbar{background:#eef4ff;border:1px solid #9bbcf5;border-radius:6px;padding:4px 8px;margin-bottom:8px;font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}#selName{font-weight:600;margin-right:6px}#selbar.idle{background:#f7f8fa;border-color:var(--b)}#selbar.idle #selName{font-weight:400;color:var(--mut)}#selbar.idle button{display:none}#selbar{min-height:30px}
+.canvasbox{overflow:auto;max-height:calc(100vh - 150px)}#preview{touch-action:none;outline:none}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);background:var(--fg);color:#fff;padding:7px 14px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:50}.toast.show{opacity:.95;transform:translateX(-50%)}.toast.bad{background:#b3261e}
+.inrow{display:flex;gap:6px;align-items:center;min-width:0}.inum{flex:none;font-size:11px;font-weight:700;color:#fff;background:#68758a;border-radius:9px;padding:0 6px}
+.lrow,.arow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;margin-top:4px;background:#fff;font-size:12px}.lrow{cursor:pointer}.lrow.sel{border-color:var(--blu);box-shadow:0 0 0 2px rgba(31,111,235,.25)}.lrow.hid{opacity:.5}.lrow.missing{opacity:.45}.lrow.dragging{opacity:.4}
+.lrow img,.arow img,.limg{width:26px;height:26px;object-fit:contain;flex:none;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/8px 8px;border-radius:3px}.lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.arow .lname{white-space:normal}
+.lnum{flex:none;min-width:20px;height:20px;border-radius:10px;border:1.5px solid #2b2f36;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.lhandle{cursor:grab;color:var(--mut);padding:0 2px;touch-action:none;user-select:none}.leye{border:none;background:none;cursor:pointer;font-size:13px}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
+.dropz{border:2px dashed var(--b);border-radius:8px;padding:12px;text-align:center;color:var(--mut);cursor:pointer;font-size:13px;margin-bottom:4px}.dropz.over{border-color:var(--blu);background:#eef4ff}#mkSelPanel.idle .mksize{display:none}.mksend{margin-top:8px;border-top:1px solid var(--b);padding-top:8px}label.chk{display:flex;align-items:center;gap:4px;font-size:12px;flex-direction:row}#mkSendDlg{max-width:520px;border:1px solid var(--b);border-radius:10px;padding:16px 18px;font-size:13px}#mkSendDlg::backdrop{background:rgba(20,25,35,.35)}#mkSendList{max-height:40vh;overflow:auto;margin:8px 0;padding-left:18px}#mkSendList li{margin:2px 0}#mkSendList .gone{color:#a33;text-decoration:line-through}#mkSendList .zero{color:var(--mut)}#mkSendSum b{font-size:14px}.mksize{margin-top:8px;border-top:1px solid var(--b);padding-top:6px}.bgctl{border:1px solid var(--b);border-radius:8px;padding:6px 8px;margin:4px 0 8px;background:#fafbfc}.bgline{display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0}.bgline input[type=range]{flex:1}.bgline .sm,input.sm{width:56px}#mkBgAdj.on{background:#fff1dc;border-color:#e07b00;color:#8a4b00}
+#mkSelPanel .btns{gap:4px;margin-top:6px}#mkSelPanel.idle .btns{display:none}#mkSelName{font-size:12px}#mkSelPanel:not(.idle) #mkSelName{font-weight:600}.mini.on{background:#eef4ff;border-color:#9bbcf5}
+#mkCanvas{touch-action:none;outline:none;box-shadow:none}.mkbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center;overflow:auto;max-height:calc(100vh - 120px)}
+.legend span{display:inline-block;width:12px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
+</style></head><body>
+<header><h1>✂️ Cricut Print Assistant</h1><div class="tabs"><button class="on" data-tab="tabLayout">Layout</button><button data-tab="tabMock" title="Arrange the stickers into the finished scene (view only, never changes the cut files)">Mockup</button><button data-tab="tabCal">Calibrate</button><button data-tab="tabHow">How to print &amp; cut</button></div><span id="busy" style="display:none">Processing…</span></header>
+
+<div id="tabLayout" class="tab"><main>
+<div class="side">
+  <div class="panel" id="settings"><h2 class="ph"><span>Sheet</span><span class="psum grow" id="sheetSum"></span><button class="pchev" id="sheetChev" title="Collapse" aria-expanded="true">▾</button></h2>
+    <div class="row"><label>Paper<select id="sheet"><option value="letter">US Letter 8.5 × 11 in</option><option value="a4">A4 210 × 297 mm</option><option value="legal">US Legal 8.5 × 14 in (12×24 mat)</option><option value="sq12">12 × 12 in cardstock</option><option value="custom">Custom…</option></select></label>
+      <label>Units<select id="unit"><option value="in">inches</option><option value="mm">mm</option></select></label></div>
+    <div class="row" id="customRow"><label><span>Custom width (<span class="u"></span>)</span><input type="number" step="any" id="customW"></label><label><span>Custom height (<span class="u"></span>)</span><input type="number" step="any" id="customH"></label><label class="chk"><input type="checkbox" id="landscape"> Landscape</label></div>
+    <div class="row"><label><span>Margin to cut lines (<span class="u"></span>)</span><input type="number" step="any" id="margin"></label><label><span>Spacing between cuts (<span class="u"></span>)</span><input type="number" step="any" id="spacing"></label></div>
+    <div class="row"><label>Bleed past the cut (mm)<input type="number" step="0.1" id="bleed"></label><label>Print resolution<select id="dpi"><option value="300">300 dpi</option><option value="450">450 dpi</option><option value="600">600 dpi (slow)</option></select></label></div>
+    <div class="row"><label class="chk"><input type="checkbox" id="rotate"> Allow rotation when packing</label><label class="chk"><input type="checkbox" id="applyCorr"> Apply calibration (print compensation + cut correction)</label></div>
+    <details><summary class="muted">Advanced</summary>
+      <div class="row" style="margin-top:6px"><label>Alignment anchors in cut file<select id="anchor"><option value="dots">4 tiny corner squares (recommended)</option><option value="frame">Full frame rectangle (needs Attach)</option></select></label>
+        <label class="chk"><input type="checkbox" id="marks"> Print matching corner marks</label></div>
+      <div class="row"><label><span>Design Space mat margin (<span class="u"></span>)</span><input type="number" step="any" id="inset"></label><label><span>Printer unprintable edge (<span class="u"></span>)</span><input type="number" step="any" id="printerMargin"></label></div>
+    </details>
+  </div>
+  <div class="panel"><h2 class="ph" style="cursor:default"><span>Images</span><span class="psum grow" id="imgSummary"></span></h2>
+    <div id="drop">Drop PNG / JPG / SVG here, or click to choose<br><small>Transparent PNGs get a contour cut. Nothing is uploaded; it all stays in this page.</small></div>
+    <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none">
+    <div class="imgtools" id="imgTools" style="display:none"><input type="search" id="ifilter" placeholder="Filter by name…"><span class="muted" id="filterNote" style="font-size:11px"></span><button class="mini" id="collapseAll" title="Collapse every image card">Collapse all</button><button class="mini" id="expandAll">Expand all</button></div>
+    <div id="items"></div>
+  </div>
+  <div class="panel"><h2>Export</h2>
+    <div class="btns"><button class="btn" id="expPDF">⬇ Print PDF</button><button class="btn" id="expSVG">⬇ Cut SVG (one per sheet)</button></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">Print the PDF at <b>100% / Actual size</b>. Upload the SVG to Design Space and check it reads <b class="ds-size"></b>. Mat: <b class="mat-size"></b>. See “How to print &amp; cut”.</p>
+    <label class="chk" style="font-size:12px;margin-top:8px"><input type="checkbox" id="numberPieces"> Print piece numbers (#n, small, on the waste next to each sticker; cut file unchanged)</label>
+    <div class="btns" style="margin-top:10px"><button class="btn sec" id="saveProj">Save project</button><button class="btn sec" id="loadProj">Open project</button><input type="file" id="projFile" accept=".json" style="display:none"></div>
+  </div>
+</div>
+<div class="stage">
+  <div class="stagebar"><div id="sheettabs"></div>
+    <div id="chips"><button class="chip" id="chipCount" title="Layout details"></button><button class="chip" id="chipCal" title="Calibration details (full controls on the Calibrate tab)"></button><button class="chip man" id="chipManual" style="display:none" title="You moved pieces by hand. Click to go back to auto-pack.">✋ Hand-placed · reset</button>
+      <div class="pop" id="statusPop" hidden><div id="status"></div><p class="muted" style="margin:8px 0 0">Calibration controls are on the Calibrate tab.</p></div></div>
+    <label><input type="checkbox" id="showPrint" checked> print</label><label><input type="checkbox" id="showCut" checked> cut lines</label><label><input type="checkbox" id="showAnchors" checked> anchors</label>
+    <span class="legend muted"><span style="background:#e0115f"></span>cut <span style="background:#1f6feb"></span>Design Space anchor box</span></div>
+  <div id="warnline" style="display:none"></div>
+  <div class="toolbar2"><button class="mini" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button><button class="mini" id="redoBtn" title="Redo (Ctrl+Y / Ctrl+Shift+Z)">↷ Redo</button><span class="sep"></span>
+    <button class="mini" id="zoomOut" title="Zoom out">−</button><span id="zoomPct" class="muted" style="min-width:38px;text-align:center">100%</span><button class="mini" id="zoomIn" title="Zoom in (Ctrl+wheel)">+</button><button class="mini" id="zoomFit" title="Fit the sheet">Fit</button><span class="sep"></span>
+    <button class="mini" id="resetAuto" title="Forget hand-placed positions and re-pack everything automatically">⟲ Reset to auto-pack</button>
+</div>
+  <div id="selbar" class="idle"><span id="selName"></span><button class="mini" id="selRot" title="Rotate 90° (R)">↻ Rotate 90°</button><button class="mini" id="selDup" title="Duplicate (D)">⧉ Duplicate</button><button class="mini" id="selDel" title="Delete this copy (Del)">🗑 Delete</button><button class="mini" id="selPrev" title="Move to the previous sheet">◀ Prev sheet</button><button class="mini" id="selNext" title="Move to the next sheet (adds one after the last)">Next sheet ▶</button></div>
+  <div class="canvasbox"><canvas id="preview" tabindex="0"></canvas></div>
+  <div class="toast" id="toast"></div>
+</div>
+</main></div>
+
+<div id="tabMock" class="tab" style="display:none"><main>
+<div class="side">
+  <div class="panel"><h2>Mockup / assemble</h2>
+    <p class="muted" style="font-size:12px;margin:0 0 8px">See how the stickers go together, at their true relative sizes (sizes come from the Layout tab). This view is separate: nothing here changes the cut layout, sizes or the print / cut files.</p>
+    <div class="row"><label>Backdrop<select id="mkPreset"><option value="letter-P">Letter portrait</option><option value="letter-L">Letter landscape</option><option value="a4-P">A4 portrait</option><option value="a4-L">A4 landscape</option><option value="sq12">12 × 12 in</option><option value="8x10">8 × 10 in</option><option value="10x8">10 × 8 in</option><option value="5x7">5 × 7 in</option><option value="custom">Custom / free size</option></select></label>
+      <label><span>Width (<span class="mku"></span>)</span><input type="number" step="any" id="mkW"></label><label><span>Height (<span class="mku"></span>)</span><input type="number" step="any" id="mkH"></label></div>
+    <div class="row"><label>Colour<input type="color" id="mkColor" style="width:100%;height:28px;padding:0;border:1px solid var(--b);border-radius:5px"></label><label>Background image<span class="btns"><button class="mini" id="mkBgImg">Choose…</button><button class="mini" id="mkBgClear">Remove</button></span></label><input type="file" id="mkBgFile" accept="image/*" style="display:none"></div>
+    <div id="mkBgCtl" class="bgctl" style="display:none">
+      <div class="row"><label>Image fit<select id="mkBgFit" title="Fit: the whole image, may leave margins · Fill: covers the page, crops the edges · Stretch: exactly the page (may distort) · True size: at the image dpi · Tile: repeats at true size"><option value="fit">Fit (whole image)</option><option value="fill">Fill (crop to page)</option><option value="stretch">Stretch to page</option><option value="original">True size (dpi)</option><option value="tile">Tile (repeat)</option></select></label><label>Image dpi<input type="number" id="mkBgDpi" min="10" max="2400" step="1" title="Used by True size, Tile and Backdrop = image size. Read from the file when it has one."></label></div>
+      <div class="bgline"><span>Scale</span><input type="range" id="mkBgScale" min="10" max="400" step="1"><input type="number" id="mkBgScaleN" step="1" min="1" max="2000" class="sm">%</div>
+      <div class="btns"><button class="mini bgp" data-p="50">50%</button><button class="mini bgp" data-p="75">75%</button><button class="mini bgp" data-p="100">100%</button><button class="mini bgp" data-p="125">125%</button><button class="mini bgp" data-p="150">150%</button></div>
+      <div class="row"><label><span>X offset (<span class="mku"></span>)</span><input type="number" step="any" id="mkBgX"></label><label><span>Y offset (<span class="mku"></span>)</span><input type="number" step="any" id="mkBgY"></label></div>
+      <div class="bgline"><span>Opacity</span><input type="range" id="mkBgOp" min="0" max="100" step="1"><span id="mkBgOpV" class="sm"></span></div>
+      <div class="btns"><button class="mini" id="mkBgAdj" title="While on, dragging on the canvas moves the background instead of the stickers (Esc to finish)">✋ Adjust background (drag to pan)</button><button class="mini" id="mkBgRot" title="Turn the background image 90°">↻ 90°</button><button class="mini" id="mkBgCenter">Centre</button></div>
+      <div class="btns"><button class="mini" id="mkBgToSize" title="Make the backdrop exactly the image size at its dpi; the image then fills it with no crop">Backdrop = image size</button><button class="mini" id="mkBgAspect" title="Keep the backdrop width, set its height to the image's aspect ratio; the image fills it with no crop">Backdrop = image shape (keep width)</button><button class="mini" id="mkBgReset" title="Fill, 100%, centred, not turned, fully opaque">Reset</button></div>
+      <div id="mkBgInfo" class="muted" style="font-size:11px"></div>
+    </div>
+    <div class="btns"><button class="mini" id="mkFit" title="Resize the backdrop to the pieces plus a 0.5 in border">Fit backdrop to pieces</button><button class="mini" id="mkArrange" title="Lay every piece out again without overlaps">Re-arrange all</button></div>
+  </div>
+  <div class="panel" id="mkSelPanel"><h2>Selected piece</h2><div id="mkSelName"></div>
+    <div class="btns"><span style="font-size:12px">Angle °</span><input type="number" step="1" id="mkAngle" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkRotL" title="−15°">↺ 15°</button><button class="mini" id="mkRotR" title="+15° (R)">↻ 15°</button><button class="mini" id="mkRot0">0°</button><button class="mini" id="mkFlip" title="Mirror left-right (F)">⇋ Flip</button></div>
+    <div class="btns"><button class="mini" id="mkFront" title="Shift+]">⤒ To front</button><button class="mini" id="mkFwd" title="]">↑ Forward</button><button class="mini" id="mkBack" title="[">↓ Backward</button><button class="mini" id="mkToBack" title="Shift+[">⤓ To back</button><button class="mini" id="mkDup" title="D">⧉ Add another</button><button class="mini" id="mkDel" title="Delete">🗑 Remove</button></div>
+    <div class="mksize"><div class="grid" style="grid-template-columns:1fr auto 1fr">
+      <label><span>Width (<span class="mku"></span>)</span><input type="number" step="any" id="mkSW"></label><button type="button" class="link" id="mkSLink" style="align-self:end;margin-bottom:3px">🔗</button><label><span>Height (<span class="mku"></span>)</span><input type="number" step="any" id="mkSH"></label></div>
+      <div class="pctrow" style="margin-top:4px;font-size:11px"><span class="muted">Scale %</span><input type="number" step="1" id="mkSPct" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button type="button" class="pp" data-p="25">25%</button><button type="button" class="pp" data-p="50">50%</button><button type="button" class="pp" data-p="75">75%</button><button type="button" class="pp" data-p="100">100%</button></div>
+      <div class="muted" id="mkSizeNote" style="font-size:11px;margin-top:4px"></div><div class="muted" style="font-size:11px">Or drag a corner square on the canvas (Shift = unlock the ratio while dragging).</div></div></div>
+  <div class="panel"><h2 class="ph" style="cursor:default"><span>Layers</span><span class="psum grow">front at the top · drag ⋮⋮ to reorder</span></h2><div id="mkLayers"></div>
+    <div class="mksend"><div class="btns" style="align-items:center"><button class="btn" id="mkSend" title="Make the Layout tab's image list exactly the pieces in this Layers list: same images, qty = number of copies here, same sizes. Images not in the layers are removed from the Layout. Rotation and flips here are only for the mockup: the Layout packer rotates pieces as it needs to, and pieces print unflipped.">📤 Send to Layout…</button>
+      <label class="chk" title="Eye-off layers count as pieces too"><input type="checkbox" id="mkSendHidden"> Include hidden layers</label></div>
+      <div class="muted" style="font-size:11px;margin-top:4px">Sets the cut sheet to just these layers (sizes carry over; rotation / flip don't). You'll see a summary first, and it can be undone.</div></div></div>
+<dialog id="mkSendDlg"><h3 style="margin:0 0 6px">Send the layers to the Layout?</h3><div id="mkSendSum"></div><ul id="mkSendList"></ul><p class="muted" id="mkSendNote" style="font-size:12px"></p>
+  <div class="btns" style="justify-content:flex-end"><button class="btn sec" id="mkSendCancel">Cancel</button><button class="btn" id="mkSendOk">Send to Layout</button></div></dialog>
+  <div class="panel"><h2>Images</h2>
+    <div id="mkDrop" class="dropz">Drop PNG / JPG / SVG here, or click to choose<br><small>Added to the shared image list (also on the Layout tab, qty 1). Transparent PNGs get a contour cut.</small></div>
+    <input type="file" id="mkFile" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none"><div id="mkAdd"></div></div>
+  <div class="panel"><h2>Assembly guide &amp; export</h2>
+    <div class="row"><label>Show<select id="mkGuide"><option value="off">Finished mockup</option><option value="outline">Guide: numbered outlines only</option><option value="ghost">Guide: ghosted images + numbered outlines</option></select></label><label>Ghost opacity<input type="range" id="mkGhost" min="0.05" max="0.8" step="0.05"></label></div>
+    <div class="btns"><button class="btn sec" id="mkExpPNG">⬇ Mockup PNG</button><button class="btn sec" id="mkExpGuidePNG">⬇ Guide PNG</button><button class="btn sec" id="mkExpGuidePDF">⬇ Guide PDF (true size)</button></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">The guide shows each piece's outline with its number (#n = image n in the Layout list), plus a legend. Print the PDF at 100%: it's the backdrop at true size (enlarged for your printer when calibration is on). Turn on "Print piece numbers" on the Layout tab to number the stickers on the cut sheet too.</p></div>
+</div>
+<div class="stage">
+  <div class="toolbar2"><button class="mini" id="mkUndo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="mini" id="mkRedo" title="Redo (Ctrl+Y)">↷ Redo</button><span class="sep"></span>
+    <button class="mini" id="mkZoomOut">−</button><span id="mkZoomPct" class="muted" style="min-width:38px;text-align:center">100%</span><button class="mini" id="mkZoomIn">+</button><button class="mini" id="mkZoomFit">Fit</button><span class="sep"></span>
+    <label><input type="checkbox" id="mkSnap"> snap to edges (hold Alt to skip)</label><span class="sep"></span>
+    <span class="muted">Drag to move · round handle rotates (Shift = 15°) · R/Shift+R ±15° · F flip · [ ] layer · D add another · Del remove</span></div>
+  <div class="mkbox"><canvas id="mkCanvas" tabindex="0"></canvas></div>
+</div>
+</main></div>
+
+<div id="tabCal" class="tab" style="display:none"><div class="doc">
+  <h2 style="margin-top:0">Calibrate once per printer + paper size</h2>
+  <p>Measures how the Cricut's cuts land relative to your printer's ink. It can compensate a printer that shrinks the page, then checks itself on a verification pass. Pick the sheet size on the Layout tab first.</p>
+  <p id="calLoaded" class="vbox" style="padding:6px 12px"></p>
+  <p><button class="btn sec" id="calExport">⬇ Export calibration</button> <button class="btn sec" id="calImport">⬆ Import calibration</button> <button class="btn sec" id="calSaveTool">⬇ Save tool with my calibration built in</button> <input type="file" id="calFile" accept=".json,application/json" style="display:none">
+    <span class="muted">Calibration auto-saves in this browser. Some browsers drop data for files opened from disk, or keep it per file location (a moved or re-downloaded copy then starts empty). Keep the exported .json as a backup (Import restores it), or save a copy of the tool with the calibration built in and open that one. Save project includes it too.</span></p>
+  <div id="wizard" class="vbox"></div>
+  <h3>Readings</h3>
+  <p class="muted">For each target, read where the <b>cut slit</b> crosses the printed mm scale: the scale across the square's <b>left</b> edge gives <b>X</b> (+ = cut is right of the printed line), the one across the <b>top</b> edge gives <b>Y</b> (+ = cut is lower). The scales run from −8 to +8 mm (ticks every 0.5 mm, numbers every 2 mm). Estimate to 0.25 mm.</p>
+  <p>Sheet code printed on this sheet: <select id="calCode"></select></p>
+  <table id="caltable"><thead><tr><th>Target</th><th>Where</th><th>X reading (mm)</th><th>Y reading (mm)</th><th>Misfit after fit X / Y (mm)</th></tr></thead><tbody></tbody></table>
+  <p>Ruler check (optional), corner marks measured outside to outside: across the top <input type="number" step="0.01" id="rulerX" style="width:80px" placeholder="in or mm"> down the left side <input type="number" step="0.01" id="rulerY" style="width:80px" placeholder="in or mm"> <span class="muted">(expected <span class="ds-size"></span>; values over 50 are read as mm)</span></p>
+  <p><button class="btn" id="calCompute">Compute &amp; check</button> <span class="muted">Pass tolerance ±<input type="number" step="0.1" id="calTol" style="width:60px"> mm</span></p>
+  <div id="verdict"></div>
+  <p class="muted">The fit uses all targets (least squares) to find the printer's size per direction, a small rotation and a shift. Each pass is fitted absolutely from the files that sheet was made with, so passes refine and never stack. "Misfit" is how far a reading is from that pattern. Over 1 mm, or one target that disagrees with the other four, is flagged as a bad reading or paper that moved.</p>
+  <p class="muted" id="corrNow"></p>
+  <details><summary>Enter values manually</summary><p>
+    Printer shrink across (%) <input type="number" step="0.01" id="mShX" style="width:70px"> down (%) <input type="number" step="0.01" id="mShY" style="width:70px">
+    · Print compensation across (%) <input type="number" step="0.01" id="mCompX" style="width:70px"> down (%) <input type="number" step="0.01" id="mCompY" style="width:70px"><br>
+    Cut vs print rotated clockwise (°) <input type="number" step="0.01" id="mRot" style="width:70px"> shifted right (mm) <input type="number" step="0.05" id="mOffX" style="width:70px"> down (mm) <input type="number" step="0.05" id="mOffY" style="width:70px">
+    <button class="btn sec" id="calManual">Save</button> <button class="btn sec" id="calReset">Reset calibration</button></p>
+    <p class="muted">Shrink = how much smaller your printer prints than the file (3.00% = 7.76 in instead of 8.000). Compensation = how much the tool enlarges the print PDF; true size needs 1/(1 − shrink) − 1 (3.00% → +3.09%). Rotation and shift describe the uncorrected cut relative to the ink, at the sheet centre.</p></details>
+</div></div>
+
+<div id="tabHow" class="tab" style="display:none"><div class="doc">
+<!--HOWTO-->
+</div></div>
+<script id="cstEmbedded" type="application/json">null</script>
+<script>/*JSPDF*/</script>
+<script>/*CORE*/</script>
+<script>/*APP*/</script>
+</body></html>
