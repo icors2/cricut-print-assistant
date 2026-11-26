@@ -1,0 +1,13 @@
+---
+description: Cricut Print Assistant – project memory, plan and invariants
+alwaysApply: true
+---
+
+Before you change anything, read `AGENT_MEMORY.md` (purpose, invariants, conventions, decisions, status, working rules). Then follow `BUILD.md` for the plan (start at the first ☐ milestone in its §14 status table). Use `AGENT_HANDOFF.md` for the code tour.
+
+Hard rules:
+- One offline HTML file built by `python3 build.py`. Never hand-edit `index.html` or `app/*.html`.
+- Never change the cut geometry, the calibration math, the sheet codes (`calCode`, the alphabet, `CAL_LAYOUT = 2`) or the byte-identity of the exports.
+- `cd test && ./run_all.sh` must be green before every commit.
+- This repo is public. No personal names, emails, hosts, tokens, local paths, real calibration data or private art.
+- Update the BUILD.md status table and the AGENT_MEMORY.md status/decisions in the same PR.

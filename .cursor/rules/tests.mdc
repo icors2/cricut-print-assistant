@@ -1,0 +1,14 @@
+---
+description: Testing rules for src/ and test/ changes
+globs: src/**,test/**,build.py
+alwaysApply: false
+---
+
+- Every behaviour change gets a puppeteer test in `test/` and a line in `test/run_all.sh` (see BUILD.md §12 for the planned test files).
+- Reuse the patterns:
+  - byte-identity: `T.frozen()` + `setFileId('0'*32)`;
+  - alignment: `align()` and the e2e check in `test/mock_warp_test.js`;
+  - multi-touch: CDP `Input.dispatchTouchEvent`.
+- Never weaken an existing byte-identity or alignment assertion. Fix the code instead.
+- Tests use synthetic fixtures only, and no network except localhost.
+- Rebuild (`python3 build.py`) and commit the built files with every `src/` change.

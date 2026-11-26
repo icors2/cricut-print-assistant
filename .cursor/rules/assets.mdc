@@ -1,0 +1,11 @@
+---
+description: Rules for art and catalog files in assets/
+globs: assets/**,tools/build_assets.js
+alwaysApply: false
+---
+
+- Follow BUILD.md §17 (art pipeline: sizes at 300 units/in, `data-region` groups, one silhouette, features ≥ 1.5 mm, avatar template anchors) and §18 (licensing).
+- Only CC0 art that is `original`, `ai-generated-by-owner` (record `tool`) or `cc0-third-party` (record `sourceUrl`). Every catalog entry has `license`, `author` and `source`.
+- Asset ids are immutable once published.
+- Never commit private or family art. It belongs in git-ignored `private/` or in on-device `.cpapack` packs.
+- Run `node tools/build_assets.js` (validator + thumbnails) and commit the generated thumbnails.

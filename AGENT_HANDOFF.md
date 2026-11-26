@@ -1,6 +1,8 @@
 # Agent handoff – Cricut Print Assistant
 
-Notes for the next developer or coding agent. Read this before changing anything. The tool is used for real print-and-cut jobs, so the cut geometry, calibration math and sheet codes must keep their current behaviour.
+Notes for the next developer or coding agent. Read this before changing anything.
+
+> **Start with [AGENT_MEMORY.md](AGENT_MEMORY.md)** (purpose, invariants, decisions, status, working rules), then follow the plan in **[BUILD.md](BUILD.md)** (Assets tab, color editor, avatar builder, iPad/PWA). This file is the code tour. The tool is used for real print-and-cut jobs, so the cut geometry, calibration math and sheet codes must keep their current behaviour.
 
 ## What it is
 
@@ -113,7 +115,7 @@ It writes the result to `index.html` and to `app/cricut_print_assistant.html`, t
    - Piece numbers OFF gives byte-identical output to the old behaviour. Numbers ON changes only the PDF, never the SVG.
    - Send to Layout gives the same exports as the equivalent hand-made layout (`mock_send_test`).
    - Hand-placed pins export exactly where they were dropped (`drag_test`).
-6. **Sizes are shared:** a mockup resize changes the item's real size, so the Layout and the cut change too. That's intended. Everything else in the Mockup is view-only.
+6. **Sizes are shared:** a mockup resize changes the item's real size, so the Layout and the cut change too. That's intended. The Mockup **warp** also carries into the print and the cut (invariant 10). Everything else in the Mockup is view-only.
 7. **Undo:** a Layout-tab change, including Send to Layout and Reset to auto-pack, is one undo step.
 8. **Single offline file:** no CDN, fonts or fetches. Images are read with FileReader; downloads use Blob URLs.
 9. **Assembly steps:**
@@ -166,7 +168,7 @@ Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene),
 - Score/draw layers (a separate SVG per operation).
 - Kiss-cut sheet outline option.
 - More paper presets and custom sizes in the UI.
-- PWA install / offline cache for the Pages version.
+- PWA install / offline cache for the Pages version: planned in [BUILD.md](BUILD.md) P1·M3, along with the Assets tab, color editor and avatar builder.
 - A localisation layer for the UI strings.
 - An optional calibration report PDF.
 

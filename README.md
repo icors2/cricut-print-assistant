@@ -113,6 +113,17 @@ Requirements: Python 3 with Pillow + NumPy, Node 18+, Google Chrome at `/usr/bin
 
 See [AGENT_HANDOFF.md](AGENT_HANDOFF.md) for the architecture, invariants and conventions.
 
+## Roadmap and contributing
+
+- **[BUILD.md](BUILD.md):** the build plan for the next features:
+  - iPad/PWA support;
+  - an **Assets** tab with preloaded, categorized art;
+  - a **color editor**;
+  - a **video-game style avatar builder**.
+
+  It includes milestones, acceptance criteria, schemas, and the art pipeline for contributing images.
+- **[AGENT_MEMORY.md](AGENT_MEMORY.md):** the project memory for coding agents and new developers: invariants, decisions, status, and where to start.
+
 ## Limitations
 
 - Accuracy depends on how exactly the paper sits at 0,0 and how straight the mat loads. Nothing sees the print, unlike Print Then Cut's sensor or a camera-guided cutter.
