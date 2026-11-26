@@ -134,7 +134,7 @@ const blend = (c, under, a) => c.map((v, i) => Math.round(v * a + under[i] * (1 
   const key = (B) => JSON.stringify([B.fit, B.scale, B.ox, B.oy, B.rot, B.opacity, B.dpi, B.w, B.h, B.img]);
   const proj = await T(async () => { const o = URL.createObjectURL; let bl; URL.createObjectURL = (x) => { bl = x; return 'data:,'; }; await window.CST.saveProject(); URL.createObjectURL = o; return await bl.text(); });
   const shot0 = await T(async () => { await new Promise(r => setTimeout(r, 300)); return window.CST.mockPNG(); });
-  await p.reload(); await wait(800); await (await p.$('#file')).uploadFile(...FILES.map(f => path.join(SC, f))); await p.waitForFunction(() => window.CST && window.CST.items.length === 7, { timeout: 20000 });
+  await wait(2200); await p.evaluate(() => localStorage.removeItem('cst.mkAuto')); await p.reload(); await wait(800); await (await p.$('#file')).uploadFile(...FILES.map(f => path.join(SC, f))); await p.waitForFunction(() => window.CST && window.CST.items.length === 7, { timeout: 20000 });
   await p.evaluate(() => { const C = window.CST; C.items.forEach(i => C.setPct(i, 100)); C.refresh(true); }); await p.evaluate(helpers); await wait(1500);
   await p.click('[data-tab=tabMock]'); await p.waitForFunction(() => window.CST.mkBgRect(), { timeout: 10000 }); await wait(500);
   let got = await T(() => window.T.bg());

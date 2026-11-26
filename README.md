@@ -51,6 +51,12 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
   - **Assembly guide** with numbered outlines (PNG, or a true-size PDF). The numbers give the order to stick: #1 is the bottom layer (goes on first) and the top layer is last, so overlaps come out right. Each copy has its own step.
   - **Crowded spots:** hide single numbers (the **#** toggle per layer) or all of them. The legend still lists every step. There's also a number size slider.
   - **📤 Send to Layout** turns the Layers list into the cut sheet: same images, qty = number of copies, same sizes.
+  - **Transform (preview only):** skew a piece or drag each corner on its own (a perspective warp) so it sits exactly right in the scene, e.g. an isometric railing on an angled floor edge. The guide outlines follow the warp; the sticker still prints and cuts undistorted.
+  - **Collapsible panels** with a one-line summary, e.g. "Letter portrait · bg: wallpaper.png Tile" or "Guide: ghost · numbers all".
+  - **Save work:**
+    - **💾 Save mockup** downloads one `.json` file with every image embedded. **📂 Open mockup** restores it, with no re-upload.
+    - **Named saves in the browser** (IndexedDB) with thumbnails: open, rename, delete. **Ctrl+S** quick-saves.
+    - An **autosave with images**, so a refresh brings the whole mockup back.
   - Moving, rotating, flipping and layering in the mockup never change the print/cut files.
 - **How to print & cut** tab: the whole workflow and troubleshooting, inside the tool.
 

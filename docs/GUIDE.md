@@ -140,6 +140,10 @@ Good to know:
 
 ## 8. Mockup: plan the finished scene
 
+Every sidebar panel on the Mockup tab collapses: click its title or the ▾ chevron. These are Mockup / assemble (page size + background image), Layers, Images, Assembly guide & export, and Save work. A collapsed panel shows a one-line summary, such as *Letter portrait · bg: wallpaper.png Tile* or *Guide: ghost · numbers all*, and the tool remembers which panels you closed.
+
+![Collapsed panels](images/22_mockup_collapsed_panels.png)
+
 The **Mockup** tab shows how the stickers go together, for example a dollhouse room, at their true relative sizes.
 
 ![Mockup](images/13_mockup_scene.png)
@@ -151,6 +155,16 @@ The **Mockup** tab shows how the stickers go together, for example a dollhouse r
 - **Resize**: drag a corner square of the selected piece. The ratio is locked; Shift or the 🔗 button unlocks it. Or type Width / Height / Scale %. A size is shared: it applies to every copy, to the Layout tab and to the cut sheet.
 
   ![Resizing in the mockup](images/15_mockup_resize.png)
+
+- **Transform: skew / free distort (preview only)**: sometimes a sticker is drawn for a slightly different angle than the scene, like an isometric dollhouse railing that's a little off the angled floor edge. Select the piece and turn on **⬚ Transform** in *Selected piece*.
+  - Drag a **corner** circle to move that corner on its own: a perspective warp of the whole image.
+  - Drag a **side's middle square** to skew. You can also type **Skew X° / Y°**.
+  - **Ctrl/⌘ + drag a corner** works without Transform mode. **Reset transform** puts it back, and Esc leaves Transform mode.
+  - The canvas, the Mockup PNG and the guide outlines (PNG and PDF) all follow the warped shape.
+  - *Warp is preview-only; the sticker prints undistorted.* The print PDF, the cut SVG, the piece's size and Send to Layout ignore it.
+  - Undo covers it, and saves and projects keep it.
+
+  ![Transform mode](images/24_mockup_transform.png)
 
 - **Assembly guide**: set *Show* to "numbered outlines" or "ghosted images + numbered outlines".
 
@@ -213,7 +227,22 @@ When the scene looks right, **📤 Send to Layout…** (under the Layers list) m
 ## 11. Saving your work
 
 - **Save project / Open project** (Layout tab) stores the images, sizes, quantities, hand placement, the mockup and the calibration in one `.json` file.
-- The calibration and the mockup also auto-save in the browser. Images themselves aren't kept in the browser; re-add the same files, or open the project, and the mockup reconnects them by name.
+- **Mockup tab → Save work** panel:
+
+  ![Save work panel](images/23_mockup_save_panel.png)
+
+  - **💾 Save mockup (file)** downloads one `.json` file with everything:
+    - every image (embedded) with its size and cut settings;
+    - the layers with their positions, angles, flips, order and visibility, plus hidden numbers;
+    - the guide options and the backdrop with its background image.
+
+    It's the same format as a project file, so **Open project** reads it too.
+  - **📂 Open mockup** brings it all back on any computer, with no re-upload. Unlike Open project, it keeps this browser's sheet settings and calibration.
+  - **Save in browser** (or **Ctrl+S** on the Mockup tab) stores a named copy, images included, in this browser.
+    - The list shows a thumbnail, date, image count and size, with **Open**, **✎ rename** and **✕ delete**.
+    - Saving again under the same name overwrites that save.
+  - The panel shows how much browser storage is used and warns when it's almost full. Browser saves are big because they hold the images; keep the important ones as files.
+- **Autosave:** the calibration, the settings and the whole mockup, images included, are saved in the browser as you work, so a refresh brings everything back. Clearing the site's data starts fresh. If the browser can't store the images, re-add the same files or open a save, and the mockup reconnects them by name.
 
 ## Troubleshooting
 

@@ -93,6 +93,7 @@ const FILES = ['wall_panel.png', 'floor_boards.png', 'window.png', 'sofa.png', '
   ok(okBack && okFront && okDown && okUp && o[0] === 'rug.png', 'To back / To front / Backward / Forward buttons and Shift+[ reorder the layers');
   // layer list: drag the wall's row to the bottom (= very back)
   const rowsBefore = await p.evaluate(() => [...document.querySelectorAll('#mkLayers .lrow .lname')].map(e => e.textContent));
+  await p.evaluate(() => document.querySelector('#mkLayers').scrollIntoView({ block: 'center' })); await wait(150);
   const hpos = await p.evaluate(() => { const r = [...document.querySelectorAll('#mkLayers .lrow')], w = r.find(x => x.querySelector('.lname').textContent.startsWith('wall_panel.png')), h = w.querySelector('.lhandle').getBoundingClientRect(), last = r[r.length - 1].getBoundingClientRect(); return { x: h.left + h.width / 2, y: h.top + h.height / 2, ty: last.bottom - 3 }; });
   await p.mouse.move(hpos.x, hpos.y); await p.mouse.down(); await p.mouse.move(hpos.x, hpos.ty, { steps: 10 }); await p.mouse.up(); await wait(300); o = await order();
   ok(o[0] === 'wall_panel.png' && await p.evaluate(() => [...document.querySelectorAll('#mkLayers .lrow .lname')].pop().textContent.startsWith('wall_panel.png')), `layer list drag (⋮⋮): wall moved to the back (list was ${rowsBefore.length} rows, now bottom = wall)`);
@@ -148,9 +149,9 @@ const FILES = ['wall_panel.png', 'floor_boards.png', 'window.png', 'sofa.png', '
   await p.select('#mkGuide', 'off'); await wait(300);
   const snapA = await p.evaluate(() => JSON.stringify(window.CST.MK.nodes.map(n => [n.name, +n.x.toFixed(6), +n.y.toFixed(6), n.rot, n.flip, n.hidden])) + JSON.stringify(window.CST.MK.bg));
   const proj = await p.evaluate(async () => { window.T.grab = []; await window.CST.saveProject(); return await window.T.grab[0].text(); });
-  await wait(600); await p.reload(); await wait(800); await load(); await inject(); await p.click('[data-tab=tabMock]'); await wait(800);
+  await wait(2200); await p.evaluate(() => localStorage.removeItem('cst.mkAuto')); await p.reload(); await wait(800); await load(); await inject(); await p.click('[data-tab=tabMock]'); await wait(800);
   const snapB = await p.evaluate(() => JSON.stringify(window.CST.MK.nodes.map(n => [n.name, +n.x.toFixed(6), +n.y.toFixed(6), n.rot, n.flip, n.hidden])) + JSON.stringify(window.CST.MK.bg));
-  ok(snapA === snapB, 'autosave: after a reload and re-adding the same images the mockup (positions, angles, flips, order, backdrop) is back');
+  ok(snapA === snapB, 'autosave without the image copy: after a reload and re-adding the same images the mockup (positions, angles, flips, order, backdrop) is back');
   await p.evaluate(() => { localStorage.clear(); sessionStorage.clear(); window.name = ''; }); await p.reload(); await wait(800);
   await inject(); await p.evaluate(async (t) => { await window.CST.loadProject(new File([t], 'p.json')); }, proj); await wait(3000); await p.click('[data-tab=tabMock]'); await wait(800);
   const snapC = await p.evaluate(() => JSON.stringify(window.CST.MK.nodes.map(n => [n.name, +n.x.toFixed(6), +n.y.toFixed(6), n.rot, n.flip, n.hidden])) + JSON.stringify(window.CST.MK.bg));

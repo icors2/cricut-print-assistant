@@ -42,6 +42,13 @@ sample_output/              # test output (git-ignored, kept with .gitkeep)
 ### app.js sections (in file order)
 
 - Persistence: `STORE` is localStorage with a memory fallback, mirrored to sessionStorage/window.name. Keys: `cst.settings`, `cst.cal.<sheet>`, legacy `cst.corr.<sheet>`, `cst.draft.<sheet>`, `cst.mockup`.
+- Saves:
+  - `projectData(kind)` builds the one file format, with images as data URLs. `applyProject(d, {settings, cal})` restores it; `loadProject` is the full version.
+  - The Mockup **Save work** panel has:
+    - a file save/open (`mkSaveFile`, `mkOpenFile`), which keeps this browser's settings and calibration;
+    - named saves in IndexedDB `cst-mockups`, with stores `meta` (name, time, counts, thumbnail) and `data` (the project object);
+    - an autosave record `__auto` plus a matching `cst.mkAuto` stamp in localStorage. The restore only runs when both match and no images are loaded, so tests that clear localStorage start fresh.
+  - Collapse state is `S.mkCol` (settings); `mkPanelSum` builds the summaries.
 - Units.
 - Image loading.
 - Processing & layout.
@@ -57,6 +64,10 @@ sample_output/              # test output (git-ignored, kept with .gitkeep)
 - Mockup, including:
   - the background image: `mkBgRect`, `renderMkBg`, `mkBgToBackdrop`;
   - assembly steps: `mkSteps`, `legendRows`, `mkNumPos`, and the per-node `noNum` flag plus `MK.num = { show, size }`.
+  - Transform (preview only): `n.warp = { sx, sy, q[4] }` in the piece's box frame.
+    - `warpQuad`/`warpMap` give a projective square→quad map. `nodePath` is the warped outline, used for drawing, hit-testing and badge spots.
+    - `drawWarped` is the mesh render (affine per triangle, `growTri` overlap). The Guide PDF maps its outline through `warpMap`.
+    - Handles: `mkWarpHandles`/`mkWarpAt`/`mkWarpDrag`. Transform mode is `mkXf`.
 - Send to Layout: `mkSendPlan`, `mkSendOpen`, `mkSendApply`.
 
 Everything the tests need is exposed on `window.CST`.
@@ -97,16 +108,17 @@ It writes the result to `index.html` and to `app/cricut_print_assistant.html`, t
    - Mockup moves, rotations, flips, layers, hiding, the guide and the background never change the print PDF or cut SVGs (`mock_test`, `mock_bg_test`).
    - Piece numbers OFF gives byte-identical output to the old behaviour. Numbers ON changes only the PDF, never the SVG.
    - Send to Layout gives the same exports as the equivalent hand-made layout (`mock_send_test`).
+   - Hand-placed pins export exactly where they were dropped (`drag_test`).
+6. **Sizes are shared:** a mockup resize changes the item's real size, so the Layout and the cut change too. That's intended. Everything else in the Mockup is view-only.
+7. **Undo:** a Layout-tab change, including Send to Layout and Reset to auto-pack, is one undo step.
+8. **Single offline file:** no CDN, fonts or fetches. Images are read with FileReader; downloads use Blob URLs.
 9. **Assembly steps:**
    - `mkSteps()` numbers the visible `MK.nodes` in array order. Index 0 is the bottom layer, drawn first. So #1 goes on first, every copy gets its own step, hidden layers get none, and the steps are always 1..N.
    - The Layers list, the Selected panel, the canvas badges, the Guide PNG/PDF and their legends, the Layout card badges (`mkCardNums`) and the printed piece numbers all derive from it.
    - Printed labels (`cutStepLabels`): copies of one image take its ascending steps in reading order (sheet, then `round(y·10)`, then x). Pieces beyond the mockup copies get `sp`. With no visible step, it falls back to the image number.
    - Hiding a number (`noNum`, or `MK.num.show = 'none'`) only removes the badge. The step stays reserved and stays in the legend.
    - None of this touches the cut SVG or the sheet code.
-   - Hand-placed pins export exactly where they were dropped (`drag_test`).
-6. **Sizes are shared:** a mockup resize changes the item's real size, so the Layout and the cut change too. That's intended. Everything else in the Mockup is view-only.
-7. **Undo:** a Layout-tab change, including Send to Layout and Reset to auto-pack, is one undo step.
-8. **Single offline file:** no CDN, fonts or fetches. Images are read with FileReader; downloads use Blob URLs.
+10. **Transform is preview-only.** `n.warp` is read only by the Mockup drawing, the hit tests and the guide exports. Never use it in `processItem`, the Layout, `buildPDF`/`buildSVGs`, the sheet code or `mkSendPlan` (`mock_warp_test` checks byte-identity).
 
 ## Tests
 
@@ -128,6 +140,8 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `drag_test.js` | Hand placement, snapping, undo, pins in exports |
 | `mock_test.js`, `mock_resize_test.js`, `mock_bg_test.js`, `mock_send_test.js` | The Mockup and its byte-identity guarantees |
 | `mock_steps_test.js` | Assembly-step numbering, number hiding (view/PNG/PDF), undo/persist, cut-sheet labels = guide steps |
+| `mock_warp_test.js` | Transform: corner distort / side skew / typed skew, warped render (pixels), Guide PDF + PNG outlines follow the warp, Layout exports byte-identical, undo, saves |
+| `mock_save_test.js` | Collapsible Mockup panels; file save → fresh page → open gives an identical state and exports; IndexedDB named saves, Ctrl+S, rename/delete; image autosave across reloads; low-storage warning |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
 Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene), plus the committed background test images in `samples/bg/`. All the art is made up.
@@ -139,7 +153,7 @@ Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene),
 - The calibration is per browser and sheet size. It needs export/import to move between computers, and browsers may drop storage for `file://` pages.
 - Design Space's UI changes over time. The 0.25 in placement has stayed stable, but if Cricut changes it, the anchor must change too.
 - Very large images at 300 dpi can be slow to process, since everything is on the main thread.
-- The Mockup doesn't store images in the browser. After a reload they're reconnected by file name.
+- Browser saves and the autosave hold every image, so they can be large. IndexedDB quotas differ per browser, and some browsers (or private windows) may evict or refuse them. The file save is the durable option.
 
 ## Ideas backlog
 

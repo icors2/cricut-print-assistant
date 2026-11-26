@@ -24,5 +24,7 @@ run node mock_resize_test.js
 run node mock_bg_test.js
 run node mock_send_test.js
 run node mock_steps_test.js
+run node mock_save_test.js
+run node mock_warp_test.js
 run node shot.js
 echo "ALL TESTS PASSED"

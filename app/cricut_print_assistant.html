@@ -42,8 +42,9 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
 .inrow{display:flex;gap:6px;align-items:center;min-width:0}.inum{flex:none;font-size:11px;font-weight:700;color:#fff;background:#68758a;border-radius:9px;padding:0 6px}
 .lrow,.arow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;margin-top:4px;background:#fff;font-size:12px}.lrow{cursor:pointer}.lrow.sel{border-color:var(--blu);box-shadow:0 0 0 2px rgba(31,111,235,.25)}.lrow.hid{opacity:.5}.lrow.missing{opacity:.45}.lrow.dragging{opacity:.4}
 .lrow img,.arow img,.limg{width:26px;height:26px;object-fit:contain;flex:none;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/8px 8px;border-radius:3px}.lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.arow .lname{white-space:normal}
-.lnum{flex:none;min-width:20px;height:20px;border-radius:10px;border:1.5px solid #2b2f36;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
-.lhandle{cursor:grab;color:var(--mut);padding:0 2px;touch-action:none;user-select:none}.leye{border:none;background:none;cursor:pointer;font-size:13px}.lnumtog{border:1px solid #9aa3b0;background:#fff;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:0 4px;line-height:16px;color:#1d2733}.lnumtog.off{color:#b0b6bf;text-decoration:line-through;border-style:dashed}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
+.arow .lnum{padding:0 4px;border-radius:10px}.lnum{flex:none;min-width:20px;height:20px;border-radius:10px;border:1.5px solid #2b2f36;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.lhandle{cursor:grab;color:var(--mut);padding:0 2px;touch-action:none;user-select:none}.srow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;margin-top:4px;background:#fff;font-size:12px}.srow.cur{border-color:var(--blu)}.srow img{width:38px;height:30px;object-fit:contain;flex:none;border:1px solid var(--b);border-radius:3px;background:#fff}#mkStore.warn{color:#b3261e;font-weight:600}
+.leye{border:none;background:none;cursor:pointer;font-size:13px}.lnumtog{border:1px solid #9aa3b0;background:#fff;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:0 4px;line-height:16px;color:#1d2733}.lnumtog.off{color:#b0b6bf;text-decoration:line-through;border-style:dashed}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
 .dropz{border:2px dashed var(--b);border-radius:8px;padding:12px;text-align:center;color:var(--mut);cursor:pointer;font-size:13px;margin-bottom:4px}.dropz.over{border-color:var(--blu);background:#eef4ff}#mkSelPanel.idle .mksize{display:none}.mksend{margin-top:8px;border-top:1px solid var(--b);padding-top:8px}label.chk{display:flex;align-items:center;gap:4px;font-size:12px;flex-direction:row}#mkSendDlg{max-width:520px;border:1px solid var(--b);border-radius:10px;padding:16px 18px;font-size:13px}#mkSendDlg::backdrop{background:rgba(20,25,35,.35)}#mkSendList{max-height:40vh;overflow:auto;margin:8px 0;padding-left:18px}#mkSendList li{margin:2px 0}#mkSendList .gone{color:#a33;text-decoration:line-through}#mkSendList .zero{color:var(--mut)}#mkSendSum b{font-size:14px}.mksize{margin-top:8px;border-top:1px solid var(--b);padding-top:6px}.bgctl{border:1px solid var(--b);border-radius:8px;padding:6px 8px;margin:4px 0 8px;background:#fafbfc}.bgline{display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0}.bgline input[type=range]{flex:1}.bgline .sm,input.sm{width:56px}#mkBgAdj.on{background:#fff1dc;border-color:#e07b00;color:#8a4b00}
 #mkSelPanel .btns{gap:4px;margin-top:6px}#mkSelPanel.idle .btns{display:none}#mkSelName{font-size:12px}#mkSelPanel:not(.idle) #mkSelName{font-weight:600}.mini.on{background:#eef4ff;border-color:#9bbcf5}
 #mkCanvas{touch-action:none;outline:none;box-shadow:none}.mkbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center;overflow:auto;max-height:calc(100vh - 120px)}
@@ -98,7 +99,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
 
 <div id="tabMock" class="tab" style="display:none"><main>
 <div class="side">
-  <div class="panel"><h2>Mockup / assemble</h2>
+  <div class="panel" data-col="back"><h2 class="ph"><span>Mockup / assemble</span><span class="psum grow">page size &amp; background</span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
     <p class="muted" style="font-size:12px;margin:0 0 8px">See how the stickers go together, at their true relative sizes (sizes come from the Layout tab). This view is separate: nothing here changes the cut layout, sizes or the print / cut files.</p>
     <div class="row"><label>Backdrop<select id="mkPreset"><option value="letter-P">Letter portrait</option><option value="letter-L">Letter landscape</option><option value="a4-P">A4 portrait</option><option value="a4-L">A4 landscape</option><option value="sq12">12 × 12 in</option><option value="8x10">8 × 10 in</option><option value="10x8">10 × 8 in</option><option value="5x7">5 × 7 in</option><option value="custom">Custom / free size</option></select></label>
       <label><span>Width (<span class="mku"></span>)</span><input type="number" step="any" id="mkW"></label><label><span>Height (<span class="mku"></span>)</span><input type="number" step="any" id="mkH"></label></div>
@@ -117,26 +118,34 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
   </div>
   <div class="panel" id="mkSelPanel"><h2>Selected piece</h2><div id="mkSelName"></div>
     <div class="btns"><span style="font-size:12px">Angle °</span><input type="number" step="1" id="mkAngle" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkRotL" title="−15°">↺ 15°</button><button class="mini" id="mkRotR" title="+15° (R)">↻ 15°</button><button class="mini" id="mkRot0">0°</button><button class="mini" id="mkFlip" title="Mirror left-right (F)">⇋ Flip</button></div>
+    <div class="btns" style="align-items:center"><button class="mini" id="mkXf" title="Skew or warp this piece so it lines up in the scene: drag a corner to move it on its own (free distort), drag a side's middle square to skew. Ctrl/⌘ + drag a corner works without Transform mode. Esc to finish.">⬚ Transform (skew / distort)</button><span style="font-size:12px">Skew X°</span><input type="number" step="0.5" id="mkSkX" style="width:58px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><span style="font-size:12px">Y°</span><input type="number" step="0.5" id="mkSkY" style="width:58px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkXfReset">Reset transform</button></div>
+    <div class="muted" id="mkWarpNote" style="font-size:11px;display:none">Warp is preview-only; the sticker prints undistorted.</div>
     <div class="btns"><label class="chk" title="Untick to hide this piece's number on the guide (canvas, Guide PNG and PDF). Its outline and legend entry stay, and it keeps its step so the order stays right."><input type="checkbox" id="mkSelNum"> Show this piece's number in the guide</label></div>
     <div class="btns"><button class="mini" id="mkFront" title="Shift+]">⤒ To front</button><button class="mini" id="mkFwd" title="]">↑ Forward</button><button class="mini" id="mkBack" title="[">↓ Backward</button><button class="mini" id="mkToBack" title="Shift+[">⤓ To back</button><button class="mini" id="mkDup" title="D">⧉ Add another</button><button class="mini" id="mkDel" title="Delete">🗑 Remove</button></div>
     <div class="mksize"><div class="grid" style="grid-template-columns:1fr auto 1fr">
       <label><span>Width (<span class="mku"></span>)</span><input type="number" step="any" id="mkSW"></label><button type="button" class="link" id="mkSLink" style="align-self:end;margin-bottom:3px">🔗</button><label><span>Height (<span class="mku"></span>)</span><input type="number" step="any" id="mkSH"></label></div>
       <div class="pctrow" style="margin-top:4px;font-size:11px"><span class="muted">Scale %</span><input type="number" step="1" id="mkSPct" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button type="button" class="pp" data-p="25">25%</button><button type="button" class="pp" data-p="50">50%</button><button type="button" class="pp" data-p="75">75%</button><button type="button" class="pp" data-p="100">100%</button></div>
       <div class="muted" id="mkSizeNote" style="font-size:11px;margin-top:4px"></div><div class="muted" style="font-size:11px">Or drag a corner square on the canvas (Shift = unlock the ratio while dragging).</div></div></div>
-  <div class="panel"><h2 class="ph" style="cursor:default"><span>Layers</span><span class="psum grow">front at the top · drag ⋮⋮ to reorder</span></h2><div id="mkLayers"></div>
+  <div class="panel" data-col="layers"><h2 class="ph"><span>Layers</span><span class="psum grow">front at the top · drag ⋮⋮ to reorder</span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2><div id="mkLayers"></div>
     <div class="mksend"><div class="btns" style="align-items:center"><button class="btn" id="mkSend" title="Make the Layout tab's image list exactly the pieces in this Layers list: same images, qty = number of copies here, same sizes. Images not in the layers are removed from the Layout. Rotation and flips here are only for the mockup: the Layout packer rotates pieces as it needs to, and pieces print unflipped.">📤 Send to Layout…</button>
       <label class="chk" title="Eye-off layers count as pieces too"><input type="checkbox" id="mkSendHidden"> Include hidden layers</label></div>
       <div class="muted" style="font-size:11px;margin-top:4px">Sets the cut sheet to just these layers (sizes carry over; rotation / flip don't). You'll see a summary first, and it can be undone.</div></div></div>
 <dialog id="mkSendDlg"><h3 style="margin:0 0 6px">Send the layers to the Layout?</h3><div id="mkSendSum"></div><ul id="mkSendList"></ul><p class="muted" id="mkSendNote" style="font-size:12px"></p>
   <div class="btns" style="justify-content:flex-end"><button class="btn sec" id="mkSendCancel">Cancel</button><button class="btn" id="mkSendOk">Send to Layout</button></div></dialog>
-  <div class="panel"><h2>Images</h2>
+  <div class="panel" data-col="images"><h2 class="ph"><span>Images</span><span class="psum grow"></span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
     <div id="mkDrop" class="dropz">Drop PNG / JPG / SVG here, or click to choose<br><small>Added to the shared image list (also on the Layout tab, qty 1). Transparent PNGs get a contour cut.</small></div>
     <input type="file" id="mkFile" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none"><div id="mkAdd"></div></div>
-  <div class="panel"><h2>Assembly guide &amp; export</h2>
+  <div class="panel" data-col="guide"><h2 class="ph"><span>Assembly guide &amp; export</span><span class="psum grow"></span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
     <div class="row"><label>Show<select id="mkGuide"><option value="off">Finished mockup</option><option value="outline">Guide: numbered outlines only</option><option value="ghost">Guide: ghosted images + numbered outlines</option></select></label><label>Ghost opacity<input type="range" id="mkGhost" min="0.05" max="0.8" step="0.05"></label></div>
     <div class="row" id="mkNumRow"><label>Numbers<select id="mkNumShow"><option value="all">All (except ones hidden with #)</option><option value="none">None: outlines + legend only</option></select></label><label>Number size <span id="mkNumSizeV" class="muted"></span><input type="range" id="mkNumSize" min="50" max="200" step="10"></label><button class="mini" id="mkNumAll" style="align-self:end" title="Show every number again">Show all numbers</button></div>
     <div class="btns"><button class="btn sec" id="mkExpPNG">⬇ Mockup PNG</button><button class="btn sec" id="mkExpGuidePNG">⬇ Guide PNG</button><button class="btn sec" id="mkExpGuidePDF">⬇ Guide PDF (true size)</button></div>
     <p class="muted" style="font-size:12px;margin:8px 0 0">The guide numbers every piece in the order to stick them on: #1 is the bottom layer (goes on first), the top layer gets the highest number. Each copy has its own step; hidden layers are skipped. Crowded spot? Click a layer's # (or untick it under Selected piece) to hide just that number, or set Numbers to None. The legend still lists every step. Print the PDF at 100%: it's the backdrop at true size (enlarged for your printer when calibration is on). Turn on "Print piece numbers" on the Layout tab to number the stickers on the cut sheet too.</p></div>
+  <div class="panel" data-col="save"><h2 class="ph"><span>Save work</span><span class="psum grow"></span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
+    <div class="btns"><button class="btn sec" id="mkSaveFile" title="Download one .json file with everything: every image, sizes and cut settings, layers, positions, angles, flips, order, visibility, hidden numbers, guide options, backdrop and background image. Same format as Save project.">💾 Save mockup (file)</button><button class="btn sec" id="mkOpenFile" title="Open a mockup save or a project file. Keeps this browser's sheet settings and calibration.">📂 Open mockup</button><input type="file" id="mkOpenInput" accept=".json,application/json" style="display:none"></div>
+    <div class="row" style="margin-top:8px"><label>Save in this browser as<input type="text" id="mkSaveName" placeholder="e.g. Living room"></label></div>
+    <div class="btns"><button class="btn" id="mkSaveIdb" title="Saves everything, images included, in this browser (IndexedDB). The same name overwrites that save.">Save in browser (Ctrl+S)</button></div>
+    <div id="mkSaves"></div><div id="mkStore" class="muted" style="font-size:11px;margin-top:4px"></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">Files include every image, so one file restores everything; Open project on the Layout tab reads them too. Browser saves stay in this browser on this computer. The mockup also autosaves here with its images, so a refresh brings it back.</p></div>
 </div>
 <div class="stage">
   <div class="toolbar2"><button class="mini" id="mkUndo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="mini" id="mkRedo" title="Redo (Ctrl+Y)">↷ Redo</button><span class="sep"></span>
@@ -1777,7 +1786,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function undo() { if (!undoStack.length) return; redoStack.push(curSnap); applySnap(undoStack.pop()); toast('Undone'); }
   function redo() { if (!redoStack.length) return; undoStack.push(curSnap); applySnap(redoStack.pop()); toast('Redone'); }
 
-  function refresh(itemsChanged) {
+  function refresh(itemsChanged) { mkIdbSoon();
     clearTimeout(dirtyTimer); $('#busy').style.display = '';
     dirtyTimer = setTimeout(() => { try { computeLayout(); recordUndo();
       if (follow) { const i = layout.sheets.findIndex(s => s.some(e => e.key === follow.key)); if (i >= 0) { curSheet = i; toast(follow.msg + (i + 1)); } follow = null; }
@@ -1934,21 +1943,26 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     for (const f of files) { if (!/image\/(png|jpe?g|svg\+xml|webp|gif)/i.test(f.type) && !/\.(png|jpe?g|svg|webp|gif)$/i.test(f.name)) continue; try { await addFile(f); } catch (e) { alert(f.name + ': ' + e.message); } }
     refresh(true);
   }
-  async function saveProject() {
+  /** everything in one object: settings, calibration, every image (data URL) with its size/cut settings, hand placement, the mockup incl. its background image */
+  function projectData(kind) {
     const calibration = {}; for (const k of STORE.keys()) if (/^cst\.cal\./.test(k)) { try { calibration[k] = JSON.parse(STORE.get(k)); } catch (e) { /* skip */ } }
     const data = { app: 'cricut-full-sheet-tool', v: 1, settings: S, calibration, items: items.map(i => ({ name: i.name, dataURL: i.dataURL, isSvg: i.isSvg, wIn: i.wIn, hIn: i.hIn, pct: +pctOf(i).toFixed(3), baseWIn: i.baseWIn, qty: i.qty, shape: i.shape, radiusIn: i.radiusIn, offsetIn: i.offsetIn, border: i.border, rotate: i.rotate, lockAR: i.lockAR !== false, collapsed: !!i.collapsed })) };
     data.mockup = mkSerial(true);
     if (manual) { const idx = new Map(items.map((it, i) => [String(it.id), i])); data.placement = { pieces: Object.entries(manual.pieces).map(([k, v]) => ({ i: idx.get(k.split('#')[0]), q: +k.split('#')[1], s: v.s, x: v.x, y: v.y, rot: !!v.rot, o: v.o })).filter(p => p.i != null) }; }
-    download('cricut-sheet-project.json', JSON.stringify(data), 'application/json');
+    if (kind) data.kind = kind; data.saved = Date.now(); return data;
   }
-  async function loadProject(file) {
-    const d = JSON.parse(await readAsText(file)); if (d.app !== 'cricut-full-sheet-tool') throw new Error('Not a project file');
-    Object.assign(S, d.settings || {}); saveSettings(); items = []; cache.clear();
-    if (d.calibration && Object.keys(d.calibration).length) { try { importCalData(d, true); } catch (e) { /* project without usable calibration */ } }
+  async function saveProject() { download('cricut-sheet-project.json', JSON.stringify(projectData()), 'application/json'); }
+  async function loadProject(file) { await applyProject(JSON.parse(await readAsText(file))); }
+  /** restore a project / mockup save. o.settings / o.cal = false keep this browser's sheet settings and calibration (Open mockup, browser saves, autosave) */
+  async function applyProject(d, o) { o = o || {}; if (!d || d.app !== 'cricut-full-sheet-tool') throw new Error('Not a project or mockup file');
+    const sameSheet = !d.settings || (d.settings.sheet === S.sheet && !!d.settings.landscape === !!S.landscape);
+    if (o.settings !== false) { const keepCol = { mkCol: S.mkCol }; Object.assign(S, d.settings || {}, keepCol.mkCol ? keepCol : {}); saveSettings(); }
+    items = []; cache.clear();
+    if (o.cal !== false && d.calibration && Object.keys(d.calibration).length) { try { importCalData(d, true); } catch (e) { /* project without usable calibration */ } }
     manual = null; sel = { key: null, itemId: null }; undoStack = []; redoStack = []; curSnap = null; curSheet = 0;
     for (const i of d.items || []) { const { dataURL, name, isSvg, ...rest } = i; await addFromDataURL(name, dataURL, dataURL, isSvg, rest); }
-    if (d.mockup) { MK = mkLoad(d.mockup); MK.nodes.forEach(n => { if (n.i != null && items[n.i]) n.itemId = items[n.i].id; delete n.i; }); mkSel = null; mkUndo = []; mkRedo = []; mkCur = null; mkAutosave(); }
-    if (d.placement && Array.isArray(d.placement.pieces)) { manual = { pieces: {} }; for (const p of d.placement.pieces) { const it = items[p.i]; if (it) manual.pieces[pieceKey(it, p.q)] = { s: p.s, x: p.x, y: p.y, rot: !!p.rot, o: p.o }; } }
+    if (d.mockup) { MK = mkLoad(d.mockup); MK.nodes.forEach(n => { if (n.i != null && items[n.i]) n.itemId = items[n.i].id; delete n.i; }); mkSel = null; mkUndo = []; mkRedo = []; mkCur = null; mkAutosave(); mkBgLoad(); }
+    if (d.placement && Array.isArray(d.placement.pieces) && (o.settings !== false || sameSheet)) { manual = { pieces: {} }; for (const p of d.placement.pieces) { const it = items[p.i]; if (it) manual.pieces[pieceKey(it, p.q)] = { s: p.s, x: p.x, y: p.y, rot: !!p.rot, o: p.o }; } }
     window._rebind(); rebindLengths(); refresh(true);
   }
 
@@ -2003,22 +2017,59 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const mkDefault = () => ({ v: 1, bg: { preset: 'letter-P', w: 8.5, h: 11, color: '#fbf3ec', img: null, fit: 'fill', scale: 100, ox: 0, oy: 0, rot: 0, opacity: 1, dpi: 150 }, guide: 'off', ghost: 0.3, snap: true, num: { show: 'all', size: 100 }, nodes: [], skip: {}, nextUid: 1 });
   const mkNumDef = () => ({ show: 'all', size: 100 });
   function mkLoad(d) { const m = mkDefault(); if (!d || typeof d !== 'object') return m; Object.assign(m, d); m.bg = Object.assign(mkDefault().bg, d.bg || {}); m.skip = d.skip || {}; m.num = Object.assign(mkNumDef(), d.num || {});
-    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden, noNum: !!n.noNum }));
+    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden, noNum: !!n.noNum, warp: warpClean(n.warp) }));
     m.nextUid = Math.max(m.nextUid || 1, ...m.nodes.map(n => (n.uid || 0) + 1)); m.nodes.forEach(n => { if (!n.uid) n.uid = m.nextUid++; }); return m; }
   let MK = (() => { try { return mkLoad(JSON.parse(STORE.get('cst.mockup') || 'null')); } catch (e) { return mkDefault(); } })();
   const mkSerial = (withIdx) => ({ v: 1, bg: MK.bg, guide: MK.guide, ghost: MK.ghost, snap: MK.snap, skip: MK.skip, nextUid: MK.nextUid, num: MK.num,
-    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (n.noNum) o.noNum = true; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
+    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (n.noNum) o.noNum = true; if (isWarped(n)) o.warp = n.warp; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
   let mkSaveT = null;
-  function mkAutosave() { clearTimeout(mkSaveT); mkSaveT = setTimeout(() => { try { STORE.set('cst.mockup', JSON.stringify(mkSerial(false))); }
+  function mkAutosave() { mkIdbSoon(); mkPanelSums(); clearTimeout(mkSaveT); mkSaveT = setTimeout(() => { try { STORE.set('cst.mockup', JSON.stringify(mkSerial(false))); }
     catch (e) { try { STORE.set('cst.mockup', JSON.stringify(Object.assign(mkSerial(false), { bg: Object.assign({}, MK.bg, { img: null }) }))); } catch (e2) { /* storage full */ } } }, 250); }
   let mkSel = null, mkDrag = null, mkView = { sc: 50, pad: 30 }, mkSnapLines = [], mkUndo = [], mkRedo = [], mkCur = null;
   function nodeItem(n) { let it = n.itemId != null ? items.find(i => i.id === n.itemId) : null;
     if (!it && n.name) { it = items.find(i => i.name === n.name); if (it) n.itemId = it.id; } return it || null; }
   function ng(n) { const it = nodeItem(n); if (!it) return null; const p = processed(it, false); return { it, p, w: p.cutW, h: p.cutH }; }
   const rad = (d) => d * Math.PI / 180;
-  function nodeAABB(n, G) { G = G || ng(n); if (!G) return null; const c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), W = G.w * c + G.h * s, H = G.w * s + G.h * c;
+  function nodeAABB(n, G) { G = G || ng(n); if (!G) return null;
+    if (isWarped(n)) { const pts = warpQuad(n, G).map(([x, y]) => boxToWorld(n, G, x, y)); return { x0: Math.min(...pts.map(p => p[0])), y0: Math.min(...pts.map(p => p[1])), x1: Math.max(...pts.map(p => p[0])), y1: Math.max(...pts.map(p => p[1])) }; }
+    const c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), W = G.w * c + G.h * s, H = G.w * s + G.h * c;
     return { x0: n.x - W / 2, y0: n.y - H / 2, x1: n.x + W / 2, y1: n.y + H / 2 }; }
   function toLocal(n, x, y) { const dx = x - n.x, dy = y - n.y, c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)); let lx = dx * c - dy * s; const ly = dx * s + dy * c; if (n.flip) lx = -lx; return [lx, ly]; }
+  // ---------- Transform (skew / free distort): preview only, never the cut size, the cut SVG or the print PDF ----------
+  // n.warp = { sx, sy (skew °, about the piece centre), q: [[dx,dy] x4] extra corner offsets TL, TR, BR, BL } in the piece's own box (inches, before flip/rotation)
+  function isWarped(n) { return !!(n && n.warp && (n.warp.sx || n.warp.sy || (n.warp.q || []).some(c => c && (c[0] || c[1])))); }
+  // hoisted: mkLoad() runs at startup, before this point
+  function warpClean(w) { if (!w || typeof w !== 'object') return null; const o = { sx: Math.max(-75, Math.min(75, +w.sx || 0)), sy: Math.max(-75, Math.min(75, +w.sy || 0)), q: [0, 1, 2, 3].map(i => { const c = (w.q || [])[i] || [0, 0]; return [+c[0] || 0, +c[1] || 0]; }) }; return isWarped({ warp: o }) ? o : null; }
+  function warpQuad(n, G) { const w = G.w, h = G.h, W = n.warp || {}, tx = Math.tan(rad(W.sx || 0)), ty = Math.tan(rad(W.sy || 0)), q = W.q || [];
+    return [[0, 0], [w, 0], [w, h], [0, h]].map(([x, y], i) => [x + tx * (y - h / 2) + ((q[i] || [])[0] || 0), y + ty * (x - w / 2) + ((q[i] || [])[1] || 0)]); }
+  /** projective map of the piece box [0,w]×[0,h] onto its warped quad (Heckbert square→quad); null = not warped */
+  function warpMap(n, G) { if (!isWarped(n)) return null; const P = warpQuad(n, G), [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = P;
+    const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3, den = dx1 * dy2 - dx2 * dy1;
+    const g = den ? (dx3 * dy2 - dx2 * dy3) / den : 0, h = den ? (dx1 * dy3 - dx3 * dy1) / den : 0;
+    const a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, c = x0, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3, f = y0;
+    return { P, f: (x, y) => { const u = x / G.w, v = y / G.h, k = g * u + h * v + 1; return [(a * u + b * v + c) / k, (d * u + e * v + f) / k]; } }; }
+  const warpPathCache = new WeakMap();
+  /** the piece's cut outline in its box frame, warped when it has a transform */
+  function nodePath(n, G) { const M = warpMap(n, G); if (!M) return loopPath(G.p); const c = warpPathCache.get(n.warp); if (c && c.p === G.p && c.w === G.w && c.h === G.h) return c.path;
+    const path = new Path2D(); for (const poly of flatLoops(G.p)) { poly.forEach(([x, y], i) => { const [a, b] = M.f(x, y); if (i) path.lineTo(a, b); else path.moveTo(a, b); }); path.closePath(); }
+    warpPathCache.set(n.warp, { p: G.p, w: G.w, h: G.h, path }); return path; }
+  /** box frame -> backdrop inches (flip, rotation, position) */
+  function boxToWorld(n, G, x, y) { let lx = x - G.w / 2; const ly = y - G.h / 2; if (n.flip) lx = -lx; const c = Math.cos(rad(n.rot)), s = Math.sin(rad(n.rot)); return [n.x + lx * c - ly * s, n.y + lx * s + ly * c]; }
+  /** draw the print image through the warp: an N×N mesh, each triangle an affine piece of the projective map (clipped, with a hair of overlap so no seams show) */
+  /** triangle grown by e on every edge (mitre capped), so neighbouring triangles overlap and no antialiasing seam shows */
+  function growTri(P, e) { const L = [0, 1, 2].map(i => { const a = P[i], b = P[(i + 1) % 3], c = P[(i + 2) % 3], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; let nx = dy / l, ny = -dx / l; if (nx * (c[0] - a[0]) + ny * (c[1] - a[1]) > 0) { nx = -nx; ny = -ny; } return { p: [a[0] + nx * e, a[1] + ny * e], d: [dx, dy] }; });
+    return [0, 1, 2].map(i => { const A = L[(i + 2) % 3], B = L[i], cr = A.d[0] * B.d[1] - A.d[1] * B.d[0], V = P[i]; if (Math.abs(cr) < 1e-12) return V;
+      const t = ((B.p[0] - A.p[0]) * B.d[1] - (B.p[1] - A.p[1]) * B.d[0]) / cr, X = [A.p[0] + A.d[0] * t, A.p[1] + A.d[1] * t], dd = Math.hypot(X[0] - V[0], X[1] - V[1]);
+      return dd > 4 * e ? [V[0] + (X[0] - V[0]) * 4 * e / dd, V[1] + (X[1] - V[1]) * 4 * e / dd] : X; }); }
+  function drawWarped(g, G, M, sc) { const pr = G.p.print, w = G.w, h = G.h, mx = Math.max(w, h), NX = Math.max(4, Math.round(16 * w / mx)), NY = Math.max(4, Math.round(16 * h / mx)), src = [], dst = [], ex = 0.8 / sc;
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) { const x = w * i / NX, y = h * j / NY; src.push([x, y]); dst.push(M.f(x, y)); }
+    const id = (i, j) => j * (NX + 1) + i;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) for (const t of [[id(i, j), id(i + 1, j), id(i + 1, j + 1)], [id(i, j), id(i + 1, j + 1), id(i, j + 1)]]) {
+      const [s0, s1, s2] = t.map(k => src[k]), [d0, d1, d2] = t.map(k => dst[k]);
+      const u1x = s1[0] - s0[0], u1y = s1[1] - s0[1], u2x = s2[0] - s0[0], u2y = s2[1] - s0[1], v1x = d1[0] - d0[0], v1y = d1[1] - d0[1], v2x = d2[0] - d0[0], v2y = d2[1] - d0[1], dn = u1x * u2y - u2x * u1y; if (!dn) continue;
+      const A = (v1x * u2y - v2x * u1y) / dn, C = (v2x * u1x - v1x * u2x) / dn, B = (v1y * u2y - v2y * u1y) / dn, D = (v2y * u1x - v1y * u2x) / dn, E = d0[0] - A * s0[0] - C * s0[1], F = d0[1] - B * s0[0] - D * s0[1];
+      g.save(); g.beginPath(); growTri([d0, d1, d2], ex).forEach(([x, y], k) => { if (k) g.lineTo(x, y); else g.moveTo(x, y); }); g.closePath(); g.clip();
+      g.transform(A, B, C, D, E, F); g.drawImage(pr.canvas, pr.x, pr.y, pr.w, pr.h); g.restore(); } }
   const pathCache = new WeakMap();
   function loopPath(p) { let P = pathCache.get(p); if (P) return P; P = new Path2D();
     for (const l of p.loops) for (const s of l) { if (s[0] === 'M') P.moveTo(s[1], s[2]); else if (s[0] === 'L') P.lineTo(s[1], s[2]); else if (s[0] === 'C') P.bezierCurveTo(s[1], s[2], s[3], s[4], s[5], s[6]); else P.closePath(); }
@@ -2026,8 +2077,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   let hitCtx = null;
   function mkHit(x, y) { hitCtx = hitCtx || document.createElement('canvas').getContext('2d');
     for (let i = MK.nodes.length - 1; i >= 0; i--) { const n = MK.nodes[i]; if (n.hidden) continue; const G = ng(n); if (!G) continue; const [lx, ly] = toLocal(n, x, y);
-      if (Math.abs(lx) > G.w / 2 || Math.abs(ly) > G.h / 2) continue;
-      if (n === mkSel || hitCtx.isPointInPath(loopPath(G.p), lx + G.w / 2, ly + G.h / 2, 'evenodd')) return n; }
+      const wq = isWarped(n); if (!wq && (Math.abs(lx) > G.w / 2 || Math.abs(ly) > G.h / 2)) continue;
+      if ((n === mkSel && !wq) || hitCtx.isPointInPath(nodePath(n, G), lx + G.w / 2, ly + G.h / 2, 'evenodd')) return n;
+      if (n === mkSel && wq) { const q = new Path2D(), P = warpQuad(n, G); P.forEach(([a, b], i) => i ? q.lineTo(a, b) : q.moveTo(a, b)); q.closePath(); if (hitCtx.isPointInPath(q, lx + G.w / 2, ly + G.h / 2)) return n; } }
     return null; }
   function mkFreeSpot(w, h) { const B = MK.bg, boxes = MK.nodes.map(n => nodeAABB(n)).filter(Boolean), g = 0.15;
     for (let y = 0.25; y + h <= B.h - 0.1; y += 0.25) for (let x = 0.25; x + w <= B.w - 0.1; x += 0.25) { if (boxes.every(b => x + w + g <= b.x0 || b.x1 + g <= x || y + h + g <= b.y0 || b.y1 + g <= y)) return { x: x + w / 2, y: y + h / 2 }; }
@@ -2052,8 +2104,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const live = [], marks = o.mode !== 'off' && !o.noMarks;
     for (const n of MK.nodes) { if (n.hidden || o.mode === 'bgonly') continue; const G = ng(n); if (!G) continue; live.push([n, G]);
       g.save(); g.translate(n.x, n.y); g.rotate(rad(n.rot)); if (n._rs) g.scale(n._rs[0], n._rs[1]); if (n.flip) g.scale(-1, 1); g.translate(-G.w / 2, -G.h / 2);
-      const P = loopPath(G.p);
-      if (o.mode !== 'outline') { g.save(); g.globalAlpha = o.mode === 'ghost' ? (o.ghost != null ? o.ghost : MK.ghost) : 1; g.clip(P, 'evenodd'); const pr = G.p.print; g.drawImage(pr.canvas, pr.x, pr.y, pr.w, pr.h); g.restore(); }
+      const P = nodePath(n, G), WM = warpMap(n, G);
+      if (o.mode !== 'outline') { g.save(); g.globalAlpha = o.mode === 'ghost' ? (o.ghost != null ? o.ghost : MK.ghost) : 1; g.clip(P, 'evenodd'); const pr = G.p.print; if (WM) drawWarped(g, G, WM, sc); else g.drawImage(pr.canvas, pr.x, pr.y, pr.w, pr.h); g.restore(); }
       if (marks) { g.lineWidth = Math.max(1.2, sc / 60) / sc; g.strokeStyle = '#2b2f36'; g.setLineDash([6 / sc, 3 / sc]); g.stroke(P); g.setLineDash([]); }
       g.restore(); }
     if (marks && MK.num.show !== 'none') { const st = mkSteps(), r = Math.max(0.09, 11 / sc) * mkNumScale(); g.font = `bold ${r * 1.15}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -2062,7 +2114,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (o.ui) {
       g.strokeStyle = '#e0115f'; g.lineWidth = 1 / sc; g.setLineDash([4 / sc, 3 / sc]); for (const l of mkSnapLines) { g.beginPath(); if (l.x != null) { g.moveTo(l.x, -1); g.lineTo(l.x, B.h + 1); } else { g.moveTo(-1, l.y); g.lineTo(B.w + 1, l.y); } g.stroke(); } g.setLineDash([]);
       const n = mkSel, G = n && !n.hidden && ng(n);
-      if (G) { const W = G.w * (n._rs ? n._rs[0] : 1), H = G.h * (n._rs ? n._rs[1] : 1); g.save(); g.translate(n.x, n.y); g.rotate(rad(n.rot)); g.strokeStyle = '#1f6feb'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); g.strokeRect(-W / 2, -H / 2, W, H); g.setLineDash([]);
+      if (G && (mkXf || isWarped(n))) { const P = warpQuad(n, G).map(([x, y]) => boxToWorld(n, G, x, y)); g.save(); g.strokeStyle = '#e07b00'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.stroke(); g.setLineDash([]);
+        if (mkXf) { const hs = 6 / sc; g.fillStyle = '#fff'; for (const [x, y] of mkWarpHandles(n, G)) { g.beginPath(); g.arc(x, y, hs, 0, Math.PI * 2); g.fill(); g.stroke(); } for (const [x, y] of mkWarpHandles(n, G).slice(4)) { g.fillStyle = '#e07b00'; g.fillRect(x - hs / 2, y - hs / 2, hs, hs); } }
+        g.restore(); }
+      if (G && !mkXf) { const W = G.w * (n._rs ? n._rs[0] : 1), H = G.h * (n._rs ? n._rs[1] : 1); g.save(); g.translate(n.x, n.y); g.rotate(rad(n.rot)); g.strokeStyle = '#1f6feb'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); if (!isWarped(n)) g.strokeRect(-W / 2, -H / 2, W, H); g.setLineDash([]);
         g.fillStyle = '#fff'; const hs = 5 / sc; for (const [cx, cy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { g.fillRect(cx * W / 2 - hs, cy * H / 2 - hs, 2 * hs, 2 * hs); g.strokeRect(cx * W / 2 - hs, cy * H / 2 - hs, 2 * hs, 2 * hs); }
         if (n._rs) { g.font = `${12 / sc}px sans-serif`; g.textAlign = 'center'; g.fillStyle = '#1f6feb'; g.fillText(`${fmtShort(W)} × ${fmtShort(H)}`, 0, H / 2 + 18 / sc); }
         const hy = -H / 2 - 24 / sc; g.beginPath(); g.moveTo(0, -G.h / 2); g.lineTo(0, hy); g.stroke(); g.beginPath(); g.arc(0, hy, 6 / sc, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.stroke(); g.restore(); } }
@@ -2071,7 +2126,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const mkNumScale = () => Math.max(0.3, Math.min(3, (+MK.num.size || 100) / 100));
   const badgeK = (t) => t.length > 2 ? 1.4 : t.length > 1 ? 1.15 : 1;
   function mkNumPos(list, r, all) { all = all || list; const out = new Map(), used = []; hitCtx = hitCtx || document.createElement('canvas').getContext('2d');
-    const onPiece = (n, G, x, y) => { const [lx, ly] = toLocal(n, x, y); return Math.abs(lx) <= G.w / 2 && Math.abs(ly) <= G.h / 2 && hitCtx.isPointInPath(loopPath(G.p), lx + G.w / 2, ly + G.h / 2, 'evenodd'); };
+    const onPiece = (n, G, x, y) => { const [lx, ly] = toLocal(n, x, y); return (isWarped(n) || (Math.abs(lx) <= G.w / 2 && Math.abs(ly) <= G.h / 2)) && hitCtx.isPointInPath(nodePath(n, G), lx + G.w / 2, ly + G.h / 2, 'evenodd'); };
     const order = MK.nodes;
     for (const [n, G] of list) { const b = nodeAABB(n, G), above = all.filter(([m]) => order.indexOf(m) > order.indexOf(n));
       const good = (x, y) => used.every(([u, v]) => Math.hypot(u - x, v - y) >= 2.3 * r) && [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dy]) => onPiece(n, G, x + dx, y + dy) && !above.some(([m, H]) => onPiece(m, H, x + dx, y + dy)));
@@ -2116,7 +2171,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   // undo / redo (positions, angles, flips, order, visibility, backdrop)
   const mkSizes = () => items.map(it => [it.id, it.wIn, it.hIn, it.pct, it.lockAR]);
-  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num]);
+  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num]);
   const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
   function mkCommit() { mkCardNums(); const s = mkSnap(); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
   function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); MK.num = Object.assign(mkNumDef(), s.num || {}); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
@@ -2157,12 +2212,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const A = $('#mkAdd'); A.innerHTML = '';
     if (!items.length) A.innerHTML = '<div class="empty">Add images on the Layout tab first.</div>';
     for (const it of items) { const k = MK.nodes.filter(n => nodeItem(n) === it).length, p = processed(it, false), r = document.createElement('div'); r.className = 'arow';
-      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/^#/, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
+      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/#/g, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
       $('button', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); }; A.append(r); }
-    renderMkSel(); renderMockCanvas(); }
+    renderMkSel(); renderMockCanvas(); mkPanelSums(); }
   function renderMkSel() { const P = $('#mkSelPanel'), n = mkSel, G = n && ng(n); $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     P.classList.toggle('idle', !G); $$('#mkSelPanel button, #mkSelPanel input').forEach(b => b.disabled = !G);
-    if (!G) { $('#mkSelName').textContent = 'Click a piece to select it. Drag to move, drag the round handle to rotate (Shift = 15° steps).'; return; }
+    if (!G) { $('#mkWarpNote').style.display = 'none'; $('#mkSelName').textContent = 'Click a piece to select it. Drag to move, drag the round handle to rotate (Shift = 15° steps).'; return; }
     const i = MK.nodes.indexOf(n), sn = mkSteps().get(n); $('#mkSelName').textContent = `${sn ? `Step #${sn}` : 'Hidden'} · ${G.it.name} · ${fmtShort(G.w)} × ${fmtShort(G.h)} · layer ${MK.nodes.length - i} of ${MK.nodes.length}`;
     if (document.activeElement !== $('#mkAngle')) $('#mkAngle').value = +(+n.rot).toFixed(1);
     const it = G.it; if (it.lockAR == null) it.lockAR = true;
@@ -2170,6 +2225,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const lk = $('#mkSLink'); lk.classList.toggle('on', !!it.lockAR); lk.textContent = it.lockAR ? '🔗' : '⛓︎‍💥'; lk.title = it.lockAR ? 'Aspect ratio locked (corner handles too; hold Shift to unlock while dragging). Click to unlink.' : 'Aspect ratio unlocked: W and H change separately. Click to link.';
     const copies = MK.nodes.filter(m => nodeItem(m) === it).length; $('#mkSizeNote').textContent = `Size applies to every copy of ${it.name} (${copies} here, qty ${it.qty} on the cut sheet) and to the Layout tab. Cut size ${fmtShort(G.w)} × ${fmtShort(G.h)}.`;
     $('#mkFlip').classList.toggle('on', !!n.flip); $('#mkSelNum').checked = !n.noNum;
+    const W = n.warp || {}; if (document.activeElement !== $('#mkSkX')) $('#mkSkX').value = +(+W.sx || 0).toFixed(1); if (document.activeElement !== $('#mkSkY')) $('#mkSkY').value = +(+W.sy || 0).toFixed(1);
+    $('#mkXfReset').disabled = !isWarped(n); $('#mkWarpNote').style.display = isWarped(n) || mkXf ? '' : 'none';
     $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', +r.dataset.uid === n.uid)); }
   function mkSelect(n) { mkSel = n; $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', n && +r.dataset.uid === n.uid)); const r = n && $(`#mkLayers .lrow[data-uid="${n.uid}"]`); if (r) r.scrollIntoView({ block: 'nearest' }); renderMkSel(); renderMockCanvas(); }
   function mkDelete(n) { const it = nodeItem(n); MK.nodes = MK.nodes.filter(m => m !== n); if (it && !MK.nodes.some(m => nodeItem(m) === it)) MK.skip[it.name] = true; if (mkSel === n) mkSel = null; mkChanged(true); }
@@ -2189,6 +2246,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function mkPt(ev) { const c = $('#mkCanvas'), r = c.getBoundingClientRect(), px = (ev.clientX - r.left) * (c.width / r.width), py = (ev.clientY - r.top) * (c.height / r.height); return { x: (px - mkView.pad) / mkView.sc, y: (py - mkView.pad) / mkView.sc }; }
   function mkCornerAt(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return null; const dx = pt.x - n.x, dy = pt.y - n.y, c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)), lx = dx * c - dy * s, ly = dx * s + dy * c, t = 9 / mkView.sc;
     for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) if (Math.abs(lx - sx * G.w / 2) <= t && Math.abs(ly - sy * G.h / 2) <= t) return [sx, sy]; return null; }
+  let mkXf = false;
+  /** transform handles in backdrop inches: 4 corners (free distort), then the 4 side middles (top, right, bottom, left: skew) */
+  function mkWarpHandles(n, G) { const P = warpQuad(n, G), M = warpMap(n, G), f = M ? M.f : (x, y) => [x, y], w = G.w, h = G.h;
+    return P.concat([f(w / 2, 0), f(w, h / 2), f(w / 2, h), f(0, h / 2)]).map(([x, y]) => boxToWorld(n, G, x, y)); }
+  /** handle index under the pointer: Transform mode = corners + sides; Ctrl/⌘ outside it = corners (distort) */
+  function mkWarpAt(pt, mod) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G || (!mkXf && !mod)) return -1; const H = mkWarpHandles(n, G), t = 9 / mkView.sc;
+    for (let i = 0; i < (mkXf ? 8 : 4); i++) if (Math.hypot(pt.x - H[i][0], pt.y - H[i][1]) <= t) return i; return -1; }
+  /** d = drag state: i (handle), w0 (warp at pointer-down), b0 (pointer in the box frame at pointer-down). Corners follow the pointer; sides skew by the pointer's movement */
+  function mkWarpDrag(n, G, d, pt) { const i = d.i, [lx, ly] = toLocal(n, pt.x, pt.y), bx = lx + G.w / 2, by = ly + G.h / 2, w0 = d.w0 || { sx: 0, sy: 0, q: [[0, 0], [0, 0], [0, 0], [0, 0]] }, W = { sx: w0.sx, sy: w0.sy, q: w0.q.map(c => c.slice()) }, w = G.w, h = G.h;
+    const deg = (t) => +Math.max(-75, Math.min(75, Math.atan(t) * 180 / Math.PI)).toFixed(2), dx = bx - d.b0[0], dy = by - d.b0[1];
+    if (i < 4) { const tx = Math.tan(rad(W.sx)), ty = Math.tan(rad(W.sy)), base = [[0, 0], [w, 0], [w, h], [0, h]][i], sk = [base[0] + tx * (base[1] - h / 2), base[1] + ty * (base[0] - w / 2)]; W.q[i] = [+(bx - sk[0]).toFixed(4), +(by - sk[1]).toFixed(4)]; }
+    else if (i === 4 || i === 6) W.sx = deg(Math.tan(rad(w0.sx)) + (i === 4 ? -dx : dx) / (h / 2));
+    else W.sy = deg(Math.tan(rad(w0.sy)) + (i === 7 ? -dy : dy) / (w / 2));
+    n.warp = warpClean(W); }
+  function mkSetXf(v) { mkXf = !!v; const b = $('#mkXf'); if (b) { b.classList.toggle('on', mkXf); b.textContent = mkXf ? '⬚ Transform: on (drag corners / sides)' : '⬚ Transform (skew / distort)'; } renderMockCanvas(); renderMkSel(); }
   function mkOnHandle(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return false; const [lx, ly] = toLocal(n, pt.x, pt.y), hy = -G.h / 2 - 24 / mkView.sc; return Math.hypot(n.flip ? -lx : lx, ly - hy) <= 10 / mkView.sc; }
   function mkSnapMove(n, nx, ny, alt) { mkSnapLines = []; if (MK.snap === false || alt) return [nx, ny]; const b = nodeAABB(n), thr = 7 / mkView.sc, hw = (b.x1 - b.x0) / 2, hh = (b.y1 - b.y0) / 2;
     const xs = [0, MK.bg.w / 2, MK.bg.w], ys = [0, MK.bg.h / 2, MK.bg.h];
@@ -2200,17 +2272,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function bindMock() {
     const cv = $('#mkCanvas');
     cv.addEventListener('pointerdown', ev => { if (ev.button > 0) return; cv.focus({ preventScroll: true }); const pt = mkPt(ev);
-      const corner = mkBgAdj ? null : mkCornerAt(pt);
-      if (mkBgAdj && mkBgReady()) mkDrag = { kind: 'bg', px: pt.x, py: pt.y, ox: +MK.bg.ox || 0, oy: +MK.bg.oy || 0, moved: false };
+      const wh = mkBgAdj ? -1 : mkWarpAt(pt, ev.ctrlKey || ev.metaKey), corner = mkBgAdj || mkXf || wh >= 0 ? null : mkCornerAt(pt);
+      if (wh >= 0) { const n = mkSel, G = ng(n), [lx, ly] = toLocal(n, pt.x, pt.y); mkDrag = { kind: 'warp', n, i: wh, w0: warpClean(n.warp), b0: [lx + G.w / 2, ly + G.h / 2], moved: false }; }
+      else if (mkBgAdj && mkBgReady()) mkDrag = { kind: 'bg', px: pt.x, py: pt.y, ox: +MK.bg.ox || 0, oy: +MK.bg.oy || 0, moved: false };
       else if (corner) { const n = mkSel, G = ng(n); mkDrag = { kind: 'size', n, it: G.it, sx: corner[0], sy: corner[1], w: G.w, h: G.h, cx: n.x, cy: n.y, moved: false }; }
-      else if (mkOnHandle(pt)) { const n = mkSel; mkDrag = { kind: 'rot', n, a0: Math.atan2(pt.y - n.y, pt.x - n.x), r0: n.rot }; }
+      else if (!mkXf && mkOnHandle(pt)) { const n = mkSel; mkDrag = { kind: 'rot', n, a0: Math.atan2(pt.y - n.y, pt.x - n.x), r0: n.rot }; }
       else { const n = mkHit(pt.x, pt.y); mkSelect(n); if (!n) return; mkDrag = { kind: 'move', n, dx: pt.x - n.x, dy: pt.y - n.y, moved: false, sx: ev.clientX, sy: ev.clientY }; }
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* synthetic */ } ev.preventDefault(); });
     cv.addEventListener('pointermove', ev => { const pt = mkPt(ev);
       if (!mkDrag && mkBgAdj) { cv.style.cursor = 'move'; return; }
       if (mkDrag && mkDrag.kind === 'bg') { MK.bg.ox = +(mkDrag.ox + pt.x - mkDrag.px).toFixed(4); MK.bg.oy = +(mkDrag.oy + pt.y - mkDrag.py).toFixed(4); mkDrag.moved = true; mkRedraw(); renderMkBg(); return; }
+      if (!mkDrag && mkWarpAt(pt, ev.ctrlKey || ev.metaKey) >= 0) { cv.style.cursor = 'move'; return; }
       if (!mkDrag) { const cr = mkCornerAt(pt); cv.style.cursor = cr ? (cr[0] * cr[1] > 0 ? 'nwse-resize' : 'nesw-resize') : mkOnHandle(pt) ? 'crosshair' : mkHit(pt.x, pt.y) ? 'grab' : 'default'; return; }
       const d = mkDrag, n = d.n;
+      if (d.kind === 'warp') { const G = ng(n); if (G) { mkWarpDrag(n, G, d, pt); d.moved = true; mkRedraw(); } return; }
       if (d.kind === 'size') { // opposite corner stays put; locked = scale along the diagonal, unlocked = free W/H
         const c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)), dx = pt.x - d.cx, dy = pt.y - d.cy, lx = dx * c - dy * s, ly = dx * s + dy * c, ax = -d.sx * d.w / 2, ay = -d.sy * d.h / 2, vx = lx - ax, vy = ly - ay, mn = 0.15;
         const lock = (d.it.lockAR !== false) !== !!ev.shiftKey; let W, H;
@@ -2229,6 +2304,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     cv.addEventListener('wheel', ev => { if (!ev.ctrlKey) return; ev.preventDefault(); mkZoom((MK.zoom || 1) * (ev.deltaY < 0 ? 1.15 : 1 / 1.15)); }, { passive: false });
     document.addEventListener('keydown', ev => { if ($('#tabMock').style.display === 'none') return;
       const tg = ev.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'SELECT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable), mod = ev.ctrlKey || ev.metaKey, k = ev.key;
+      if (mod && (k === 's' || k === 'S')) { ev.preventDefault(); mkQuickSave(); return; }
+      if (mkXf && k === 'Escape' && !typing) { mkSetXf(false); return; }
       if (mkBgAdj && k === 'Escape' && !typing) { mkBgAdj = false; renderMkBg(); renderMockCanvas(); return; }
       if (mod && !typing && k.toLowerCase() === 'z') { ev.preventDefault(); ev.shiftKey ? mkRedoFn() : mkUndoFn(); return; }
       if (mod && !typing && k.toLowerCase() === 'y') { ev.preventDefault(); mkRedoFn(); return; }
@@ -2264,14 +2341,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $('#mkNumShow').onchange = () => { MK.num.show = $('#mkNumShow').value; mkChanged(true); };
     $('#mkNumSize').oninput = () => { MK.num.size = +$('#mkNumSize').value; $('#mkNumSizeV').textContent = MK.num.size + '%'; renderMockCanvas(); }; $('#mkNumSize').onchange = () => { MK.num.size = +$('#mkNumSize').value; mkChanged(false); };
     $('#mkNumAll').onclick = () => { MK.nodes.forEach(n => { n.noNum = false; }); MK.num.show = 'all'; mkChanged(true); };
+ $('#mkXf').onclick = () => mkSetXf(!mkXf);
+    const skew = (k) => () => { if (!mkSel) return; const v = parseFloat($(k === 'sx' ? '#mkSkX' : '#mkSkY').value); if (!isFinite(v)) return; mkSel.warp = warpClean(Object.assign({ sx: 0, sy: 0, q: [] }, mkSel.warp, { [k]: v })); mkChanged(false); };
+    $('#mkSkX').onchange = skew('sx'); $('#mkSkY').onchange = skew('sy');
+    $('#mkXfReset').onclick = () => { if (mkSel && mkSel.warp) { mkSel.warp = null; mkChanged(false); } };
     $('#mkSelNum').onchange = () => { if (mkSel) { mkSel.noNum = !$('#mkSelNum').checked; mkChanged(true); } };
     $('#mkGhost').oninput = () => { MK.ghost = +$('#mkGhost').value; mkAutosave(); renderMockCanvas(); };
     $('#mkPreset').onchange = () => { const v = $('#mkPreset').value, P = MK_PRESETS[v]; MK.bg.preset = v; if (P && P[1]) { MK.bg.w = P[1]; MK.bg.h = P[2]; } mkChanged(true); };
     const dim = (k) => () => { const v = fromU(parseFloat($(k === 'w' ? '#mkW' : '#mkH').value)); if (isFinite(v) && v >= 1 && v <= 120) { MK.bg[k] = v; MK.bg.preset = 'custom'; mkChanged(true); } };
     $('#mkW').onchange = dim('w'); $('#mkH').onchange = dim('h');
     $('#mkColor').oninput = () => { MK.bg.color = $('#mkColor').value; renderMockCanvas(); }; $('#mkColor').onchange = () => { MK.bg.color = $('#mkColor').value; mkChanged(false); };
-    $('#mkBgImg').onclick = () => $('#mkBgFile').click(); $('#mkBgClear').onclick = () => { MK.bg.img = null; mkBgAdj = false; mkChanged(true); };
-    $('#mkBgFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const u = await readAsDataURL(f); MK.bg.img = u; Object.assign(MK.bg, MK_BG_RESET, { dpi: imgDpi(u) || 150 }); mkChanged(true); };
+    $('#mkBgImg').onclick = () => $('#mkBgFile').click(); $('#mkBgClear').onclick = () => { MK.bg.img = null; MK.bg.imgName = null; mkBgAdj = false; mkChanged(true); };
+    $('#mkBgFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const u = await readAsDataURL(f); MK.bg.img = u; MK.bg.imgName = f.name; Object.assign(MK.bg, MK_BG_RESET, { dpi: imgDpi(u) || 150 }); mkChanged(true); };
     const bgLive = (fn) => () => { fn(); renderMockCanvas(); renderMkBg(); }, bgSet = (fn) => () => { fn(); mkChanged(false); renderMkBg(); };
     const num = (id) => parseFloat($(id).value);
     $('#mkBgFit').onchange = bgSet(() => { MK.bg.fit = $('#mkBgFit').value; });
@@ -2287,6 +2368,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $('#mkBgAdj').onclick = () => { mkBgAdj = !mkBgAdj; renderMkBg(); renderMockCanvas(); };
     $('#mkBgToSize').onclick = () => mkBgToBackdrop('dpi'); $('#mkBgAspect').onclick = () => mkBgToBackdrop('width');
     $('#mkFit').onclick = mkFitBackdrop; $('#mkArrange').onclick = () => { const live = mkLive(); MK.nodes = MK.nodes.filter(n => !nodeItem(n)); for (const n of live) { const G = ng(n), c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), sp = mkFreeSpot(G.w * c + G.h * s, G.w * s + G.h * c); n.x = sp.x; n.y = sp.y; MK.nodes.push(n); } mkChanged(true); };
+    bindMkPanels(); bindMkStore();
     $('#mkSend').onclick = mkSendOpen; $('#mkSendCancel').onclick = () => $('#mkSendDlg').close();
     $('#mkSendOk').onclick = () => { const D = $('#mkSendDlg'), P = D._plan; D.close(); mkSendApply(P); };
     $('#mkExpPNG').onclick = () => download(`${mkBase()}-MOCKUP.png`, dataURLBlob(mockPNG()));
@@ -2345,7 +2427,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const [a, b] = P(0, 0); doc.addImage(r.toDataURL('image/jpeg', 0.85), 'JPEG', a * PT, b * PT, B.w * k.ex * PT, B.h * k.ey * PT, 'ghost', 'FAST'); }
     doc.setDrawColor(40); doc.setLineWidth(0.8); doc.setLineDashPattern([3, 2], 0);
     for (const n of live) { const G = ng(n), c = Math.cos(rad(n.rot)), s = Math.sin(rad(n.rot));
-      const T = (lx, ly) => { lx -= G.w / 2; ly -= G.h / 2; if (n.flip) lx = -lx; const x = n.x + lx * c - ly * s, y = n.y + lx * s + ly * c, [a, b] = P(x, y); return [a * PT, b * PT]; };
+      const WM = warpMap(n, G), T = (lx, ly) => { if (WM) [lx, ly] = WM.f(lx, ly); lx -= G.w / 2; ly -= G.h / 2; if (n.flip) lx = -lx; const x = n.x + lx * c - ly * s, y = n.y + lx * s + ly * c, [a, b] = P(x, y); return [a * PT, b * PT]; };
       for (const poly of flatLoops(G.p)) { if (poly.length < 2) continue; const pts = poly.map(([x, y]) => T(x, y)), d = []; for (let i = 1; i < pts.length; i++) d.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]); doc.lines(d, pts[0][0], pts[0][1], [1, 1], 'S', true); } }
     doc.setLineDashPattern([], 0); doc.setLineWidth(0.8);
     const st = mkSteps(), ns = mkNumScale(), allG = live.map(n => [n, ng(n)]), shown = MK.num.show === 'none' ? [] : allG.filter(([n]) => !n.noNum), npos = mkNumPos(shown, 0.125 * ns, allG);
@@ -2360,12 +2442,84 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const pr = processed(r.it, false); doc.setFontSize(11); doc.text(`Step ${r.n}: ${r.it.name}`, 1.8 * PT, y * PT + 1); doc.setFontSize(8); doc.setTextColor(110); doc.text(`${fmtShort(pr.cutW)} × ${fmtShort(pr.cutH)}${legendNote(r)}`, 1.8 * PT, y * PT + 11);
       y += 0.62; }
     doc.setTextColor(0); doc.setDrawColor(0); doc.setFillColor(0); return doc; }
+  // ---------- Mockup panels: collapsible, with a one-line summary when collapsed (state kept in the settings) ----------
+  const MK_PANELS = ['back', 'layers', 'images', 'guide', 'save'];
+  function mkPanelSum(k) { const B = MK.bg;
+    if (k === 'back') { const pr = MK_PRESETS[B.preset], fitL = { fit: 'Fit', fill: 'Fill', stretch: 'Stretch', original: 'True size', tile: 'Tile' }[B.fit || 'fill'];
+      return `${pr && pr[1] ? pr[0] : 'Custom ' + fmtShort(B.w) + ' × ' + fmtShort(B.h)}${B.img ? ` · bg: ${B.imgName || 'image'} ${fitL}` : ''}`; }
+    if (k === 'layers') { const h = MK.nodes.filter(n => n.hidden).length; return `${plural(MK.nodes.length, 'layer')}${h ? ` · ${h} hidden` : ''}`; }
+    if (k === 'images') return plural(items.length, 'image');
+    if (k === 'guide') return `${MK.guide === 'off' ? 'Finished mockup' : MK.guide === 'ghost' ? 'Guide: ghost' : 'Guide: outlines'} · numbers ${MK.num.show === 'none' ? 'none' : 'all'}${MK.nodes.some(n => n.noNum) && MK.num.show !== 'none' ? ` (${MK.nodes.filter(n => n.noNum).length} hidden)` : ''}${(+MK.num.size || 100) !== 100 ? ` · size ${MK.num.size}%` : ''}`;
+    if (k === 'save') return mkStoreState.last ? `saved “${mkStoreState.last.name}” ${new Date(mkStoreState.last.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : mkStoreState.auto ? 'autosaved in this browser' : '';
+    return ''; }
+  function mkPanelSums() { const C = S.mkCol || {}; for (const k of MK_PANELS) { const P = document.querySelector(`.panel[data-col="${k}"]`); if (!P) continue; const sm = $('.psum', P); if (sm && sm.dataset.hint == null) sm.dataset.hint = sm.textContent; if (sm) sm.textContent = C[k] ? mkPanelSum(k) : (sm.dataset.hint || ''); } }
+  function setMkCol(k, v) { S.mkCol = Object.assign({}, S.mkCol, { [k]: !!v }); const P = document.querySelector(`.panel[data-col="${k}"]`); if (!P) return; P.classList.toggle('collapsed', !!v); const b = $('.pchev', P); b.setAttribute('aria-expanded', String(!v)); b.title = v ? 'Expand' : 'Collapse'; mkPanelSums(); }
+  function bindMkPanels() { for (const k of MK_PANELS) { const P = document.querySelector(`.panel[data-col="${k}"]`); if (!P) continue; const sm = $('.psum', P); if (sm && sm.dataset.hint == null) sm.dataset.hint = sm.textContent;
+      $('h2', P).onclick = (ev) => { if (ev.target.closest('a,input,select')) return; setMkCol(k, !(S.mkCol || {})[k]); saveSettings(); if (!S.mkCol[k]) renderMockCanvas(); };
+      setMkCol(k, !!(S.mkCol || {})[k]); } }
+
+  // ---------- Mockup saves: file (= project format, images embedded), named saves + autosave in IndexedDB ----------
+  const IDB = (() => { let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => { try { const r = indexedDB.open('cst-mockups', 1); r.onupgradeneeded = () => { const db = r.result; db.createObjectStore('meta', { keyPath: 'id' }); db.createObjectStore('data', { keyPath: 'id' }); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }).catch(e => { dbp = null; throw e; }));
+    const tx = async (stores, mode, f) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction(stores, mode); let out; const q = f(...stores.map(n => t.objectStore(n))); if (q) q.onsuccess = () => { out = q.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('aborted')); }); };
+    return { ok: typeof indexedDB !== 'undefined',
+      list: () => tx(['meta'], 'readonly', m => m.getAll()), get: (id) => tx(['data'], 'readonly', d => d.get(id)),
+      put: (meta, data) => tx(['meta', 'data'], 'readwrite', (m, d) => { if (meta) m.put(meta); d.put({ id: data.id, d: data.d }); }),
+      rename: (id, name) => tx(['meta'], 'readwrite', m => { const q = m.get(id); q.onsuccess = () => { if (q.result) m.put(Object.assign(q.result, { name })); }; }),
+      del: (id) => tx(['meta', 'data'], 'readwrite', (m, d) => { m.delete(id); d.delete(id); }) }; })();
+  const mkStoreState = { cur: null, last: null, auto: false, busy: false };
+  const fmtMB = (b) => b >= 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b >= 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB';
+  function mkThumb() { try { const B = MK.bg, sc = Math.min(40, 160 / Math.max(B.w, B.h)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(B.w * sc)); c.height = Math.max(1, Math.round(B.h * sc)); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); mkDraw(g, { sc, pad: 0, mode: 'off', ui: false }); return c.toDataURL('image/jpeg', 0.7); } catch (e) { return null; } }
+  const isQuota = (e) => e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message || ''));
+  async function mkStorageInfo() { const el = $('#mkStore'); if (!el) return null; let est = null; try { est = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; } catch (e) { est = null; }
+    if (!est || !est.quota) { el.textContent = IDB.ok ? '' : 'This browser has no IndexedDB: use Save mockup (file).'; el.classList.remove('warn'); return null; }
+    const free = est.quota - (est.usage || 0), low = free < 100e6 || (est.usage || 0) / est.quota > 0.85;
+    el.textContent = low ? `⚠ Browser storage is almost full (${fmtMB(est.usage || 0)} used, ${fmtMB(Math.max(0, free))} free). Delete old saves or use 💾 Save mockup (file).` : `Browser storage: ${fmtMB(est.usage || 0)} used of ${fmtMB(est.quota)}.`;
+    el.classList.toggle('warn', low); return { usage: est.usage || 0, quota: est.quota, low }; }
+  async function mkSaveList() { const L = $('#mkSaves'); if (!L) return []; let list = []; try { list = (await IDB.list()).filter(r => r.id !== '__auto').sort((a, b) => b.t - a.t); } catch (e) { L.innerHTML = '<div class="empty">Browser saves aren\'t available here (use the file buttons).</div>'; return []; }
+    L.innerHTML = list.length ? '' : '<div class="empty">No saves in this browser yet.</div>';
+    for (const r of list) { const row = document.createElement('div'); row.className = 'srow' + (mkStoreState.cur === r.id ? ' cur' : ''); row.dataset.id = r.id;
+      row.innerHTML = `${r.thumb ? `<img src="${r.thumb}" alt="">` : '<span class="limg"></span>'}<span class="lname"><b>${esc(r.name)}</b><br><span class="muted">${new Date(r.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${plural(r.images || 0, 'image')} · ${fmtMB(r.bytes || 0)}</span></span><button class="mini" data-a="open">Open</button><button class="mini" data-a="ren" title="Rename">✎</button><button class="x" data-a="del" title="Delete this save">✕</button>`;
+      row.querySelector('[data-a=open]').onclick = () => mkOpenSave(r.id);
+      row.querySelector('[data-a=ren]').onclick = async () => { const n = prompt('Rename the save:', r.name); if (n && n.trim()) { await IDB.rename(r.id, n.trim()); if (mkStoreState.last && mkStoreState.last.id === r.id) mkStoreState.last.name = n.trim(); mkSaveList(); } };
+      row.querySelector('[data-a=del]').onclick = async () => { if (!confirm(`Delete the browser save “${r.name}”?`)) return; await IDB.del(r.id); if (mkStoreState.cur === r.id) mkStoreState.cur = null; mkSaveList(); mkStorageInfo(); };
+      L.append(row); }
+    return list; }
+  /** save in this browser under a name (same name = overwrite that save) */
+  async function mkSaveIdb(name) { name = (name || '').trim() || `Mockup ${new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+    const list = (await IDB.list().catch(() => [])).filter(r => r.id !== '__auto'), same = list.find(r => r.name === name), id = same ? same.id : 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const d = projectData('mockup'), bytes = JSON.stringify(d).length, meta = { id, name, t: Date.now(), images: items.length, layers: MK.nodes.length, bytes, thumb: mkThumb() };
+    try { await IDB.put(meta, { id, d }); } catch (e) { toast(isQuota(e) ? 'Browser storage is full: not saved. Delete old saves or use Save mockup (file).' : 'Could not save in the browser: ' + (e.message || e), true); mkStorageInfo(); return null; }
+    mkStoreState.cur = id; mkStoreState.last = { id, name, t: meta.t }; $('#mkSaveName').value = name; toast(`Saved “${name}” in this browser (${fmtMB(bytes)})`); await mkSaveList(); mkPanelSums(); const st = await mkStorageInfo(); if (st && st.low) toast('Saved, but browser storage is almost full', true); return id; }
+  function mkQuickSave() { const nm = $('#mkSaveName').value.trim() || (mkStoreState.last && mkStoreState.last.name) || ''; return mkSaveIdb(nm); }
+  async function mkOpenSave(id) { const r = await IDB.get(id); if (!r || !r.d) { toast('That save is missing', true); return false; }
+    await applyProject(r.d, { settings: false, cal: false }); mkStoreState.cur = id; const m = (await IDB.list()).find(x => x.id === id); if (m) { mkStoreState.last = { id, name: m.name, t: m.t }; $('#mkSaveName').value = m.name; }
+    mkAfterOpen(); toast(`Opened “${m ? m.name : 'save'}”`); mkSaveList(); return true; }
+  function mkAfterOpen() { const tb = $('.tabs button[data-tab=tabMock]'); if (tb && $('#tabMock').style.display === 'none') tb.click(); else renderMock(true); mkPanelSums(); }
+  function mkSaveFile() { const d = projectData('mockup'); download(`${mkBase()}-mockup-save.json`, JSON.stringify(d), 'application/json'); }
+  async function mkOpenFile(file) { const d = JSON.parse(await readAsText(file)); await applyProject(d, { settings: false, cal: false }); mkStoreState.cur = null; mkAfterOpen(); toast(`Opened ${file.name}: ${plural(items.length, 'image')}, ${plural(MK.nodes.length, 'layer')}`); }
+  // autosave incl. images: IndexedDB record '__auto' + a stamp in localStorage; a refresh restores it only when both match (clearing site data starts fresh)
+  let mkIdbT = null, mkIdbReady = false;
+  function mkIdbSoon() { if (!mkIdbReady || !IDB.ok) return; clearTimeout(mkIdbT); mkIdbT = setTimeout(mkIdbAuto, 1500); }
+  async function mkIdbAuto() { if (!items.length && !MK.nodes.length) { try { STORE.del('cst.mkAuto'); await IDB.del('__auto'); } catch (e) { /* ignore */ } mkStoreState.auto = false; return; }
+    const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), d = Object.assign(projectData('autosave'), { stamp });
+    try { await IDB.put(null, { id: '__auto', d }); STORE.set('cst.mkAuto', stamp); mkStoreState.auto = true; mkPanelSums(); }
+    catch (e) { if (isQuota(e)) { const el = $('#mkStore'); if (el) { el.textContent = '⚠ Browser storage is full: the autosave (with images) failed. Use 💾 Save mockup (file).'; el.classList.add('warn'); } } } }
+  async function mkIdbRestore() { const stamp = STORE.get('cst.mkAuto'); try { if (stamp && !items.length && IDB.ok) { const r = await IDB.get('__auto'); if (r && r.d && r.d.stamp === stamp && (r.d.items || []).length) { await applyProject(r.d, { settings: false, cal: false }); toast(`Restored your last session: ${plural(items.length, 'image')}, ${plural(MK.nodes.length, 'layer')}`); if ($('#tabMock').style.display !== 'none') renderMock(true); mkStoreState.auto = true; } } } catch (e) { /* no autosave */ }
+    mkIdbReady = true; mkStoreState.restored = true; }
+  function bindMkStore() {
+    $('#mkSaveFile').onclick = mkSaveFile; $('#mkOpenFile').onclick = () => $('#mkOpenInput').click();
+    $('#mkOpenInput').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await mkOpenFile(f); } catch (er) { alert(er.message); } };
+    $('#mkSaveIdb').onclick = () => mkSaveIdb($('#mkSaveName').value);
+    mkSaveList(); mkStorageInfo(); setTimeout(mkIdbRestore, 0); }
+
   /** image-card badges on the Layout tab = the image's assembly steps (they change with the mockup) */
   function mkCardNums() { const st = mkSteps(); for (const el of document.querySelectorAll('.inum[data-iid]')) { const it = items.find(i => String(i.id) === el.dataset.iid); if (!it) continue; const b = stepBadge(it, st); el.textContent = b.t; el.title = b.tip; } }
   // test / automation hooks (local only)
   window.CST = { saveToolCopy, get EMBEDDED() { return EMBEDDED; }, STORE, exportCal, importCalData, calStatusLine, getCal, saveCal, onCompute, choose, renderCalTable, currentState, stateCode, get lastResult() { return lastResult; }, S, get items() { return items; }, setPct, pctOf, BASE_DPI, addFromDataURL, computeLayout, buildPDF, buildSVGs, buildCalPDF, buildCalSVG, computeCalibration, getCorr, setCorr, drawPreview, refresh, sheetDims, calTargets, get layout() { return layout; }, cache,
     get manual() { return manual; }, set manual(v) { manual = v; }, pinLayout, resetAuto, selectPiece, selectItem, get sel() { return sel; }, get curSheet() { return curSheet; }, set curSheet(v) { curSheet = v; },
     get MK() { return MK; }, mkSetSize, mkGeom: (n) => { const G = ng(n); return G && { w: G.w, h: G.h }; }, renderMock, mkSelect, get mkSel() { return mkSel; }, get mkView() { return mkView; }, mkOrder, mockPNG, guidePNG, guidePDF, pieceLabels, mkSteps, legendRows, cutStepLabels, stepBadge, insidePiece, numOf, mkUndo: () => mkUndoFn(), mkRedo: () => mkRedoFn(), mkFitBackdrop, mkSendPlan, mkSendApply, mkSendOpen, mkBgRect, mkBgToBackdrop, imgDpi, set mkBgAdj(v) { mkBgAdj = !!v; renderMkBg(); renderMockCanvas(); }, get mkBgAdj() { return mkBgAdj; },
+    projectData, applyProject, mkSaveIdb, mkQuickSave, warpMap, warpQuad, nodePath, mkWarpHandles, mkSetXf, get mkXf() { return mkXf; }, isWarped, mkOpenSave, mkSaveFile, mkOpenFile, mkSaveList, mkStorageInfo, mkIdbAuto, IDB, setMkCol, mkPanelSum, get mkStoreState() { return mkStoreState; },
     rotatePiece, moveToSheet, duplicatePiece, deletePiece, nudge, fillQty, undo, redo, get undoDepth() { return undoStack.length; }, get view() { return view; }, setZoom, saveProject, loadProject, findSpot };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

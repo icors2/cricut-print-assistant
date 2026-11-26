@@ -101,6 +101,16 @@ const PASS1 = { T1: [-2.25, -5.5], T2: [2, -4.5], T3: [-1, -1.75], T4: [-3.75, 0
   await shot('20_guide_step_numbers.png');
   const gp = await p.evaluate(() => window.CST.guidePNG()); fs.writeFileSync(path.join(IMG, '21_guide_png_legend.png'), Buffer.from(gp.split(',')[1], 'base64')); console.log('wrote docs/images/21_guide_png_legend.png');
   await p.select('#mkGuide', 'off'); await wait(300);
+  // transform: skew + free distort the floor boards so they sit on an angled edge
+  await p.evaluate(() => { const C = window.CST, n = C.MK.nodes.find(n => C.items.find(i => i.id === n.itemId).name === 'floor_boards.png'); n.warp = { sx: -18, sy: 4, q: [[0.35, 0.1], [0.2, -0.25], [0, 0], [0, 0]] }; C.mkSelect(n); C.mkSetXf(true); window.scrollTo(0, 0); }); await wait(600);
+  await shot('24_mockup_transform.png');
+  await p.evaluate(() => { const C = window.CST; C.mkSetXf(false); C.mkSel.warp = null; C.mkSelect(null); C.renderMock(true); }); await wait(300);
+  // collapsible panels + Save work
+  await p.evaluate(async () => { const C = window.CST; ['back', 'layers', 'images', 'guide'].forEach(k => C.setMkCol(k, true)); C.setMkCol('save', false); C.renderMock(true);
+    document.querySelector('#mkSaveName').value = 'Living room'; await C.mkSaveIdb('Living room'); const n = C.MK.nodes[C.MK.nodes.length - 1]; n.x += 0.4; C.renderMock(true); await C.mkSaveIdb('Living room – variant'); window.scrollTo(0, 0); }); await wait(800);
+  await shot('22_mockup_collapsed_panels.png');
+  await el('.panel[data-col=save]', '23_mockup_save_panel.png');
+  await p.evaluate(() => { const C = window.CST; ['back', 'layers', 'images', 'guide', 'save'].forEach(k => C.setMkCol(k, false)); C.renderMock(true); }); await wait(300);
   // how-to tab
   await p.click('.tabs button[data-tab=tabHow]'); await wait(400); await shot('19_howto_tab.png');
   await b.close();
