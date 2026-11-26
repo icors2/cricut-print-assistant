@@ -102,9 +102,14 @@ const PASS1 = { T1: [-2.25, -5.5], T2: [2, -4.5], T3: [-1, -1.75], T4: [-3.75, 0
   const gp = await p.evaluate(() => window.CST.guidePNG()); fs.writeFileSync(path.join(IMG, '21_guide_png_legend.png'), Buffer.from(gp.split(',')[1], 'base64')); console.log('wrote docs/images/21_guide_png_legend.png');
   await p.select('#mkGuide', 'off'); await wait(300);
   // transform: skew + free distort the floor boards so they sit on an angled edge
-  await p.evaluate(() => { const C = window.CST, n = C.MK.nodes.find(n => C.items.find(i => i.id === n.itemId).name === 'floor_boards.png'); n.warp = { sx: -18, sy: 4, q: [[0.35, 0.1], [0.2, -0.25], [0, 0], [0, 0]] }; C.mkSelect(n); C.mkSetXf(true); window.scrollTo(0, 0); }); await wait(600);
+  await p.evaluate(() => { const C = window.CST, n = C.MK.nodes.find(n => C.items.find(i => i.id === n.itemId).name === 'floor_boards.png'); n.warp = { sx: -18, sy: 4, q: [[0.35, 0.1], [0.2, -0.25], [0, 0], [0, 0]] }; C.syncItemWarps(); C.refresh(true); C.mkSelect(n); C.mkSetXf(true); window.scrollTo(0, 0); }); await wait(1500);
   await shot('24_mockup_transform.png');
-  await p.evaluate(() => { const C = window.CST; C.mkSetXf(false); C.mkSel.warp = null; C.mkSelect(null); C.renderMock(true); }); await wait(300);
+  // the warp is baked into the printed sticker: the Layout shows the warped piece and its card says so
+  await p.click('.tabs button[data-tab=tabLayout]'); await wait(1200);
+  await p.evaluate(() => { const C = window.CST, it = C.items.find(i => i.name === 'floor_boards.png'); C.selectItem(it); window.scrollTo(0, 0); }); await wait(800);
+  await shot('25_layout_warped_piece.png');
+  await p.click('.tabs button[data-tab=tabMock]'); await wait(800);
+  await p.evaluate(() => { const C = window.CST; C.mkSetXf(false); C.MK.nodes.forEach(n => { n.warp = null; }); C.syncItemWarps(); C.mkSelect(null); C.refresh(true); }); await wait(1500);
   // collapsible panels + Save work
   await p.evaluate(async () => { const C = window.CST; ['back', 'layers', 'images', 'guide'].forEach(k => C.setMkCol(k, true)); C.setMkCol('save', false); C.renderMock(true);
     document.querySelector('#mkSaveName').value = 'Living room'; await C.mkSaveIdb('Living room'); const n = C.MK.nodes[C.MK.nodes.length - 1]; n.x += 0.4; C.renderMock(true); await C.mkSaveIdb('Living room – variant'); window.scrollTo(0, 0); }); await wait(800);

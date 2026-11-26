@@ -156,15 +156,24 @@ The **Mockup** tab shows how the stickers go together, for example a dollhouse r
 
   ![Resizing in the mockup](images/15_mockup_resize.png)
 
-- **Transform: skew / free distort (preview only)**: sometimes a sticker is drawn for a slightly different angle than the scene, like an isometric dollhouse railing that's a little off the angled floor edge. Select the piece and turn on **⬚ Transform** in *Selected piece*.
+- **Transform: skew / free distort**: sometimes a sticker is drawn for a slightly different angle than the scene, like an isometric dollhouse railing that's a little off the angled floor edge. Select the piece and turn on **⬚ Transform** in *Selected piece*.
   - Drag a **corner** circle to move that corner on its own: a perspective warp of the whole image.
   - Drag a **side's middle square** to skew. You can also type **Skew X° / Y°**.
   - **Ctrl/⌘ + drag a corner** works without Transform mode. **Reset transform** puts it back, and Esc leaves Transform mode.
   - The canvas, the Mockup PNG and the guide outlines (PNG and PDF) all follow the warped shape.
-  - *Warp is preview-only; the sticker prints undistorted.* The print PDF, the cut SVG, the piece's size and Send to Layout ignore it.
+  - *Warp applies to the printed sticker.* The Layout updates right away and prints and cuts the warped shape.
+    - The picture is re-drawn at print resolution through the warp, and the cut line goes through exactly the same mapping, so they line up.
+    - The cut size becomes the warped shape's bounding box. The width/height on the Layout card stay the size before the warp.
+    - The Layout card says the image is warped and has a **Remove warp** button.
+  - **Copies:** a warp belongs to the image.
+    - If copies of one image have different warps, the Layout uses the warp most copies share for now. The note in *Selected piece* tells you.
+    - **Send to Layout** then gives the other copies their own entry, e.g. *railing.png (warped 2)*.
+  - Calibration, sheet codes and the anchors aren't affected.
   - Undo covers it, and saves and projects keep it.
 
   ![Transform mode](images/24_mockup_transform.png)
+
+  ![The warped piece on the Layout](images/25_layout_warped_piece.png)
 
 - **Assembly guide**: set *Show* to "numbered outlines" or "ghosted images + numbered outlines".
 

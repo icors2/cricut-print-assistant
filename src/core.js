@@ -227,6 +227,35 @@
     return { cutW: p.cutH, cutH: p.cutW, loops, print: { canvas: c, x: H - (pr.y + pr.h), y: pr.x, w: pr.h, h: pr.w, hasAlpha: pr.hasAlpha }, info: p.info, rotated: true };
   }
 
+  /** bake a projective warp into a processed piece. f maps the piece's cut-box inches to warped inches and finv maps back.
+      The print raster is resampled at dpi through finv (bilinear, premultiplied alpha) and the cut loops go through f, so print and cut stay aligned.
+      The result is re-based so its cut bbox starts at 0,0 (cutW/cutH = the warped bbox). */
+  function warpProcessed(p, f, finv, dpi) {
+    const flat = p.loops.map(l => { const pts = []; let cx = 0, cy = 0;
+      for (const s of l) { if (s[0] === 'M' || s[0] === 'L') { cx = s[1]; cy = s[2]; pts.push([cx, cy]); }
+        else if (s[0] === 'C') { for (let k = 1; k <= 16; k++) { const t = k / 16, u = 1 - t; pts.push([u * u * u * cx + 3 * u * u * t * s[1] + 3 * u * t * t * s[3] + t * t * t * s[5], u * u * u * cy + 3 * u * u * t * s[2] + 3 * u * t * t * s[4] + t * t * t * s[6]]); } cx = s[5]; cy = s[6]; } }
+      if (pts.length > 1 && Math.abs(pts[0][0] - pts[pts.length - 1][0]) < 1e-12 && Math.abs(pts[0][1] - pts[pts.length - 1][1]) < 1e-12) pts.pop();
+      return pts; });
+    const mp = flat.map(P => P.map(([x, y]) => f(x, y)));
+    let x0 = INF, y0 = INF, x1 = -INF, y1 = -INF;
+    for (const P of mp) for (const [x, y] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const loops = mp.map(P => polyLoop(P.map(([x, y]) => [x - x0, y - y0])));
+    const pr = p.print, cs = [[pr.x, pr.y], [pr.x + pr.w, pr.y], [pr.x + pr.w, pr.y + pr.h], [pr.x, pr.y + pr.h]].map(([x, y]) => f(x, y));
+    const X0 = Math.min(...cs.map(c => c[0])), Y0 = Math.min(...cs.map(c => c[1])), X1 = Math.max(...cs.map(c => c[0])), Y1 = Math.max(...cs.map(c => c[1]));
+    const W = Math.max(1, Math.ceil((X1 - X0) * dpi)), H = Math.max(1, Math.ceil((Y1 - Y0) * dpi));
+    const src = pr.canvas, sw = src.width, sh = src.height, sd = src.getContext('2d').getImageData(0, 0, sw, sh).data, kx = sw / pr.w, ky = sh / pr.h;
+    const c = makeCanvas(W, H), g = c.getContext('2d'), od = g.createImageData(W, H), o = od.data;
+    for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
+      const b = finv(X0 + (u + 0.5) / dpi, Y0 + (v + 0.5) / dpi), fx = (b[0] - pr.x) * kx - 0.5, fy = (b[1] - pr.y) * ky - 0.5;
+      if (!(fx > -1 && fy > -1 && fx < sw && fy < sh)) continue;
+      const ix = Math.floor(fx), iy = Math.floor(fy), ax = fx - ix, ay = fy - iy; let r = 0, gg = 0, bb = 0, a = 0;
+      for (let q = 0; q < 4; q++) { const X = ix + (q & 1), Y = iy + (q >> 1); if (X < 0 || Y < 0 || X >= sw || Y >= sh) continue;
+        const wt = ((q & 1) ? ax : 1 - ax) * ((q >> 1) ? ay : 1 - ay), j = (Y * sw + X) * 4, al = sd[j + 3] * wt; r += sd[j] * al; gg += sd[j + 1] * al; bb += sd[j + 2] * al; a += al; }
+      if (a <= 0.5) continue; const j = (v * W + u) * 4; o[j] = r / a; o[j + 1] = gg / a; o[j + 2] = bb / a; o[j + 3] = a; }
+    g.putImageData(od, 0, 0);
+    return { cutW: x1 - x0, cutH: y1 - y0, loops, print: { canvas: c, x: X0 - x0, y: Y0 - y0, w: W / dpi, h: H / dpi, hasAlpha: true }, info: p.info, warped: true };
+  }
+
   // ---------- MaxRects bin packing (best short side fit), multi-sheet ----------
   function packAll(rects, binW, binH, allowRotateGlobal) {
     // try several orderings x placement rules, keep the result with fewest sheets / unplaced, then densest early sheets
@@ -456,5 +485,5 @@
   }
 
   global.CSTCore = { PT, edt, fillHoles, dropSmallComponents, marchingSquares, signedArea, simplifyClosed, rdp, polyLoop, roundedRectLoop, mapLoop, loopBBox, loopToD,
-    processItem, rotateProcessed, packAll, makeCorrector, fitLinear, normCorr, fitMachine, correctionFromMachine, describeCorr, IDENTITY, calDefault, calFromLegacy, calCutCorr, printMap, calCode, calFit, readingPattern, rulerShrink, judgePass, suggestFixes, buildCutSVG, makeCanvas };
+    processItem, rotateProcessed, warpProcessed, packAll, makeCorrector, fitLinear, normCorr, fitMachine, correctionFromMachine, describeCorr, IDENTITY, calDefault, calFromLegacy, calCutCorr, printMap, calCode, calFit, readingPattern, rulerShrink, judgePass, suggestFixes, buildCutSVG, makeCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

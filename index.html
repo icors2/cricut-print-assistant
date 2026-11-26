@@ -17,7 +17,7 @@ input[type=number],select{padding:4px 6px;border:1px solid var(--b);border-radiu
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}.grid label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:2px}.grid label:nth-child(n+4){grid-column:span 3}
 @media(min-width:0){.grid label:nth-child(4),.grid label:nth-child(5){grid-column:span 3}}
 .hint{font-size:10px;color:var(--mut);font-weight:400}.pctrow{display:flex;gap:4px;align-items:center}.pctrow input{width:80px!important;flex:none}.pp{border:1px solid var(--b);background:#fff;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer}.pp:hover{background:#eef4ff}
-.imeta{font-size:11px;color:var(--mut);margin-top:4px}.empty{color:var(--mut);font-size:13px;padding:8px 0}
+.imeta{font-size:11px;color:var(--mut);margin-top:4px}.warpline{font-size:11px;color:#9a5a00;margin-top:4px}.warpline .mini{margin-left:4px}.empty{color:var(--mut);font-size:13px;padding:8px 0}
 button.btn{background:var(--fg);color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600}button.btn.sec{background:#fff;color:var(--fg);border:1px solid var(--b)}
 .btns{display:flex;gap:8px;flex-wrap:wrap}.stage{flex:1;min-width:0;position:sticky;top:10px}.stagebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:13px}
 #sheettabs button{border:1px solid var(--b);background:#fff;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px}#sheettabs button.on{background:var(--blu);color:#fff;border-color:var(--blu)}
@@ -119,7 +119,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
   <div class="panel" id="mkSelPanel"><h2>Selected piece</h2><div id="mkSelName"></div>
     <div class="btns"><span style="font-size:12px">Angle °</span><input type="number" step="1" id="mkAngle" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkRotL" title="−15°">↺ 15°</button><button class="mini" id="mkRotR" title="+15° (R)">↻ 15°</button><button class="mini" id="mkRot0">0°</button><button class="mini" id="mkFlip" title="Mirror left-right (F)">⇋ Flip</button></div>
     <div class="btns" style="align-items:center"><button class="mini" id="mkXf" title="Skew or warp this piece so it lines up in the scene: drag a corner to move it on its own (free distort), drag a side's middle square to skew. Ctrl/⌘ + drag a corner works without Transform mode. Esc to finish.">⬚ Transform (skew / distort)</button><span style="font-size:12px">Skew X°</span><input type="number" step="0.5" id="mkSkX" style="width:58px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><span style="font-size:12px">Y°</span><input type="number" step="0.5" id="mkSkY" style="width:58px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkXfReset">Reset transform</button></div>
-    <div class="muted" id="mkWarpNote" style="font-size:11px;display:none">Warp is preview-only; the sticker prints undistorted.</div>
+    <div class="muted" id="mkWarpNote" style="font-size:11px;display:none">Warp applies to the printed sticker.</div>
     <div class="btns"><label class="chk" title="Untick to hide this piece's number on the guide (canvas, Guide PNG and PDF). Its outline and legend entry stay, and it keeps its step so the order stays right."><input type="checkbox" id="mkSelNum"> Show this piece's number in the guide</label></div>
     <div class="btns"><button class="mini" id="mkFront" title="Shift+]">⤒ To front</button><button class="mini" id="mkFwd" title="]">↑ Forward</button><button class="mini" id="mkBack" title="[">↓ Backward</button><button class="mini" id="mkToBack" title="Shift+[">⤓ To back</button><button class="mini" id="mkDup" title="D">⧉ Add another</button><button class="mini" id="mkDel" title="Delete">🗑 Remove</button></div>
     <div class="mksize"><div class="grid" style="grid-template-columns:1fr auto 1fr">
@@ -880,6 +880,35 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return { cutW: p.cutH, cutH: p.cutW, loops, print: { canvas: c, x: H - (pr.y + pr.h), y: pr.x, w: pr.h, h: pr.w, hasAlpha: pr.hasAlpha }, info: p.info, rotated: true };
   }
 
+  /** bake a projective warp into a processed piece. f maps the piece's cut-box inches to warped inches and finv maps back.
+      The print raster is resampled at dpi through finv (bilinear, premultiplied alpha) and the cut loops go through f, so print and cut stay aligned.
+      The result is re-based so its cut bbox starts at 0,0 (cutW/cutH = the warped bbox). */
+  function warpProcessed(p, f, finv, dpi) {
+    const flat = p.loops.map(l => { const pts = []; let cx = 0, cy = 0;
+      for (const s of l) { if (s[0] === 'M' || s[0] === 'L') { cx = s[1]; cy = s[2]; pts.push([cx, cy]); }
+        else if (s[0] === 'C') { for (let k = 1; k <= 16; k++) { const t = k / 16, u = 1 - t; pts.push([u * u * u * cx + 3 * u * u * t * s[1] + 3 * u * t * t * s[3] + t * t * t * s[5], u * u * u * cy + 3 * u * u * t * s[2] + 3 * u * t * t * s[4] + t * t * t * s[6]]); } cx = s[5]; cy = s[6]; } }
+      if (pts.length > 1 && Math.abs(pts[0][0] - pts[pts.length - 1][0]) < 1e-12 && Math.abs(pts[0][1] - pts[pts.length - 1][1]) < 1e-12) pts.pop();
+      return pts; });
+    const mp = flat.map(P => P.map(([x, y]) => f(x, y)));
+    let x0 = INF, y0 = INF, x1 = -INF, y1 = -INF;
+    for (const P of mp) for (const [x, y] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const loops = mp.map(P => polyLoop(P.map(([x, y]) => [x - x0, y - y0])));
+    const pr = p.print, cs = [[pr.x, pr.y], [pr.x + pr.w, pr.y], [pr.x + pr.w, pr.y + pr.h], [pr.x, pr.y + pr.h]].map(([x, y]) => f(x, y));
+    const X0 = Math.min(...cs.map(c => c[0])), Y0 = Math.min(...cs.map(c => c[1])), X1 = Math.max(...cs.map(c => c[0])), Y1 = Math.max(...cs.map(c => c[1]));
+    const W = Math.max(1, Math.ceil((X1 - X0) * dpi)), H = Math.max(1, Math.ceil((Y1 - Y0) * dpi));
+    const src = pr.canvas, sw = src.width, sh = src.height, sd = src.getContext('2d').getImageData(0, 0, sw, sh).data, kx = sw / pr.w, ky = sh / pr.h;
+    const c = makeCanvas(W, H), g = c.getContext('2d'), od = g.createImageData(W, H), o = od.data;
+    for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
+      const b = finv(X0 + (u + 0.5) / dpi, Y0 + (v + 0.5) / dpi), fx = (b[0] - pr.x) * kx - 0.5, fy = (b[1] - pr.y) * ky - 0.5;
+      if (!(fx > -1 && fy > -1 && fx < sw && fy < sh)) continue;
+      const ix = Math.floor(fx), iy = Math.floor(fy), ax = fx - ix, ay = fy - iy; let r = 0, gg = 0, bb = 0, a = 0;
+      for (let q = 0; q < 4; q++) { const X = ix + (q & 1), Y = iy + (q >> 1); if (X < 0 || Y < 0 || X >= sw || Y >= sh) continue;
+        const wt = ((q & 1) ? ax : 1 - ax) * ((q >> 1) ? ay : 1 - ay), j = (Y * sw + X) * 4, al = sd[j + 3] * wt; r += sd[j] * al; gg += sd[j + 1] * al; bb += sd[j + 2] * al; a += al; }
+      if (a <= 0.5) continue; const j = (v * W + u) * 4; o[j] = r / a; o[j + 1] = gg / a; o[j + 2] = bb / a; o[j + 3] = a; }
+    g.putImageData(od, 0, 0);
+    return { cutW: x1 - x0, cutH: y1 - y0, loops, print: { canvas: c, x: X0 - x0, y: Y0 - y0, w: W / dpi, h: H / dpi, hasAlpha: true }, info: p.info, warped: true };
+  }
+
   // ---------- MaxRects bin packing (best short side fit), multi-sheet ----------
   function packAll(rects, binW, binH, allowRotateGlobal) {
     // try several orderings x placement rules, keep the result with fewest sheets / unplaced, then densest early sheets
@@ -1109,7 +1138,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   global.CSTCore = { PT, edt, fillHoles, dropSmallComponents, marchingSquares, signedArea, simplifyClosed, rdp, polyLoop, roundedRectLoop, mapLoop, loopBBox, loopToD,
-    processItem, rotateProcessed, packAll, makeCorrector, fitLinear, normCorr, fitMachine, correctionFromMachine, describeCorr, IDENTITY, calDefault, calFromLegacy, calCutCorr, printMap, calCode, calFit, readingPattern, rulerShrink, judgePass, suggestFixes, buildCutSVG, makeCanvas };
+    processItem, rotateProcessed, warpProcessed, packAll, makeCorrector, fitLinear, normCorr, fitMachine, correctionFromMachine, describeCorr, IDENTITY, calDefault, calFromLegacy, calCutCorr, printMap, calCode, calFit, readingPattern, rulerShrink, judgePass, suggestFixes, buildCutSVG, makeCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>/* Cricut Print Assistant - UI */
@@ -1279,20 +1308,29 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const it = Object.assign({ id: nextId++, name, dataURL, isSvg, img, natW: nw, natH: nh, hasAlpha,
       wIn: asp <= 1 ? L : L / asp, hIn: asp <= 1 ? L * asp : L, qty: 1,
       shape: hasAlpha ? 'contour' : 'rect', radiusIn: 0.125, offsetIn: hasAlpha ? 0.0 : 0, border: 'extend', rotate: true }, saved || {});
-    it.img = img; it.dataURL = dataURL;
+    it.img = img; it.dataURL = dataURL; it.warp = warpClean(it.warp);
     it.baseWIn = (isSvg && svgBaseWidth(dataURL)) || nw / BASE_DPI;
     if (saved && saved.wIn == null && saved.pct != null) setPct(it, saved.pct); // project saved with % only
     it.pct = pctOf(it); items.push(it); return it;
   }
 
   // ---------- processing & layout ----------
-  function procKey(it) { return JSON.stringify([it.id, it.wIn.toFixed(4), it.hIn.toFixed(4), it.shape, it.radiusIn, it.offsetIn, it.border, S.bleed, S.dpi]); }
-  function processed(it, rot) {
-    const k = procKey(it); let e = cache.get(k);
+  function procKey(it, base) { const k = [it.id, it.wIn.toFixed(4), it.hIn.toFixed(4), it.shape, it.radiusIn, it.offsetIn, it.border, S.bleed, S.dpi]; if (!base && isWarped(it)) k.push(it.warp); return JSON.stringify(k); }
+  function baseEntry(it) { const k = procKey(it, true); let e = cache.get(k);
     if (!e) { e = { p: C.processItem(it.img, { wIn: it.wIn, hIn: it.hIn, shape: it.shape, radiusIn: it.radiusIn, offsetIn: it.offsetIn, bleedIn: S.bleed, border: it.border, dpi: S.dpi }) }; cache.set(k, e); }
+    return e; }
+  const warpedKeys = new Map();
+  /** what prints and cuts: the image's own processing, with its Mockup warp (it.warp) baked in when it has one */
+  function processed(it, rot) { let e;
+    if (isWarped(it)) { const k = procKey(it); e = cache.get(k);
+      if (!e) { const b = baseEntry(it).p, M = warpMap(it, { w: b.cutW, h: b.cutH }); e = { p: C.warpProcessed(b, M.f, M.inv, S.dpi) };
+        const old = warpedKeys.get(it.id); if (old && old !== k) cache.delete(old); warpedKeys.set(it.id, k); cache.set(k, e); } }
+    else e = baseEntry(it);
     if (rot && !e.r) e.r = C.rotateProcessed(e.p);
     return rot ? e.r : e.p;
   }
+  /** the unwarped processing: the Mockup's piece box (its warp is drawn on top of this) */
+  const processedBase = (it) => baseEntry(it).p;
   // ---------- manual placement (drag on the canvas) ----------
   // manual = null → auto-pack. Otherwise { pieces: { 'itemId#copy': { s: sheet, x, y, rot } } } with x/y = top-left of the piece's
   // cut box in sheet inches (the same numbers the auto-packer produces), so export takes exactly the same path either way.
@@ -1711,6 +1749,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <label>Bleed fill<select data-f="border"><option value="extend">Extend edge colours</option><option value="white">White border</option></select></label>
           <label class="chk"><input type="checkbox" data-f="rot"> Allow 90° rotation</label>
         </div><div class="imeta">Cut size ${fmtLen(p.cutW)} × ${fmtLen(p.cutH)}${p.info.components > 1 ? ` · ${p.info.components} separate outlines` : ''}${tooBig(p, it) ? ` <span class="warn">· too large for the usable area – it is skipped; lower the size or %</span>` : ''}</div></div>`;
+      if (isWarped(it)) { const wl = document.createElement('div'); wl.className = 'warpline'; wl.innerHTML = 'Warped in the Mockup (skew / distort): prints and cuts warped; the size above is before the warp. <button type="button" class="mini unwarp">Remove warp</button>'; $('.imeta', card).after(wl);
+        $('.unwarp', wl).onclick = (ev) => { ev.stopPropagation(); it.warp = null; for (const n of MK.nodes) if (nodeItem(n) === it) n.warp = null; mkCommit(); refresh(true); }; }
       const ratio = () => it.hIn / it.wIn;
       $('[data-f=w]', card).append(numInput(toU(it.wIn), v => { const k = ratio(); it.wIn = Math.max(0.1, fromU(v)); if (it.lockAR) it.hIn = it.wIn * k; it.pct = pctOf(it); refresh(true); }));
       $('[data-f=h]', card).append(numInput(toU(it.hIn), v => { const k = ratio(); it.hIn = Math.max(0.1, fromU(v)); if (it.lockAR) it.wIn = it.hIn / k; it.pct = pctOf(it); refresh(true); }));
@@ -1788,7 +1828,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   function refresh(itemsChanged) { mkIdbSoon();
     clearTimeout(dirtyTimer); $('#busy').style.display = '';
-    dirtyTimer = setTimeout(() => { try { computeLayout(); recordUndo();
+    dirtyTimer = setTimeout(() => { try { syncItemWarps(); computeLayout(); recordUndo();
       if (follow) { const i = layout.sheets.findIndex(s => s.some(e => e.key === follow.key)); if (i >= 0) { curSheet = i; toast(follow.msg + (i + 1)); } follow = null; }
       if (itemsChanged !== false) renderItems(); else refreshCardSummaries(); renderStatus(); renderPreview(); if ($('#tabMock').style.display !== 'none') renderMock(); } catch (e) { console.error(e); alert('Error: ' + e.message); } $('#busy').style.display = 'none'; }, 30);
   }
@@ -1946,7 +1986,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /** everything in one object: settings, calibration, every image (data URL) with its size/cut settings, hand placement, the mockup incl. its background image */
   function projectData(kind) {
     const calibration = {}; for (const k of STORE.keys()) if (/^cst\.cal\./.test(k)) { try { calibration[k] = JSON.parse(STORE.get(k)); } catch (e) { /* skip */ } }
-    const data = { app: 'cricut-full-sheet-tool', v: 1, settings: S, calibration, items: items.map(i => ({ name: i.name, dataURL: i.dataURL, isSvg: i.isSvg, wIn: i.wIn, hIn: i.hIn, pct: +pctOf(i).toFixed(3), baseWIn: i.baseWIn, qty: i.qty, shape: i.shape, radiusIn: i.radiusIn, offsetIn: i.offsetIn, border: i.border, rotate: i.rotate, lockAR: i.lockAR !== false, collapsed: !!i.collapsed })) };
+    const data = { app: 'cricut-full-sheet-tool', v: 1, settings: S, calibration, items: items.map(i => ({ name: i.name, dataURL: i.dataURL, isSvg: i.isSvg, wIn: i.wIn, hIn: i.hIn, pct: +pctOf(i).toFixed(3), baseWIn: i.baseWIn, qty: i.qty, shape: i.shape, radiusIn: i.radiusIn, offsetIn: i.offsetIn, border: i.border, rotate: i.rotate, lockAR: i.lockAR !== false, collapsed: !!i.collapsed, ...(isWarped(i) ? { warp: i.warp } : {}) })) };
     data.mockup = mkSerial(true);
     if (manual) { const idx = new Map(items.map((it, i) => [String(it.id), i])); data.placement = { pieces: Object.entries(manual.pieces).map(([k, v]) => ({ i: idx.get(k.split('#')[0]), q: +k.split('#')[1], s: v.s, x: v.x, y: v.y, rot: !!v.rot, o: v.o })).filter(p => p.i != null) }; }
     if (kind) data.kind = kind; data.saved = Date.now(); return data;
@@ -2027,15 +2067,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     catch (e) { try { STORE.set('cst.mockup', JSON.stringify(Object.assign(mkSerial(false), { bg: Object.assign({}, MK.bg, { img: null }) }))); } catch (e2) { /* storage full */ } } }, 250); }
   let mkSel = null, mkDrag = null, mkView = { sc: 50, pad: 30 }, mkSnapLines = [], mkUndo = [], mkRedo = [], mkCur = null;
   function nodeItem(n) { let it = n.itemId != null ? items.find(i => i.id === n.itemId) : null;
-    if (!it && n.name) { it = items.find(i => i.name === n.name); if (it) n.itemId = it.id; } return it || null; }
-  function ng(n) { const it = nodeItem(n); if (!it) return null; const p = processed(it, false); return { it, p, w: p.cutW, h: p.cutH }; }
+    if (!it && n.name) { const m = /^(.*) \((?:warped \d+|unwarped)\)$/.exec(n.name); it = items.find(i => i.name === n.name) || (m && items.find(i => i.name === m[1])); if (it) n.itemId = it.id; } return it || null; }
+  function ng(n) { const it = nodeItem(n); if (!it) return null; const p = processedBase(it); return { it, p, w: p.cutW, h: p.cutH }; }
   const rad = (d) => d * Math.PI / 180;
   function nodeAABB(n, G) { G = G || ng(n); if (!G) return null;
     if (isWarped(n)) { const pts = warpQuad(n, G).map(([x, y]) => boxToWorld(n, G, x, y)); return { x0: Math.min(...pts.map(p => p[0])), y0: Math.min(...pts.map(p => p[1])), x1: Math.max(...pts.map(p => p[0])), y1: Math.max(...pts.map(p => p[1])) }; }
     const c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), W = G.w * c + G.h * s, H = G.w * s + G.h * c;
     return { x0: n.x - W / 2, y0: n.y - H / 2, x1: n.x + W / 2, y1: n.y + H / 2 }; }
   function toLocal(n, x, y) { const dx = x - n.x, dy = y - n.y, c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)); let lx = dx * c - dy * s; const ly = dx * s + dy * c; if (n.flip) lx = -lx; return [lx, ly]; }
-  // ---------- Transform (skew / free distort): preview only, never the cut size, the cut SVG or the print PDF ----------
+  // ---------- Transform (skew / free distort): drawn in the Mockup and baked into the printed sticker ----------
+  // Each copy (node) has its own warp; the image's warp (it.warp, what prints and cuts) follows its copies (see syncItemWarps); Send to Layout splits copies with different warps
   // n.warp = { sx, sy (skew °, about the piece centre), q: [[dx,dy] x4] extra corner offsets TL, TR, BR, BL } in the piece's own box (inches, before flip/rotation)
   function isWarped(n) { return !!(n && n.warp && (n.warp.sx || n.warp.sy || (n.warp.q || []).some(c => c && (c[0] || c[1])))); }
   // hoisted: mkLoad() runs at startup, before this point
@@ -2047,7 +2088,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3, den = dx1 * dy2 - dx2 * dy1;
     const g = den ? (dx3 * dy2 - dx2 * dy3) / den : 0, h = den ? (dx1 * dy3 - dx3 * dy1) / den : 0;
     const a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, c = x0, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3, f = y0;
-    return { P, f: (x, y) => { const u = x / G.w, v = y / G.h, k = g * u + h * v + 1; return [(a * u + b * v + c) / k, (d * u + e * v + f) / k]; } }; }
+    const iA = e - f * h, iB = f * g - d, iC = d * h - e * g, iD = c * h - b, iE = a - c * g, iF = b * g - a * h, iG = b * f - c * e, iH = c * d - a * f, iI = a * e - b * d;
+    return { P, f: (x, y) => { const u = x / G.w, v = y / G.h, k = g * u + h * v + 1; return [(a * u + b * v + c) / k, (d * u + e * v + f) / k]; },
+      inv: (X, Y) => { const s = iC * X + iF * Y + iI; return [G.w * (iA * X + iD * Y + iG) / s, G.h * (iB * X + iE * Y + iH) / s]; } }; }
+  const warpSig = (w) => JSON.stringify(warpClean(w));
+  /** the image's printed warp = the warp most of its Mockup copies share (ties: the lowest layer). Images with no copies keep theirs. true = something changed */
+  function syncItemWarps() { const by = new Map(); let ch = false;
+    for (const n of MK.nodes) { const it = nodeItem(n); if (!it) continue; let m = by.get(it); if (!m) by.set(it, m = new Map()); const s = isWarped(n) ? warpSig(n.warp) : ''; m.set(s, (m.get(s) || 0) + 1); }
+    for (const [it, m] of by) { let best = '', bc = -1; for (const [s, c] of m) if (c > bc) { best = s; bc = c; }
+      if (best !== (isWarped(it) ? warpSig(it.warp) : '')) { it.warp = best ? JSON.parse(best) : null; ch = true; } }
+    return ch; }
+  /** copies of n's image whose warp differs from n's */
+  const warpOthers = (n) => { const it = nodeItem(n), s = isWarped(n) ? warpSig(n.warp) : ''; return MK.nodes.filter(m => m !== n && nodeItem(m) === it && (isWarped(m) ? warpSig(m.warp) : '') !== s).length; };
   const warpPathCache = new WeakMap();
   /** the piece's cut outline in its box frame, warped when it has a transform */
   function nodePath(n, G) { const M = warpMap(n, G); if (!M) return loopPath(G.p); const c = warpPathCache.get(n.warp); if (c && c.p === G.p && c.w === G.w && c.h === G.h) return c.path;
@@ -2084,8 +2136,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function mkFreeSpot(w, h) { const B = MK.bg, boxes = MK.nodes.map(n => nodeAABB(n)).filter(Boolean), g = 0.15;
     for (let y = 0.25; y + h <= B.h - 0.1; y += 0.25) for (let x = 0.25; x + w <= B.w - 0.1; x += 0.25) { if (boxes.every(b => x + w + g <= b.x0 || b.x1 + g <= x || y + h + g <= b.y0 || b.y1 + g <= y)) return { x: x + w / 2, y: y + h / 2 }; }
     return { x: B.w / 2 + (Math.random() - 0.5) * 0.5, y: B.h / 2 + (Math.random() - 0.5) * 0.5 }; }
-  function mkAdd(it, near) { const p = processed(it, false), c = near ? { x: Math.min(MK.bg.w, near.x + 0.35), y: Math.min(MK.bg.h, near.y + 0.35) } : mkFreeSpot(p.cutW, p.cutH);
-    const n = { uid: MK.nextUid++, name: it.name, itemId: it.id, x: c.x, y: c.y, rot: near ? near.rot : 0, flip: near ? near.flip : false, hidden: false, noNum: false }; MK.nodes.push(n); delete MK.skip[it.name]; return n; }
+  function mkAdd(it, near) { const p = processedBase(it), c = near ? { x: Math.min(MK.bg.w, near.x + 0.35), y: Math.min(MK.bg.h, near.y + 0.35) } : mkFreeSpot(p.cutW, p.cutH);
+    const n = { uid: MK.nextUid++, name: it.name, itemId: it.id, x: c.x, y: c.y, rot: near ? near.rot : 0, flip: near ? near.flip : false, hidden: false, noNum: false, warp: warpClean(near ? near.warp : it.warp) }; MK.nodes.push(n); delete MK.skip[it.name]; return n; }
   /** one instance of every image (unless the user deleted all of an image's instances); keeps dormant nodes of images not loaded right now */
   function mkEnsure() { let added = 0; for (const it of items) if (!MK.nodes.some(n => nodeItem(n) === it) && !MK.skip[it.name]) { mkAdd(it); added++; } return added; }
   const mkLive = () => MK.nodes.filter(n => nodeItem(n));
@@ -2173,10 +2225,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const mkSizes = () => items.map(it => [it.id, it.wIn, it.hIn, it.pct, it.lockAR]);
   const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num]);
   const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
-  function mkCommit() { mkCardNums(); const s = mkSnap(); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
+  function mkCommit() { mkCardNums(); const s = mkSnap(); if (syncItemWarps()) refresh(true); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
   function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); MK.num = Object.assign(mkNumDef(), s.num || {}); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
     let sized = false; for (const [id, w, h, pct, lock] of s.sizes || []) { const it = items.find(i => i.id === id); if (it && (it.wIn !== w || it.hIn !== h || it.lockAR !== lock)) { it.wIn = w; it.hIn = h; it.pct = pct; it.lockAR = lock; sized = true; } }
-    if (sized) refresh(true); else renderMock(true); }
+    if (sized || syncItemWarps()) refresh(true); else renderMock(true); }
   /** image size is shared with the Layout tab (and every copy on the cut sheet) */
   function mkSetSize(it, wIn, hIn) { it.wIn = Math.max(0.1, wIn); it.hIn = Math.max(0.1, hIn); it.pct = pctOf(it); mkCommit(); refresh(true); }
   let mkSelectNew = false;
@@ -2223,10 +2275,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const it = G.it; if (it.lockAR == null) it.lockAR = true;
     if (document.activeElement !== $('#mkSW')) $('#mkSW').value = +toU(it.wIn).toFixed(4); if (document.activeElement !== $('#mkSH')) $('#mkSH').value = +toU(it.hIn).toFixed(4); if (document.activeElement !== $('#mkSPct')) $('#mkSPct').value = +pctOf(it).toFixed(1);
     const lk = $('#mkSLink'); lk.classList.toggle('on', !!it.lockAR); lk.textContent = it.lockAR ? '🔗' : '⛓︎‍💥'; lk.title = it.lockAR ? 'Aspect ratio locked (corner handles too; hold Shift to unlock while dragging). Click to unlink.' : 'Aspect ratio unlocked: W and H change separately. Click to link.';
-    const copies = MK.nodes.filter(m => nodeItem(m) === it).length; $('#mkSizeNote').textContent = `Size applies to every copy of ${it.name} (${copies} here, qty ${it.qty} on the cut sheet) and to the Layout tab. Cut size ${fmtShort(G.w)} × ${fmtShort(G.h)}.`;
+    const copies = MK.nodes.filter(m => nodeItem(m) === it).length; $('#mkSizeNote').textContent = `Size applies to every copy of ${it.name} (${copies} here, qty ${it.qty} on the cut sheet) and to the Layout tab. Cut size ${fmtShort(G.w)} × ${fmtShort(G.h)}${isWarped(it) ? `; printed warped: ${fmtShort(processed(it, false).cutW)} × ${fmtShort(processed(it, false).cutH)}` : ''}.`;
     $('#mkFlip').classList.toggle('on', !!n.flip); $('#mkSelNum').checked = !n.noNum;
     const W = n.warp || {}; if (document.activeElement !== $('#mkSkX')) $('#mkSkX').value = +(+W.sx || 0).toFixed(1); if (document.activeElement !== $('#mkSkY')) $('#mkSkY').value = +(+W.sy || 0).toFixed(1);
-    $('#mkXfReset').disabled = !isWarped(n); $('#mkWarpNote').style.display = isWarped(n) || mkXf ? '' : 'none';
+    const wo = warpOthers(n); $('#mkXfReset').disabled = !isWarped(n); $('#mkWarpNote').style.display = isWarped(n) || mkXf || wo ? '' : 'none';
+    $('#mkWarpNote').textContent = 'Warp applies to the printed sticker.' + (wo ? ` ${plural(wo, 'other copy')} of ${G.it.name} ${wo === 1 ? 'has' : 'have'} a different warp: Send to Layout gives ${wo === 1 ? 'it its' : 'them their'} own Layout entry.` : '');
     $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', +r.dataset.uid === n.uid)); }
   function mkSelect(n) { mkSel = n; $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', n && +r.dataset.uid === n.uid)); const r = n && $(`#mkLayers .lrow[data-uid="${n.uid}"]`); if (r) r.scrollIntoView({ block: 'nearest' }); renderMkSel(); renderMockCanvas(); }
   function mkDelete(n) { const it = nodeItem(n); MK.nodes = MK.nodes.filter(m => m !== n); if (it && !MK.nodes.some(m => nodeItem(m) === it)) MK.skip[it.name] = true; if (mkSel === n) mkSel = null; mkChanged(true); }
@@ -2378,9 +2431,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   // ---------- Send to Layout: the Layout's image list becomes exactly the pieces in the Layers list ----------
   /** plan: kept images with qty = number of layer copies (hidden layers only when included), images with only hidden layers -> qty 0 (kept so those layers still show), images with no layer -> removed */
   function mkSendPlan(incHidden) { const cnt = new Map();
-    for (const n of MK.nodes) { const it = nodeItem(n); if (!it) continue; const c = cnt.get(it) || { k: 0, hid: 0, flip: 0 }; cnt.set(it, c); if (n.hidden && !incHidden) c.hid++; else { c.k++; if (n.flip) c.flip++; } }
-    const keep = [], zero = [], removed = []; for (const it of items) { const c = cnt.get(it); if (!c) removed.push(it); else if (c.k) keep.push({ it, k: c.k, from: it.qty }); else zero.push(it); }
-    return { keep, zero, removed, images: keep.length, pieces: keep.reduce((t, r) => t + r.k, 0), flipped: [...cnt.values()].reduce((t, c) => t + c.flip, 0), hiddenSkipped: [...cnt.values()].reduce((t, c) => t + c.hid, 0), incHidden: !!incHidden }; }
+    for (const n of MK.nodes) { const it = nodeItem(n); if (!it) continue; const c = cnt.get(it) || { k: 0, hid: 0, flip: 0, g: new Map(), hn: [] }; cnt.set(it, c); if (n.hidden && !incHidden) { c.hid++; c.hn.push(n); }
+      else { c.k++; if (n.flip) c.flip++; const s = isWarped(n) ? warpSig(n.warp) : '', gr = c.g.get(s) || { s, k: 0, nodes: [] }; gr.k++; gr.nodes.push(n); c.g.set(s, gr); } }
+    // copies with different warps: the group matching the image's warp keeps the image, every other group becomes its own Layout entry
+    const keep = [], zero = [], removed = [], splits = []; for (const it of items) { const c = cnt.get(it); if (!c) removed.push(it); else if (c.k) { const gs = [...c.g.values()], main = c.g.get(isWarped(it) ? warpSig(it.warp) : '') || gs.reduce((a, b) => b.k > a.k ? b : a);
+        keep.push({ it, k: main.k, from: it.qty, warp: main.s }); let wn = 1;
+        for (const gr of gs) if (gr !== main) splits.push({ it, k: gr.k, warp: gr.s, nodes: gr.nodes.concat(c.hn.filter(n => (isWarped(n) ? warpSig(n.warp) : '') === gr.s)), name: `${it.name} (${gr.s ? 'warped ' + (++wn) : 'unwarped'})` }); }
+      else zero.push(it); }
+    return { keep, zero, removed, splits, images: keep.length + splits.length, pieces: keep.reduce((t, r) => t + r.k, 0) + splits.reduce((t, r) => t + r.k, 0), flipped: [...cnt.values()].reduce((t, c) => t + c.flip, 0), hiddenSkipped: [...cnt.values()].reduce((t, c) => t + c.hid, 0), incHidden: !!incHidden }; }
   const plural = (n, w) => `${n} ${n === 1 ? w : /y$/.test(w) ? w.slice(0, -1) + 'ies' : w + 's'}`;
   function mkSendSummary(P) { const parts = [`Layout will have <b>${plural(P.images, 'image')}, ${plural(P.pieces, 'piece')}</b>`];
     if (P.removed.length) parts.push(`${plural(P.removed.length, 'image')} removed`); if (P.zero.length) parts.push(`${plural(P.zero.length, 'image')} set to qty 0 (only hidden layers)`);
@@ -2388,12 +2446,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function mkSendOpen() { const P = mkSendPlan($('#mkSendHidden').checked), D = $('#mkSendDlg');
     $('#mkSendSum').innerHTML = P.pieces ? mkSendSummary(P) : '<b>Nothing to send:</b> there are no ' + (P.incHidden ? '' : 'visible ') + 'pieces in the Layers list.';
     const li = []; for (const r of P.keep) { li.push(`<li>${esc(r.it.name)} × ${r.k} <span class="muted">· ${fmtShort(r.it.wIn)} × ${fmtShort(r.it.hIn)}${r.k !== r.from ? ` · qty ${r.from} → ${r.k}` : ''}</span></li>`); }
+    for (const r of P.splits) li.push(`<li>${esc(r.name)} × ${r.k} <span class="muted">· new entry: ${r.warp ? 'these copies have their own warp' : 'unwarped copies'}</span></li>`);
     for (const it of P.zero) li.push(`<li class="zero">${esc(it.name)} · qty ${it.qty} → 0 (hidden layer${MK.nodes.filter(n => nodeItem(n) === it).length > 1 ? 's' : ''} only)</li>`);
     for (const it of P.removed) li.push(`<li><span class="gone">${esc(it.name)}</span> <span class="muted">· removed (not in the layers)</span></li>`);
     $('#mkSendList').innerHTML = li.join('');
-    $('#mkSendNote').textContent = [P.hiddenSkipped && !P.incHidden ? `${plural(P.hiddenSkipped, 'hidden layer')} not counted (tick "Include hidden layers" to count them).` : '', 'Hand-placed pieces are reset and the Layout auto-packs again.', 'Sizes carry over; mockup rotation is not used (the packer rotates pieces as it needs to)' + (P.flipped ? ` and ${plural(P.flipped, 'flipped piece')} will print unflipped.` : '.'), 'Undo with Ctrl+Z or Undo on the Layout tab.'].filter(Boolean).join(' ');
+    $('#mkSendNote').textContent = [P.hiddenSkipped && !P.incHidden ? `${plural(P.hiddenSkipped, 'hidden layer')} not counted (tick "Include hidden layers" to count them).` : '', 'Hand-placed pieces are reset and the Layout auto-packs again.', 'Sizes and warps carry over; mockup rotation is not used (the packer rotates pieces as it needs to)' + (P.flipped ? ` and ${plural(P.flipped, 'flipped piece')} will print unflipped.` : '.'), 'Undo with Ctrl+Z or Undo on the Layout tab.'].filter(Boolean).join(' ');
     $('#mkSendOk').disabled = !P.pieces; D._plan = P; if (D.showModal) D.showModal(); else D.setAttribute('open', ''); }
-  function mkSendApply(P) { if (!P || !P.pieces) return false; items = items.filter(it => !P.removed.includes(it)); for (const r of P.keep) r.it.qty = r.k; for (const it of P.zero) it.qty = 0;
+  function mkSendApply(P) { if (!P || !P.pieces) return false; items = items.filter(it => !P.removed.includes(it)); for (const r of P.keep) { r.it.qty = r.k; r.it.warp = r.warp ? JSON.parse(r.warp) : null; } for (const it of P.zero) it.qty = 0;
+    for (const sp of (P.splits || []).slice().reverse()) { const ni = Object.assign({}, sp.it, { id: nextId++, name: sp.name, qty: sp.k, warp: sp.warp ? JSON.parse(sp.warp) : null, collapsed: false });
+      items.splice(items.indexOf(sp.it) + 1, 0, ni); for (const n of sp.nodes) { n.itemId = ni.id; n.name = ni.name; } }
+    if (P.splits && P.splits.length) mkCommit();
     manual = null; sel = { key: null, itemId: null }; curSheet = 0; const tb = $('.tabs button[data-tab=tabLayout]'); if (tb) tb.click(); refresh(true);
     toast(`Layout now has ${plural(P.images, 'image')}, ${plural(P.pieces, 'piece')} from the mockup (Ctrl+Z to undo)`); return true; }
   function mkZoom(z) { MK.zoom = Math.max(0.5, Math.min(4, z)); if (Math.abs(MK.zoom - 1) < 0.03) MK.zoom = 1; renderMockCanvas(); }
@@ -2519,7 +2581,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   window.CST = { saveToolCopy, get EMBEDDED() { return EMBEDDED; }, STORE, exportCal, importCalData, calStatusLine, getCal, saveCal, onCompute, choose, renderCalTable, currentState, stateCode, get lastResult() { return lastResult; }, S, get items() { return items; }, setPct, pctOf, BASE_DPI, addFromDataURL, computeLayout, buildPDF, buildSVGs, buildCalPDF, buildCalSVG, computeCalibration, getCorr, setCorr, drawPreview, refresh, sheetDims, calTargets, get layout() { return layout; }, cache,
     get manual() { return manual; }, set manual(v) { manual = v; }, pinLayout, resetAuto, selectPiece, selectItem, get sel() { return sel; }, get curSheet() { return curSheet; }, set curSheet(v) { curSheet = v; },
     get MK() { return MK; }, mkSetSize, mkGeom: (n) => { const G = ng(n); return G && { w: G.w, h: G.h }; }, renderMock, mkSelect, get mkSel() { return mkSel; }, get mkView() { return mkView; }, mkOrder, mockPNG, guidePNG, guidePDF, pieceLabels, mkSteps, legendRows, cutStepLabels, stepBadge, insidePiece, numOf, mkUndo: () => mkUndoFn(), mkRedo: () => mkRedoFn(), mkFitBackdrop, mkSendPlan, mkSendApply, mkSendOpen, mkBgRect, mkBgToBackdrop, imgDpi, set mkBgAdj(v) { mkBgAdj = !!v; renderMkBg(); renderMockCanvas(); }, get mkBgAdj() { return mkBgAdj; },
-    projectData, applyProject, mkSaveIdb, mkQuickSave, warpMap, warpQuad, nodePath, mkWarpHandles, mkSetXf, get mkXf() { return mkXf; }, isWarped, mkOpenSave, mkSaveFile, mkOpenFile, mkSaveList, mkStorageInfo, mkIdbAuto, IDB, setMkCol, mkPanelSum, get mkStoreState() { return mkStoreState; },
+    projectData, applyProject, processed, processedBase, syncItemWarps, mkSaveIdb, mkQuickSave, warpMap, warpQuad, nodePath, mkWarpHandles, mkSetXf, get mkXf() { return mkXf; }, isWarped, mkOpenSave, mkSaveFile, mkOpenFile, mkSaveList, mkStorageInfo, mkIdbAuto, IDB, setMkCol, mkPanelSum, get mkStoreState() { return mkStoreState; },
     rotatePiece, moveToSheet, duplicatePiece, deletePiece, nudge, fillQty, undo, redo, get undoDepth() { return undoStack.length; }, get view() { return view; }, setZoom, saveProject, loadProject, findSpot };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

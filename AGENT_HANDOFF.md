@@ -64,10 +64,14 @@ sample_output/              # test output (git-ignored, kept with .gitkeep)
 - Mockup, including:
   - the background image: `mkBgRect`, `renderMkBg`, `mkBgToBackdrop`;
   - assembly steps: `mkSteps`, `legendRows`, `mkNumPos`, and the per-node `noNum` flag plus `MK.num = { show, size }`.
-  - Transform (preview only): `n.warp = { sx, sy, q[4] }` in the piece's box frame.
+  - Transform: `n.warp = { sx, sy, q[4] }` per copy, in the piece's base (unwarped) box frame. It is baked into the printed sticker through the image's `it.warp`.
     - `warpQuad`/`warpMap` give a projective square→quad map. `nodePath` is the warped outline, used for drawing, hit-testing and badge spots.
     - `drawWarped` is the mesh render (affine per triangle, `growTri` overlap). The Guide PDF maps its outline through `warpMap`.
     - Handles: `mkWarpHandles`/`mkWarpAt`/`mkWarpDrag`. Transform mode is `mkXf`.
+    - Printing: `processed(it)` is what prints and cuts. For a warped image, `core.warpProcessed` resamples the unwarped print raster at print dpi through the inverse homography (`warpMap(...).inv`, bilinear, premultiplied). It maps the flattened cut loops through the forward map and re-bases to the warped bbox.
+    - `processedBase(it)` is the unwarped box the Mockup uses (`ng`). Cache key = `procKey` + warp; the old warped entry for an image is evicted.
+    - `syncItemWarps()` (called in `mkCommit`, `mkApply` and every `refresh`): `it.warp` = the warp most of the image's copies share (ties: the lowest layer). Images without copies keep theirs.
+    - `mkSendPlan` groups copies by warp. Extra groups go to `plan.splits` and `mkSendApply` clones them into "name (warped N)" / "name (unwarped)" items. `nodeItem` falls back from such a name to the base image.
 - Send to Layout: `mkSendPlan`, `mkSendOpen`, `mkSendApply`.
 
 Everything the tests need is exposed on `window.CST`.
@@ -118,7 +122,7 @@ It writes the result to `index.html` and to `app/cricut_print_assistant.html`, t
    - Printed labels (`cutStepLabels`): copies of one image take its ascending steps in reading order (sheet, then `round(y·10)`, then x). Pieces beyond the mockup copies get `sp`. With no visible step, it falls back to the image number.
    - Hiding a number (`noNum`, or `MK.num.show = 'none'`) only removes the badge. The step stays reserved and stays in the legend.
    - None of this touches the cut SVG or the sheet code.
-10. **Transform is preview-only.** `n.warp` is read only by the Mockup drawing, the hit tests and the guide exports. Never use it in `processItem`, the Layout, `buildPDF`/`buildSVGs`, the sheet code or `mkSendPlan` (`mock_warp_test` checks byte-identity).
+10. **Warp is baked into the print and the cut with ONE mapping.** The raster and the loops must both go through `warpMap` of the base cut box; `mock_warp_test` checks the alpha edge against the contour, and the exported PDF against the SVG. Unwarped images must stay byte-identical (bake only when `isWarped(it)`). The warp never touches calibration, sheet codes or anchors.
 
 ## Tests
 
@@ -140,7 +144,7 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `drag_test.js` | Hand placement, snapping, undo, pins in exports |
 | `mock_test.js`, `mock_resize_test.js`, `mock_bg_test.js`, `mock_send_test.js` | The Mockup and its byte-identity guarantees |
 | `mock_steps_test.js` | Assembly-step numbering, number hiding (view/PNG/PDF), undo/persist, cut-sheet labels = guide steps |
-| `mock_warp_test.js` | Transform: corner distort / side skew / typed skew, warped render (pixels), Guide PDF + PNG outlines follow the warp, Layout exports byte-identical, undo, saves |
+| `mock_warp_test.js` | Transform: corner distort / side skew / typed skew, warped render (pixels), Guide PDF + PNG outlines follow the warp. Layout takes the warp live (cut size = warped bbox). Print raster vs cut path aligned (processed alpha vs loops for rect + contour pieces; exported PDF render vs cut SVG). Other images byte-identical; Reset gives byte-identical exports; undo/redo; per-copy warps split on Send to Layout (and Layout undo); saves |
 | `mock_save_test.js` | Collapsible Mockup panels; file save → fresh page → open gives an identical state and exports; IndexedDB named saves, Ctrl+S, rename/delete; image autosave across reloads; low-storage warning |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
