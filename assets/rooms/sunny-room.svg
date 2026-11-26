@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10in" height="8in" viewBox="0 0 1000 800" data-cst-natw-in="10">
+  <title>Sunny room</title>
+  <g data-region="wall" fill="#f6e7c1"><rect x="0" y="0" width="1000" height="460"/></g>
+  <g data-region="floor" fill="#e7cba9"><rect x="0" y="460" width="1000" height="340"/></g>
+</svg>

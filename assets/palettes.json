@@ -1,0 +1,10 @@
+{
+  "schema": "cpa-palettes/1",
+  "palettes": [
+    { "id": "pastel", "name": "Pastel", "colors": ["#f4a6c1", "#f7d488", "#a8d8b9", "#8ecae6", "#c4b5e0", "#f2c4a2"] },
+    { "id": "wood", "name": "Wood", "colors": ["#8b5a2b", "#c4a574", "#5c4033"] },
+    { "id": "skin", "name": "Skin", "colors": ["#f1c27d", "#e0ac69", "#c68642", "#8d5524"] },
+    { "id": "hair", "name": "Hair", "colors": ["#2b1b10", "#4a2c1a", "#c4a574", "#d4a017"] },
+    { "id": "eyes", "name": "Eyes", "colors": ["#3b6ea5", "#2f6b3a", "#6b4c3b"] }
+  ]
+}

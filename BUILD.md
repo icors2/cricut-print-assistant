@@ -10,7 +10,7 @@ This is the build plan for the next big chunk of work on Cricut Print Assistant.
 
 **Read [AGENT_MEMORY.md](AGENT_MEMORY.md) first.** It has the invariants that must never break and the working rules. [AGENT_HANDOFF.md](AGENT_HANDOFF.md) is the code tour of what exists today.
 
-> **Status:** this is a plan only; none of it is built yet. Start at **P1 · M1**. Tick the acceptance items in the PR description as you go, and record finished milestones in the status table (§14).
+> **Status:** P1–P4 code is in, with a few original placeholder drawings. Still open: a real catalog of at least 30 assets, a full avatar set (6 options per main slot), and the physical iPad checklist in §12.3.
 
 ---
 
@@ -1568,24 +1568,24 @@ Update this table (status + commit) in the PR that finishes a milestone.
 
 | Milestone | Status | PR / commit | Notes |
 |---|---|---|---|
-| P1·M1 module plumbing | ☐ not started | | **start here** |
-| P1·M2 touch | ☐ | | |
-| P1·M3 PWA | ☐ | | |
-| P1·M4 iPad quirks | ☐ | | |
-| P2·M1 assets repo + validator | ☐ | | placeholder art by the agent |
-| P2·M2 loader | ☐ | | |
-| P2·M3 Assets tab | ☐ | | |
-| P2·M4 add to Mockup | ☐ | | |
-| P2·M5 private packs | ☐ | | |
-| P2·M6 docs + first art | ☐ | | needs ≥ 30 assets from the art team |
-| P3·M1 recolor engine | ☐ | | |
-| P3·M2 color editor | ☐ | | |
-| P3·M3 PNG tint | ☐ | | |
-| P3·M4 palettes + docs | ☐ | | |
-| P4·M1 compositor | ☐ | | needs a few test parts (the agent may draw placeholders) |
-| P4·M2 builder + gallery | ☐ | | |
-| P4·M3 export | ☐ | | |
-| P4·M4 docs + art | ☐ | | needs the avatar parts from the art team |
+| P1·M1 module plumbing | done | | bus, ORDER, /*MODULES*/ |
+| P1·M2 touch | done | | pinch, twist, action bar; mouse tests unchanged |
+| P1·M3 PWA | done | | manifest, icons, sw.js; offline reload tested |
+| P1·M4 iPad quirks | done | | share, storage banner, canvas budget. §12.3 checklist still open |
+| P2·M1 assets repo + validator | done | | 5 original CC0 placeholders |
+| P2·M2 loader | done | | fetch on http(s); --bundle-assets; file:// stays offline |
+| P2·M3 Assets tab | done | | search, details, kid mode |
+| P2·M4 add to Mockup | done | | catalog size; project asset field |
+| P2·M5 private packs | done | | zip and json, IndexedDB only |
+| P2·M6 docs + first art | code done | | docs written. ≥ 30 real assets still open |
+| P3·M1 recolor engine | done | | paint only; alpha unchanged |
+| P3·M2 color editor | done | | cut SVG stays byte-identical |
+| P3·M3 PNG tint | done | | mask tint and hue; alpha copied |
+| P3·M4 palettes + docs | done | | Surprise is seeded. No palette editor |
+| P4·M1 compositor | done | | placeholder parts; pairs, hides, swap |
+| P4·M2 builder + gallery | done | | own undo, locks, IndexedDB gallery |
+| P4·M3 export | done | | one 2×3 in contour sticker |
+| P4·M4 docs + art | code done | | guide written. Full avatar set still open |
 
 ## 15. Risks and mitigations
 

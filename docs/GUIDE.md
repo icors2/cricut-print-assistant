@@ -13,6 +13,10 @@ This guide walks through the whole job: lay out a sheet, calibrate once, print, 
 - [9. Background image](#9-background-image)
 - [10. Send the mockup to the Layout](#10-send-the-mockup-to-the-layout)
 - [11. Saving your work](#11-saving-your-work)
+- [12. Use it on an iPad](#12-use-it-on-an-ipad)
+- [13. Assets](#13-assets)
+- [14. Change colours](#14-change-colours)
+- [15. Make an avatar](#15-make-an-avatar)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -252,6 +256,46 @@ When the scene looks right, **📤 Send to Layout…** (under the Layers list) m
     - Saving again under the same name overwrites that save.
   - The panel shows how much browser storage is used and warns when it's almost full. Browser saves are big because they hold the images; keep the important ones as files.
 - **Autosave:** the calibration, the settings and the whole mockup, images included, are saved in the browser as you work, so a refresh brings everything back. Clearing the site's data starts fresh. If the browser can't store the images, re-add the same files or open a save, and the mockup reconnects them by name.
+
+## 12. Use it on an iPad
+
+Open the site in Safari, then Share → Add to Home Screen. The icon is "Sticker Studio" and the app opens full screen.
+
+- Pinch with two fingers on the selected piece to resize it, and twist to rotate. One undo puts both back.
+- Pinch empty space to zoom the view. The page itself does not zoom.
+- A long-press shows Undo, Duplicate, Delete, layer, flip and rotate.
+- Buttons are larger on a touch screen.
+- Save a PDF or SVG through the share sheet (Save to Files or AirDrop).
+- A very large picture is printed at a lower dpi instead of crashing the tab. The note under the dpi field says so.
+- A HEIC photo is not accepted. Use a PNG or JPG (on iPhone: Settings → Camera → Formats → Most Compatible).
+
+Kid mode, which turns on by itself on a touch screen, shows Assets, Mockup and Avatar. Hold **Grown-ups** for 2 seconds to get Layout, Calibrate and How to back.
+
+## 13. Assets
+
+The Assets tab lists starter drawings. Tap one to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. Long-press for the size, the licence and **Add to scene**.
+
+Search ignores accents, so "cafe" finds "café". Rooms can be the Mockup background.
+
+**+ Import pack** reads a `.cpapack.zip` or `.cpapack.json`. A private pack stays in this browser and can be exported or deleted. It is never part of the public site.
+
+The five drawings here are placeholders. A larger set is still to come.
+
+![Assets tab](images/30_assets_tab.png)
+
+## 14. Change colours
+
+Open **🎨** on a drawing that has colour parts (from its details, from the Mockup, or from its Layout card). Pick a palette swatch or a colour. **Surprise** chooses from that drawing's palettes. **Done** updates the picture. **Only this copy** makes a new image so the other copies stay as they were.
+
+The cut line does not move. Undo puts the previous colours back.
+
+## 15. Make an avatar
+
+The Avatar tab stacks a body, a face, eyes, a mouth, hair and an optional hat. A lock keeps that slot when you press **Randomize**. **Save** stores it in this browser. **Add to scene** makes one 2 × 3 in contour sticker.
+
+If the parts do not overlap, the tool warns that the sticker would cut as more than one piece. Editing an avatar from the Mockup updates that sticker in place.
+
+The part list here is a small placeholder set.
 
 ## Troubleshooting
 

@@ -1,0 +1,11 @@
+# Load order for src/modules. One filename per line. build.py fails if this list
+# and the folder disagree. bus.js is first so every later module can use CST.bus.
+bus.js
+touch.js
+pwa.js
+assets.js
+recolor.js
+avatar.js
+assets_ui.js
+color_ui.js
+avatar_ui.js

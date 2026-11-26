@@ -1,0 +1,107 @@
+{
+  "schema": "cpa-catalog/1",
+  "pack": { "id": "core", "name": "Starter", "version": "0.1.0", "license": "CC0-1.0" },
+  "categories": [
+    { "id": "rooms", "name": "Rooms", "icon": "🏠", "order": 1 },
+    { "id": "furniture", "name": "Furniture", "icon": "🛋️", "order": 2 },
+    { "id": "decor", "name": "Decor", "icon": "🖼️", "order": 3 },
+    { "id": "items", "name": "Items", "icon": "🧸", "order": 4 }
+  ],
+  "assets": [
+    {
+      "id": "core.rooms.sunny-room",
+      "name": "Sunny room",
+      "category": "rooms",
+      "role": "backdrop",
+      "tags": ["room", "background"],
+      "size": { "w": 10, "h": 8 },
+      "files": { "svg": "rooms/sunny-room.svg", "thumb": "thumbs/core.rooms.sunny-room.webp" },
+      "cut": { "shape": "rect", "offset": 0 },
+      "regions": [
+        { "id": "wall", "name": "Wall", "default": "#f6e7c1" },
+        { "id": "floor", "name": "Floor", "default": "#e7cba9" }
+      ],
+      "palettes": ["pastel", "wood"],
+      "license": "CC0-1.0",
+      "author": "Cricut Print Assistant contributors",
+      "source": "original",
+      "added": "2026-11-26"
+    },
+    {
+      "id": "core.furniture.round-sofa",
+      "name": "Round sofa",
+      "category": "furniture",
+      "tags": ["sofa", "café", "living room"],
+      "size": { "w": 2.5, "h": 1.4 },
+      "files": { "svg": "furniture/round-sofa.svg", "thumb": "thumbs/core.furniture.round-sofa.webp" },
+      "cut": { "shape": "contour", "offset": 0.04 },
+      "regions": [
+        { "id": "fabric", "name": "Fabric", "default": "#7fb3d5" },
+        { "id": "cushion", "name": "Cushions", "default": "#a9cce3" },
+        { "id": "legs", "name": "Legs", "default": "#8b5a2b" }
+      ],
+      "palettes": ["pastel", "wood"],
+      "license": "CC0-1.0",
+      "author": "Cricut Print Assistant contributors",
+      "source": "original",
+      "added": "2026-11-26"
+    },
+    {
+      "id": "core.furniture.lamp",
+      "name": "Lamp",
+      "category": "furniture",
+      "tags": ["lamp", "light"],
+      "size": { "w": 1, "h": 2 },
+      "files": { "svg": "furniture/lamp.svg", "thumb": "thumbs/core.furniture.lamp.webp" },
+      "cut": { "shape": "contour", "offset": 0.04 },
+      "regions": [
+        { "id": "shade", "name": "Shade", "default": "#f4e1b5" },
+        { "id": "stand", "name": "Stand", "default": "#c4a574" }
+      ],
+      "palettes": ["pastel", "wood"],
+      "license": "CC0-1.0",
+      "author": "Cricut Print Assistant contributors",
+      "source": "original",
+      "added": "2026-11-26"
+    },
+    {
+      "id": "core.decor.rug",
+      "name": "Rug",
+      "category": "decor",
+      "tags": ["rug", "floor"],
+      "size": { "w": 3.2, "h": 2 },
+      "files": { "svg": "decor/rug.svg", "thumb": "thumbs/core.decor.rug.webp" },
+      "cut": { "shape": "contour", "offset": 0.04 },
+      "regions": [
+        { "id": "field", "name": "Field", "default": "#d4a5a5" },
+        { "id": "border", "name": "Border", "default": "#8c4a4a" }
+      ],
+      "palettes": ["pastel"],
+      "license": "CC0-1.0",
+      "author": "Cricut Print Assistant contributors",
+      "source": "original",
+      "added": "2026-11-26"
+    },
+    {
+      "id": "core.items.teddy",
+      "name": "Teddy",
+      "category": "items",
+      "tags": ["bear", "toy"],
+      "size": { "w": 1.2, "h": 1.4 },
+      "files": {
+        "png": "items/teddy.png",
+        "thumb": "thumbs/core.items.teddy.webp",
+        "masks": { "fur": "items/teddy-mask.png" }
+      },
+      "cut": { "shape": "contour", "offset": 0.04 },
+      "regions": [
+        { "id": "fur", "name": "Fur", "default": "#c4a574", "mode": "tint" }
+      ],
+      "palettes": ["wood"],
+      "license": "CC0-1.0",
+      "author": "Cricut Print Assistant contributors",
+      "source": "original",
+      "added": "2026-11-26"
+    }
+  ]
+}

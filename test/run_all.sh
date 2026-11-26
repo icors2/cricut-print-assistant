@@ -26,5 +26,21 @@ run node mock_send_test.js
 run node mock_steps_test.js
 run node mock_save_test.js
 run node mock_warp_test.js
+run node modules_test.js
+run node touch_test.js
+run node pwa_test.js
+run node ipad_quirks_test.js
+run node ../tools/build_assets.js --check
+run node assets_validator_test.js
+run node assets_loader_test.js
+run node assets_ui_test.js
+run node assets_add_test.js
+run node packs_test.js
+run node recolor_test.js
+run node color_ui_test.js
+run node avatar_compose_test.js
+run node avatar_ui_test.js
+run node avatar_export_test.js
+if git ls-files | grep -E 'cpapack|private/' ; then echo 'private pack files must not be committed'; exit 1; fi
 run node shot.js
 echo "ALL TESTS PASSED"

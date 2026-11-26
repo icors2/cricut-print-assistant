@@ -11,14 +11,22 @@ A single, self-contained, offline HTML file. It lays out images on a printer she
 - a print PDF made with the embedded jsPDF;
 - a matching cut SVG for Cricut Design Space.
 
-It also holds a print/cut calibration and a view-only Mockup. It has no server, no network calls and no dependencies at runtime.
+It also holds a print/cut calibration, a view-only Mockup, an asset library, a colour editor and an avatar builder. The downloaded file makes no network calls. The web version loads `assets/` from the same site and can install a service worker.
 
 ## File map
 
 ```
 build.py                    # inlines everything into index.html + app/cricut_print_assistant.html
+src/modules/ORDER            # module load order (one file name per line)
+src/modules/*.js             # bus, touch, pwa, assets, recolor, avatar, and the tab UIs
+src/sw.template.js           # service worker source; build.py writes sw.js
+assets/                      # catalog, palettes, placeholder art, avatar parts (CC0)
+tools/build_assets.js        # catalog validator and thumbnail renderer
+tools/serve.js               # localhost static server for PWA and asset tests
 index.html                  # BUILT (GitHub Pages entry point). Don't edit by hand.
 app/cricut_print_assistant.html   # BUILT, identical copy for download
+app/cricut_print_assistant_bundled.html  # BUILT with python3 build.py --bundle-assets
+sw.js                       # BUILT from src/sw.template.js. Don't edit by hand.
 src/template.html           # markup + CSS; placeholders /*JSPDF*/ /*CORE*/ /*APP*/ <!--HOWTO-->
 src/core.js                 # pure math, no DOM: window.CSTCore (also loadable in Node via globalThis)
 src/app.js                  # UI, state, persistence, exports, wizard, mockup; test hooks on window.CST
@@ -85,9 +93,10 @@ Everything the tests need is exposed on `window.CST`.
 - `vendor/LICENSE` as a comment + `vendor/jspdf.umd.min.js`, with the sourceMappingURL stripped. It asserts that no inlined body contains `</script`;
 - `src/core.js`;
 - `src/app.js`;
+- `src/modules/*.js`, concatenated in the order listed in `src/modules/ORDER` (one file name per line, `#` comments) into the `/*MODULES*/` placeholder in the same script, right after `/*APP*/`. The build fails if a file in `src/modules/` is not listed, or a listed file is missing;
 - `src/howto.html`.
 
-It writes the result to `index.html` and to `app/cricut_print_assistant.html`, then prints the sizes. Always rebuild and commit both built files with any `src/` change; GitHub Pages serves `index.html` from `main`.
+It writes the result to `index.html` and to `app/cricut_print_assistant.html`, then writes `sw.js` (cache name `cpa-` plus a hash of `index.html` and `assets/catalog.json`). `python3 build.py --bundle-assets` also writes `app/cricut_print_assistant_bundled.html` with the catalog inlined. `index.html` must stay under 800 KB. Always rebuild and commit the built files with any `src/` change; GitHub Pages serves `index.html` from `main`.
 
 "Save tool with my calibration built in" saves the page's pristine source with a `<script id="cstEmbedded" type="application/json">` block added. Don't break `PRISTINE` capture: it must run before anything changes the DOM.
 
@@ -148,6 +157,20 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `mock_steps_test.js` | Assembly-step numbering, number hiding (view/PNG/PDF), undo/persist, cut-sheet labels = guide steps |
 | `mock_warp_test.js` | Transform: corner distort / side skew / typed skew, warped render (pixels), Guide PDF + PNG outlines follow the warp. Layout takes the warp live (cut size = warped bbox). Print raster vs cut path aligned (processed alpha vs loops for rect + contour pieces; exported PDF render vs cut SVG). Other images byte-identical; Reset gives byte-identical exports; undo/redo; per-copy warps split on Send to Layout (and Layout undo); saves |
 | `mock_save_test.js` | Collapsible Mockup panels; file save → fresh page → open gives an identical state and exports; IndexedDB named saves, Ctrl+S, rename/delete; image autosave across reloads; low-storage warning |
+| `modules_test.js` | Module registry and event bus; `items:changed` after refresh; a module left out of `ORDER` fails the build |
+| `touch_test.js` | Two-finger pinch and twist, one undo step, 44 px targets; a gesture matches a mouse edit |
+| `pwa_test.js` | Manifest, service worker on localhost, offline reload, cache purge; no registration on file:// |
+| `ipad_quirks_test.js` | Share-or-download, canvas budget, storage banner, HEIC message |
+| `assets_validator_test.js` | Each broken catalog fails for its own reason |
+| `assets_loader_test.js` | file:// does not fetch; http loads the catalog; the bundle inlines it |
+| `assets_ui_test.js` | Category order, search, details, kid mode, 500-tile paint |
+| `assets_add_test.js` | Catalog size, a second copy is a node, project `asset` field, cut alignment |
+| `packs_test.js` | A private zip imports into IndexedDB and is not a git file |
+| `recolor_test.js` | Paint-only recolor; alpha and cut loops unchanged |
+| `color_ui_test.js` | Cut SVG byte-identical, PDF changes, undo, PNG tint, seeded Surprise |
+| `avatar_compose_test.js` | Pairs, hides, swap, prefixed ids, locked randomize |
+| `avatar_ui_test.js` | Named buttons, 44 px targets, live preview |
+| `avatar_export_test.js` | One 2×3 in contour sticker, alignment, in-place edit |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
 Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene), plus the committed background test images in `samples/bg/`. All the art is made up.

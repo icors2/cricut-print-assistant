@@ -134,6 +134,9 @@ node docs_shots.js                   # regenerate docs/images/*.png when the UI 
 | D16 | Private packs (`.cpapack.zip/json`) stay only in IndexedDB or the git-ignored `private/` | Family or personal art never reaches the public repo |
 | D17 | CC0-only public art, with provenance recorded in the catalog | No licence risk in a public repo |
 | D18 | Build locally, in small PRs; no cloud agents for this repo | Keeps control of the privacy scrub and of the tests |
+| D19 | Modules load in the same script as `app.js`, after `window.CST` is assigned | `bus.js` needs `CST` immediately, and `PRISTINE` is already captured at the top of `app.js` |
+| D20 | The canvas budget and import downscale apply only on a coarse pointer or when big targets are on | Desktop exports stay byte-identical; an iPad gets a lower dpi instead of a crashed tab |
+| D21 | Kid mode is on by default only for a coarse pointer, and it only hides tabs | Layout, Calibrate and How to come back after a 2 second hold. It is a guardrail, not a lock |
 
 Add new rows when you make a design decision, with the reason, and never rewrite old rows. If you reverse a decision, add a new row that refers to the old one.
 
@@ -144,21 +147,16 @@ Add new rows when you make a design decision, with the reason, and never rewrite
   - the warp prints;
   - the Mockup panels collapse;
   - saves.
-- `./run_all.sh` is **green**, and Pages is live.
-- BUILD.md: every milestone ☐ (not started). See the §14 status table.
-- There's no `assets/` folder, no service worker and no modules folder yet.
+- The milestone tests for P1–P4 pass in headless Chrome. Re-run `test/run_all.sh` on a machine with Pillow, NumPy and poppler before a release.
+- BUILD.md §14: P1–P4 code is done. Still open: at least 30 real catalog assets, a full avatar set, and the physical iPad checklist (§12.3).
+- `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, and the three UI modules.
+- `assets/` holds five original CC0 placeholders, palettes, and a few avatar parts. `sw.js` is generated. Do not hand-edit `index.html`, `app/*.html`, `sw.js`, or `assets/thumbs/`.
 
 ## 7. Where to start
 
-1. Read BUILD.md §1–§3 and §6.
-2. Do **P1 · M1 – Module plumbing** (BUILD.md §6):
-   - `src/modules/ORDER` and `bus.js`;
-   - the `/*MODULES*/` placeholder in `build.py`;
-   - `test/modules_test.js`.
-
-   It has no visible change, and every existing test must stay byte-identical.
-3. Then P1·M2 (touch) → M3 (PWA) → M4 (iPad quirks).
-4. Start P2·M1 (assets layout + validator) with **placeholder art you draw yourself** (simple CC0 shapes). Don't wait for the art team.
+1. Read BUILD.md §1–§3 and the status table in §14.
+2. The code for P1–P4 is in. The next human jobs are the art counts (P2·M6.2 and P4·M4.1) and the iPad checklist in §12.3.
+3. New behaviour goes in `src/modules/`. Rebuild with `python3 build.py`. Projects that have no asset must stay byte-identical.
 
 ## 8. Working rules for agents
 

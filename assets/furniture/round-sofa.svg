@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2.5in" height="1.4in" viewBox="0 0 750 420" data-cst-natw-in="2.5">
+  <title>Round sofa</title>
+  <g data-region="fabric" fill="#7fb3d5"><rect x="40" y="80" width="670" height="250" rx="80"/></g>
+  <g data-region="cushion" fill="#a9cce3"><rect x="120" y="120" width="220" height="140" rx="30"/><rect x="400" y="120" width="220" height="140" rx="30"/></g>
+  <g data-region="legs" fill="#8b5a2b"><rect x="90" y="320" width="36" height="70"/><rect x="624" y="320" width="36" height="70"/></g>
+</svg>

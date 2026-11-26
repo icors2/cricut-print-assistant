@@ -1,4 +1,8 @@
 node_modules/
+private/
+*.cpapack.zip
+*.cpapack.json
+assets/**/_wip/
 sample_output/*
 !sample_output/.gitkeep
 *.log

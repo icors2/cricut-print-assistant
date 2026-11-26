@@ -131,6 +131,27 @@
   function readAsDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
   function readAsText(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(file); }); }
   function loadImg(url) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not decode image')); i.src = url; }); }
+  const CANVAS_MAX = 16777216;
+  function touchDevice() { return document.documentElement.classList.contains('big') || window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(any-pointer: coarse)').matches; }
+  function budgetDpi(it) {
+    const dpi = S.dpi || 300; if (!touchDevice()) return dpi;
+    const extra = 2 * ((+it.offsetIn || 0) + (S.bleed || 0));
+    const w = Math.max(0.1, it.wIn + extra), h = Math.max(0.1, it.hIn + extra), px = w * dpi * h * dpi;
+    if (px <= CANVAS_MAX) return dpi;
+    const next = Math.max(72, Math.floor(Math.sqrt(CANVAS_MAX / (w * h))));
+    const note = 'printed at ' + next + ' dpi to fit iPad memory';
+    const el = document.getElementById('dpiNote'); if (el) { el.hidden = false; el.textContent = note; }
+    return next;
+  }
+  function releaseCanvas(p) { const c = p && p.print && p.print.canvas; if (c) c.width = 0; }
+  async function shrinkImport(img) {
+    const m = Math.max(img.naturalWidth || 0, img.naturalHeight || 0);
+    if (!touchDevice() || m <= 4096) return img;
+    const k = 4096 / m, c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const url = c.toDataURL('image/png'); c.width = 0; return loadImg(url);
+  }
   function fixSvgText(t) { // make sure the root <svg> has explicit pixel width/height so browsers rasterize it reliably
     const doc = new DOMParser().parseFromString(t, 'image/svg+xml'), svg = doc.documentElement;
     if (!svg || svg.nodeName.toLowerCase() !== 'svg') throw new Error('Not an SVG');
@@ -156,7 +177,7 @@
   function setPct(it, pct) { const asp = it.wIn > 0 && it.hIn > 0 ? it.hIn / it.wIn : it.natH / it.natW; // keeps the current W:H ratio
     it.wIn = Math.max(0.1, it.baseWIn * pct / 100); it.hIn = it.wIn * asp; it.pct = pctOf(it); }
   async function addFromDataURL(name, dataURL, srcURL, isSvg, saved) {
-    const img = await loadImg(srcURL || dataURL);
+    const img = await shrinkImport(await loadImg(srcURL || dataURL));
     const nw = img.naturalWidth || 1000, nh = img.naturalHeight || 1000;
     const t = document.createElement('canvas'), k = Math.min(1, 256 / Math.max(nw, nh)); t.width = Math.max(1, Math.round(nw * k)); t.height = Math.max(1, Math.round(nh * k));
     const g = t.getContext('2d'); g.drawImage(img, 0, 0, t.width, t.height); const d = g.getImageData(0, 0, t.width, t.height).data;
@@ -174,14 +195,14 @@
   // ---------- processing & layout ----------
   function procKey(it, base) { const k = [it.id, it.wIn.toFixed(4), it.hIn.toFixed(4), it.shape, it.radiusIn, it.offsetIn, it.border, S.bleed, S.dpi]; if (!base && isWarped(it)) k.push(it.warp); return JSON.stringify(k); }
   function baseEntry(it) { const k = procKey(it, true); let e = cache.get(k);
-    if (!e) { e = { p: C.processItem(it.img, { wIn: it.wIn, hIn: it.hIn, shape: it.shape, radiusIn: it.radiusIn, offsetIn: it.offsetIn, bleedIn: S.bleed, border: it.border, dpi: S.dpi }) }; cache.set(k, e); }
+      if (!e) { e = { p: C.processItem(it.img, { wIn: it.wIn, hIn: it.hIn, shape: it.shape, radiusIn: it.radiusIn, offsetIn: it.offsetIn, bleedIn: S.bleed, border: it.border, dpi: budgetDpi(it) }) }; cache.set(k, e); }
     return e; }
   const warpedKeys = new Map();
   /** what prints and cuts: the image's own processing, with its Mockup warp (it.warp) baked in when it has one */
   function processed(it, rot) { let e;
     if (isWarped(it)) { const k = procKey(it); e = cache.get(k);
       if (!e) { const b = baseEntry(it).p, M = warpMap(it, { w: b.cutW, h: b.cutH }); e = { p: C.warpProcessed(b, M.f, M.inv, S.dpi) };
-        const old = warpedKeys.get(it.id); if (old && old !== k) cache.delete(old); warpedKeys.set(it.id, k); cache.set(k, e); } }
+        const old = warpedKeys.get(it.id); if (old && old !== k) { releaseCanvas((cache.get(old) || {}).p); cache.delete(old); } warpedKeys.set(it.id, k); cache.set(k, e); } }
     else e = baseEntry(it);
     if (rot && !e.r) e.r = C.rotateProcessed(e.p);
     return rot ? e.r : e.p;
@@ -367,6 +388,20 @@
     });
   }
   function download(name, data, type) { const b = data instanceof Blob ? data : new Blob([data], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
+  function saveBlob(name, data, type) {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' });
+    if (window.CST && window.CST.pwa && window.CST.pwa.shareOrDownload) return window.CST.pwa.shareOrDownload(name, blob);
+    download(name, blob);
+  }
+  function noteFileSave() { try { localStorage.setItem('cst.fileSaveAt', String(Date.now())); } catch (e) { /* ignore */ } }
+  async function storageNudge() {
+    let old = 0; try { old = +localStorage.getItem('cst.fileSaveAt') || 0; } catch (e) { old = 0; }
+    if (old && Date.now() - old > 7 * 864e5) toast('It has been a week since you saved a file. Save a copy so a browser cleanup cannot drop this work.');
+    let persisted = true;
+    try { persisted = !(navigator.storage && navigator.storage.persisted) || await navigator.storage.persisted(); } catch (e) { persisted = false; }
+    let dismissed = false; try { dismissed = sessionStorage.getItem('cst.storageNudge') === '1'; } catch (e) { dismissed = false; }
+    const el = $('#storageNudge'); if (el) el.hidden = !(touchDevice() && !persisted && !dismissed);
+  }
   const base = () => 'sheet-' + sheetDims().key;
 
   // ---------- calibration ----------
@@ -553,7 +588,7 @@
       ${c.mode && !done ? (() => { const old = Object.keys(c.issued || {}).filter(k => k !== code); const cmp = st.ex !== 1 || st.ey !== 1;
         return `<p class="warn">Use only files with sheet code <b>${code}</b>${cmp ? ` – their PDF's top line says “CODE ${code} · COMPENSATION ${fmtPct(st.ex - 1)} / ${fmtPct(st.ey - 1)}” and its corner marks are ${(bw * st.ex).toFixed(3)} × ${(bh * st.ey).toFixed(3)} in inside the PDF` : ''}.${old.length ? ` Files with ${old.join(', ')} are out of date – delete them.` : ''}${S.applyCorr ? '' : ' <b>Note: “Apply calibration” is OFF on the Layout tab, so your real sheets are not corrected (calibration files always are).</b>'}</p>`; })() : ''}
       <ol class="wsteps">${steps.map(t => `<li>${t}</li>`).join('')}</ol>`;
-    $$('#wizard [data-dl]').forEach(b => b.onclick = () => { b.dataset.dl === 'pdf' ? download(`${base()}-CALIBRATION-${code}-PRINT.pdf`, buildCalPDF().output('blob')) : download(`${base()}-CALIBRATION-${code}-CUT.svg`, buildCalSVG(), 'image/svg+xml'); setTimeout(renderCalTable, 50); });
+    $$('#wizard [data-dl]').forEach(b => b.onclick = () => { b.dataset.dl === 'pdf' ? saveBlob(`${base()}-CALIBRATION-${code}-PRINT.pdf`, buildCalPDF().output('blob')) : saveBlob(`${base()}-CALIBRATION-${code}-CUT.svg`, buildCalSVG(), 'image/svg+xml'); setTimeout(renderCalTable, 50); });
   }
   // ---------- preview ----------
   let view = { sc: 50 }, sel = { key: null, itemId: null }, drag = null, filterText = '';
@@ -687,7 +722,7 @@
     clearTimeout(dirtyTimer); $('#busy').style.display = '';
     dirtyTimer = setTimeout(() => { try { syncItemWarps(); computeLayout(); recordUndo();
       if (follow) { const i = layout.sheets.findIndex(s => s.some(e => e.key === follow.key)); if (i >= 0) { curSheet = i; toast(follow.msg + (i + 1)); } follow = null; }
-      if (itemsChanged !== false) renderItems(); else refreshCardSummaries(); renderStatus(); renderPreview(); if ($('#tabMock').style.display !== 'none') renderMock(); } catch (e) { console.error(e); alert('Error: ' + e.message); } $('#busy').style.display = 'none'; }, 30);
+      if (itemsChanged !== false) renderItems(); else refreshCardSummaries(); renderStatus(); renderPreview(); if ($('#tabMock').style.display !== 'none') renderMock(); } catch (e) { console.error(e); alert('Error: ' + e.message); } $('#busy').style.display = 'none'; if (window.CST && window.CST.bus) window.CST.bus.emit('items:changed'); }, 30);
   }
   let toastT = null;
   function toast(msg, bad) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = 'toast', 2600); }
@@ -837,18 +872,22 @@
 
   async function handleFiles(files) {
     $('#busy').style.display = '';
-    for (const f of files) { if (!/image\/(png|jpe?g|svg\+xml|webp|gif)/i.test(f.type) && !/\.(png|jpe?g|svg|webp|gif)$/i.test(f.name)) continue; try { await addFile(f); } catch (e) { alert(f.name + ': ' + e.message); } }
+    for (const f of files) {
+      if (/\.heic$/i.test(f.name) || /heic|heif/i.test(f.type || '')) { alert('Please choose a PNG or JPG. On iPhone: Settings → Camera → Formats → Most Compatible.'); continue; }
+      if (!/image\/(png|jpe?g|svg\+xml|webp|gif)/i.test(f.type) && !/\.(png|jpe?g|svg|webp|gif)$/i.test(f.name)) continue;
+      try { await addFile(f); } catch (e) { alert(/\.(heic|heif)$/i.test(f.name) ? 'Please choose a PNG or JPG. On iPhone: Settings → Camera → Formats → Most Compatible.' : (f.name + ': ' + e.message)); }
+    }
     refresh(true);
   }
   /** everything in one object: settings, calibration, every image (data URL) with its size/cut settings, hand placement, the mockup incl. its background image */
   function projectData(kind) {
     const calibration = {}; for (const k of STORE.keys()) if (/^cst\.cal\./.test(k)) { try { calibration[k] = JSON.parse(STORE.get(k)); } catch (e) { /* skip */ } }
-    const data = { app: 'cricut-full-sheet-tool', v: 1, settings: S, calibration, items: items.map(i => ({ name: i.name, dataURL: i.dataURL, isSvg: i.isSvg, wIn: i.wIn, hIn: i.hIn, pct: +pctOf(i).toFixed(3), baseWIn: i.baseWIn, qty: i.qty, shape: i.shape, radiusIn: i.radiusIn, offsetIn: i.offsetIn, border: i.border, rotate: i.rotate, lockAR: i.lockAR !== false, collapsed: !!i.collapsed, ...(isWarped(i) ? { warp: i.warp } : {}) })) };
+    const data = { app: 'cricut-full-sheet-tool', v: 1, settings: S, calibration, items: items.map(i => ({ name: i.name, dataURL: i.dataURL, isSvg: i.isSvg, wIn: i.wIn, hIn: i.hIn, pct: +pctOf(i).toFixed(3), baseWIn: i.baseWIn, qty: i.qty, shape: i.shape, radiusIn: i.radiusIn, offsetIn: i.offsetIn, border: i.border, rotate: i.rotate, lockAR: i.lockAR !== false, collapsed: !!i.collapsed, ...(i.asset ? { asset: i.asset } : {}), ...(isWarped(i) ? { warp: i.warp } : {}) })) };
     data.mockup = mkSerial(true);
     if (manual) { const idx = new Map(items.map((it, i) => [String(it.id), i])); data.placement = { pieces: Object.entries(manual.pieces).map(([k, v]) => ({ i: idx.get(k.split('#')[0]), q: +k.split('#')[1], s: v.s, x: v.x, y: v.y, rot: !!v.rot, o: v.o })).filter(p => p.i != null) }; }
     if (kind) data.kind = kind; data.saved = Date.now(); return data;
   }
-  async function saveProject() { download('cricut-sheet-project.json', JSON.stringify(projectData()), 'application/json'); }
+  async function saveProject() { noteFileSave(); saveBlob('cricut-sheet-project.json', JSON.stringify(projectData()), 'application/json'); }
   async function loadProject(file) { await applyProject(JSON.parse(await readAsText(file))); }
   /** restore a project / mockup save. o.settings / o.cal = false keep this browser's sheet settings and calibration (Open mockup, browser saves, autosave) */
   async function applyProject(d, o) { o = o || {}; if (!d || d.app !== 'cricut-full-sheet-tool') throw new Error('Not a project or mockup file');
@@ -864,6 +903,7 @@
   }
 
   function init() {
+    applyChrome();
     bindSettings(); rebindLengths();
     const dz = $('#drop'), fi = $('#file');
     dz.addEventListener('click', () => fi.click()); fi.addEventListener('change', () => { handleFiles(Array.from(fi.files)); fi.value = ''; });
@@ -872,11 +912,11 @@
     dz.addEventListener('drop', ev => handleFiles(Array.from(ev.dataTransfer.files)));
     document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => { if (!dz.contains(e.target)) { e.preventDefault(); handleFiles(Array.from(e.dataTransfer.files)); } });
     ['showPrint', 'showCut', 'showAnchors'].forEach(id => $('#' + id).addEventListener('change', renderPreview));
-    $('#expPDF').onclick = () => { try { download(base() + '-PRINT.pdf', buildPDF().output('blob')); } catch (e) { alert(e.message); } };
-    $('#expSVG').onclick = () => { try { const s = buildSVGs(); s.forEach((t, i) => setTimeout(() => download(`${base()}-${i + 1}-CUT.svg`, t, 'image/svg+xml'), i * 400)); } catch (e) { alert(e.message); } };
+    $('#expPDF').onclick = () => { try { saveBlob(base() + '-PRINT.pdf', buildPDF().output('blob')); } catch (e) { alert(e.message); } };
+    $('#expSVG').onclick = () => { try { const s = buildSVGs(); s.forEach((t, i) => setTimeout(() => saveBlob(`${base()}-${i + 1}-CUT.svg`, t, 'image/svg+xml'), i * 400)); } catch (e) { alert(e.message); } };
     $('#saveProj').onclick = saveProject; $('#loadProj').onclick = () => $('#projFile').click();
     $('#projFile').onchange = async (e) => { try { await loadProject(e.target.files[0]); } catch (er) { alert(er.message); } e.target.value = ''; };
-    $$('.tabs button').forEach(b => b.onclick = () => { $$('.tabs button').forEach(x => x.classList.toggle('on', x === b)); $$('.tab').forEach(t => t.style.display = t.id === b.dataset.tab ? '' : 'none'); if (b.dataset.tab === 'tabCal') renderCalTable(); if (b.dataset.tab === 'tabLayout') renderPreview(); if (b.dataset.tab === 'tabMock') renderMock(); });
+    $$('.tabs button[data-tab]').forEach(b => b.onclick = () => { $$('.tabs button[data-tab]').forEach(x => x.classList.toggle('on', x === b)); $$('.tab').forEach(t => t.style.display = t.id === b.dataset.tab ? '' : 'none'); if (b.dataset.tab === 'tabCal') renderCalTable(); if (b.dataset.tab === 'tabLayout') renderPreview(); if (b.dataset.tab === 'tabMock') renderMock(); if (window.CST && window.CST.bus) window.CST.bus.emit('tab:shown', b.dataset.tab); });
     $('#calCompute').onclick = () => onCompute();
     $('#calManual').onclick = () => { const c = getCal(), sx = 1 - (+$('#mShX').value || 0) / 100, sy = 1 - (+$('#mShY').value || 0) / 100, th = -(+$('#mRot').value || 0) * Math.PI / 180;
       c.Q = { v: 2, a11: sx, a12: -th, a21: th, a22: sy, tx: -(+$('#mOffX').value || 0) / MM, ty: -(+$('#mOffY').value || 0) / MM };
@@ -899,6 +939,8 @@
     $('#calReset').onclick = () => { if (confirm('Reset the saved calibration for this sheet size (printer model, compensation and wizard progress)?')) { saveCal(C.calDefault()); STORE.del(draftKey()); $$('#caltable input').forEach(i => i.value = ''); lastResult = null; $('#verdict').innerHTML = ''; renderCalTable(); refresh(false); } };
     window.addEventListener('resize', () => renderPreview());
     bindCanvas(); bindMock();
+    const nudgeHide = $('#storageNudgeHide'); if (nudgeHide) nudgeHide.onclick = () => { $('#storageNudge').hidden = true; try { sessionStorage.setItem('cst.storageNudge', '1'); } catch (e) { /* ignore */ } };
+    storageNudge();
     $('#numberPieces').checked = !!S.numberPieces; $('#numberPieces').onchange = () => { S.numberPieces = $('#numberPieces').checked; saveSettings(); refresh(false); };
     $('#ifilter').addEventListener('input', () => { filterText = $('#ifilter').value; applyFilter(); });
     $('#collapseAll').onclick = () => items.forEach(it => setCollapsed(it, null, true));
@@ -1080,14 +1122,29 @@
 
   // undo / redo (positions, angles, flips, order, visibility, backdrop)
   const mkSizes = () => items.map(it => [it.id, it.wIn, it.hIn, it.pct, it.lockAR]);
-  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num]);
-  const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
-  function mkCommit() { mkCardNums(); const s = mkSnap(); if (syncItemWarps()) refresh(true); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
+  const mkPaints = () => items.filter(i => i.asset).map(i => [i.id, i.dataURL, JSON.stringify(i.asset.recolor || null), JSON.stringify(i.asset.avatar || null)]);
+  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num, mkPaints().map(p => [p[0], p[1].length, p[2], p[3]])]);
+  const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), paints: mkPaints(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
+  function mkCommit() { mkCardNums(); const s = mkSnap(); if (syncItemWarps()) refresh(true); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); if (window.CST && window.CST.bus) window.CST.bus.emit('mockup:changed'); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); if (window.CST && window.CST.bus) window.CST.bus.emit('mockup:changed'); }
   function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); MK.num = Object.assign(mkNumDef(), s.num || {}); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
     let sized = false; for (const [id, w, h, pct, lock] of s.sizes || []) { const it = items.find(i => i.id === id); if (it && (it.wIn !== w || it.hIn !== h || it.lockAR !== lock)) { it.wIn = w; it.hIn = h; it.pct = pct; it.lockAR = lock; sized = true; } }
+    for (const [id, url, rec, av] of s.paints || []) { const it = items.find(i => i.id === id); if (!it || !it.asset) continue; if (it.dataURL !== url) { it.dataURL = url; for (const k of [...cache.keys()]) { try { if (JSON.parse(k)[0] === id) cache.delete(k); } catch (e) { /* not a cache key */ } } loadImg(url).then(im => { it.img = im; refresh(true); }); } it.asset.recolor = JSON.parse(rec); it.asset.avatar = JSON.parse(av); }
     if (sized || syncItemWarps()) refresh(true); else renderMock(true); }
   /** image size is shared with the Layout tab (and every copy on the cut sheet) */
   function mkSetSize(it, wIn, hIn) { it.wIn = Math.max(0.1, wIn); it.hIn = Math.max(0.1, hIn); it.pct = pctOf(it); mkCommit(); refresh(true); }
+  function mkPtFromClient(x, y) { const c = $('#mkCanvas'), r = c.getBoundingClientRect(), px = (x - r.left) * (c.width / r.width), py = (y - r.top) * (c.height / r.height); return { x: (px - mkView.pad) / mkView.sc, y: (py - mkView.pad) / mkView.sc }; }
+  function sheetPt(x, y) { const c = $('#preview'), r = c.getBoundingClientRect(); return { x: (x - r.left) * (c.width / r.width) / view.sc, y: (y - r.top) * (c.height / r.height) / view.sc }; }
+  function layoutHitSelected(x, y) { const e = hitTest(sheetPt(x, y)), s = selEntry(); return !!(e && s && e.key === s.key); }
+  function cancelLayoutDrag() { drag = null; }
+  function mkLiveSize(it, wIn, hIn) { it.wIn = Math.max(0.1, wIn); it.hIn = Math.max(0.1, hIn); it.pct = pctOf(it); if ($('#tabMock') && $('#tabMock').style.display !== 'none') { renderMockCanvas(); renderMkSel(); } else renderPreview(); }
+  function mkLiveRot(n, deg) { mkSetRot(n, deg); renderMockCanvas(); }
+  function mkCancelDrag() { mkDrag = null; mkSnapLines = []; }
+  function applyChrome() {
+    const coarse = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(any-pointer: coarse)').matches;
+    const big = S.ui && S.ui.bigTargets != null ? !!S.ui.bigTargets : coarse;
+    document.documentElement.classList.toggle('big', !!big);
+    document.documentElement.classList.toggle('touchui', !!(coarse || big));
+  }
   let mkSelectNew = false;
   function mkUndoFn() { if (!mkUndo.length) return; mkRedo.push(mkCur); mkApply(mkUndo.pop()); }
   function mkRedoFn() { if (!mkRedo.length) return; mkUndo.push(mkCur); mkApply(mkRedo.pop()); }
@@ -1154,14 +1211,15 @@
 
   // canvas interaction
   function mkPt(ev) { const c = $('#mkCanvas'), r = c.getBoundingClientRect(), px = (ev.clientX - r.left) * (c.width / r.width), py = (ev.clientY - r.top) * (c.height / r.height); return { x: (px - mkView.pad) / mkView.sc, y: (py - mkView.pad) / mkView.sc }; }
-  function mkCornerAt(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return null; const dx = pt.x - n.x, dy = pt.y - n.y, c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)), lx = dx * c - dy * s, ly = dx * s + dy * c, t = 9 / mkView.sc;
+  function hitR() { return (document.documentElement.classList.contains('big') ? 22 : 9) / (mkView.sc || 1); }
+  function mkCornerAt(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return null; const dx = pt.x - n.x, dy = pt.y - n.y, c = Math.cos(-rad(n.rot)), s = Math.sin(-rad(n.rot)), lx = dx * c - dy * s, ly = dx * s + dy * c, t = hitR();
     for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) if (Math.abs(lx - sx * G.w / 2) <= t && Math.abs(ly - sy * G.h / 2) <= t) return [sx, sy]; return null; }
   let mkXf = false;
   /** transform handles in backdrop inches: 4 corners (free distort), then the 4 side middles (top, right, bottom, left: skew) */
   function mkWarpHandles(n, G) { const P = warpQuad(n, G), M = warpMap(n, G), f = M ? M.f : (x, y) => [x, y], w = G.w, h = G.h;
     return P.concat([f(w / 2, 0), f(w, h / 2), f(w / 2, h), f(0, h / 2)]).map(([x, y]) => boxToWorld(n, G, x, y)); }
   /** handle index under the pointer: Transform mode = corners + sides; Ctrl/⌘ outside it = corners (distort) */
-  function mkWarpAt(pt, mod) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G || (!mkXf && !mod)) return -1; const H = mkWarpHandles(n, G), t = 9 / mkView.sc;
+  function mkWarpAt(pt, mod) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G || (!mkXf && !mod)) return -1; const H = mkWarpHandles(n, G), t = hitR();
     for (let i = 0; i < (mkXf ? 8 : 4); i++) if (Math.hypot(pt.x - H[i][0], pt.y - H[i][1]) <= t) return i; return -1; }
   /** d = drag state: i (handle), w0 (warp at pointer-down), b0 (pointer in the box frame at pointer-down). Corners follow the pointer; sides skew by the pointer's movement */
   function mkWarpDrag(n, G, d, pt) { const i = d.i, [lx, ly] = toLocal(n, pt.x, pt.y), bx = lx + G.w / 2, by = ly + G.h / 2, w0 = d.w0 || { sx: 0, sy: 0, q: [[0, 0], [0, 0], [0, 0], [0, 0]] }, W = { sx: w0.sx, sy: w0.sy, q: w0.q.map(c => c.slice()) }, w = G.w, h = G.h;
@@ -1171,7 +1229,7 @@
     else W.sy = deg(Math.tan(rad(w0.sy)) + (i === 7 ? -dy : dy) / (w / 2));
     n.warp = warpClean(W); }
   function mkSetXf(v) { mkXf = !!v; const b = $('#mkXf'); if (b) { b.classList.toggle('on', mkXf); b.textContent = mkXf ? '⬚ Transform: on (drag corners / sides)' : '⬚ Transform (skew / distort)'; } renderMockCanvas(); renderMkSel(); }
-  function mkOnHandle(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return false; const [lx, ly] = toLocal(n, pt.x, pt.y), hy = -G.h / 2 - 24 / mkView.sc; return Math.hypot(n.flip ? -lx : lx, ly - hy) <= 10 / mkView.sc; }
+  function mkOnHandle(pt) { const n = mkSel, G = n && !n.hidden && ng(n); if (!G) return false; const [lx, ly] = toLocal(n, pt.x, pt.y), hy = -G.h / 2 - 24 / mkView.sc; return Math.hypot(n.flip ? -lx : lx, ly - hy) <= hitR(); }
   function mkSnapMove(n, nx, ny, alt) { mkSnapLines = []; if (MK.snap === false || alt) return [nx, ny]; const b = nodeAABB(n), thr = 7 / mkView.sc, hw = (b.x1 - b.x0) / 2, hh = (b.y1 - b.y0) / 2;
     const xs = [0, MK.bg.w / 2, MK.bg.w], ys = [0, MK.bg.h / 2, MK.bg.h];
     for (const m of MK.nodes) { if (m === n || m.hidden) continue; const o = nodeAABB(m); if (!o) continue; xs.push(o.x0, (o.x0 + o.x1) / 2, o.x1); ys.push(o.y0, (o.y0 + o.y1) / 2, o.y1); }
@@ -1283,7 +1341,7 @@
     $('#mkSendOk').onclick = () => { const D = $('#mkSendDlg'), P = D._plan; D.close(); mkSendApply(P); };
     $('#mkExpPNG').onclick = () => download(`${mkBase()}-MOCKUP.png`, dataURLBlob(mockPNG()));
     $('#mkExpGuidePNG').onclick = () => download(`${mkBase()}-ASSEMBLY-GUIDE.png`, dataURLBlob(guidePNG()));
-    $('#mkExpGuidePDF').onclick = () => { try { download(`${mkBase()}-ASSEMBLY-GUIDE.pdf`, guidePDF().output('blob')); } catch (e) { alert(e.message); } };
+    $('#mkExpGuidePDF').onclick = () => { try { saveBlob(`${mkBase()}-ASSEMBLY-GUIDE.pdf`, guidePDF().output('blob')); } catch (e) { alert(e.message); } };
     window.addEventListener('resize', () => renderMockCanvas()); }
   // ---------- Send to Layout: the Layout's image list becomes exactly the pieces in the Layers list ----------
   /** plan: kept images with qty = number of layer copies (hidden layers only when included), images with only hidden layers -> qty 0 (kept so those layers still show), images with no layer -> removed */
@@ -1415,14 +1473,14 @@
     await applyProject(r.d, { settings: false, cal: false }); mkStoreState.cur = id; const m = (await IDB.list()).find(x => x.id === id); if (m) { mkStoreState.last = { id, name: m.name, t: m.t }; $('#mkSaveName').value = m.name; }
     mkAfterOpen(); toast(`Opened “${m ? m.name : 'save'}”`); mkSaveList(); return true; }
   function mkAfterOpen() { const tb = $('.tabs button[data-tab=tabMock]'); if (tb && $('#tabMock').style.display === 'none') tb.click(); else renderMock(true); mkPanelSums(); }
-  function mkSaveFile() { const d = projectData('mockup'); download(`${mkBase()}-mockup-save.json`, JSON.stringify(d), 'application/json'); }
+  function mkSaveFile() { noteFileSave(); const d = projectData('mockup'); saveBlob(`${mkBase()}-mockup-save.json`, JSON.stringify(d), 'application/json'); }
   async function mkOpenFile(file) { const d = JSON.parse(await readAsText(file)); await applyProject(d, { settings: false, cal: false }); mkStoreState.cur = null; mkAfterOpen(); toast(`Opened ${file.name}: ${plural(items.length, 'image')}, ${plural(MK.nodes.length, 'layer')}`); }
   // autosave incl. images: IndexedDB record '__auto' + a stamp in localStorage; a refresh restores it only when both match (clearing site data starts fresh)
   let mkIdbT = null, mkIdbReady = false;
   function mkIdbSoon() { if (!mkIdbReady || !IDB.ok) return; clearTimeout(mkIdbT); mkIdbT = setTimeout(mkIdbAuto, 1500); }
   async function mkIdbAuto() { if (!items.length && !MK.nodes.length) { try { STORE.del('cst.mkAuto'); await IDB.del('__auto'); } catch (e) { /* ignore */ } mkStoreState.auto = false; return; }
     const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), d = Object.assign(projectData('autosave'), { stamp });
-    try { await IDB.put(null, { id: '__auto', d }); STORE.set('cst.mkAuto', stamp); mkStoreState.auto = true; mkPanelSums(); }
+    try { await IDB.put(null, { id: '__auto', d }); STORE.set('cst.mkAuto', stamp); mkStoreState.auto = true; mkPanelSums(); if (window.CST && window.CST.pwa) window.CST.pwa.persist(); }
     catch (e) { if (isQuota(e)) { const el = $('#mkStore'); if (el) { el.textContent = '⚠ Browser storage is full: the autosave (with images) failed. Use 💾 Save mockup (file).'; el.classList.add('warn'); } } } }
   async function mkIdbRestore() { const stamp = STORE.get('cst.mkAuto'); try { if (stamp && !items.length && IDB.ok) { const r = await IDB.get('__auto'); if (r && r.d && r.d.stamp === stamp && (r.d.items || []).length) { await applyProject(r.d, { settings: false, cal: false }); toast(`Restored your last session: ${plural(items.length, 'image')}, ${plural(MK.nodes.length, 'layer')}`); if ($('#tabMock').style.display !== 'none') renderMock(true); mkStoreState.auto = true; } } } catch (e) { /* no autosave */ }
     mkIdbReady = true; mkStoreState.restored = true; }
@@ -1439,6 +1497,7 @@
     get manual() { return manual; }, set manual(v) { manual = v; }, pinLayout, resetAuto, selectPiece, selectItem, get sel() { return sel; }, get curSheet() { return curSheet; }, set curSheet(v) { curSheet = v; },
     get MK() { return MK; }, mkSetSize, mkGeom: (n) => { const G = ng(n); return G && { w: G.w, h: G.h }; }, renderMock, mkSelect, get mkSel() { return mkSel; }, get mkView() { return mkView; }, mkOrder, mockPNG, guidePNG, guidePDF, pieceLabels, mkSteps, legendRows, cutStepLabels, stepBadge, insidePiece, numOf, mkUndo: () => mkUndoFn(), mkRedo: () => mkRedoFn(), mkFitBackdrop, mkSendPlan, mkSendApply, mkSendOpen, mkBgRect, mkBgToBackdrop, imgDpi, set mkBgAdj(v) { mkBgAdj = !!v; renderMkBg(); renderMockCanvas(); }, get mkBgAdj() { return mkBgAdj; },
     projectData, applyProject, processed, processedBase, syncItemWarps, mkSaveIdb, mkQuickSave, warpMap, warpQuad, nodePath, mkWarpHandles, mkSetXf, get mkXf() { return mkXf; }, isWarped, mkOpenSave, mkSaveFile, mkOpenFile, mkSaveList, mkStorageInfo, mkIdbAuto, IDB, setMkCol, mkPanelSum, get mkStoreState() { return mkStoreState; },
+    mkAdd, mkCommit, download, saveBlob, toast, mkLiveSize, mkLiveRot, mkCancelDrag, applyChrome, mkPtFromClient, sheetPt, layoutHitSelected, cancelLayoutDrag, nodeItem, mkZoom, mkDelete, mkSetRot, mkSig, storageNudge, budgetDpi, get mkUndoDepth() { return mkUndo.length; },
     rotatePiece, moveToSheet, duplicatePiece, deletePiece, nudge, fillQty, undo, redo, get undoDepth() { return undoStack.length; }, get view() { return view; }, setZoom, saveProject, loadProject, findSpot };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

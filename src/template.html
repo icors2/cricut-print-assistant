@@ -1,9 +1,14 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
 <title>Cricut Print Assistant – full-sheet print &amp; cut</title>
 <style>
 :root{--b:#d6dbe3;--fg:#1d2733;--mut:#68758a;--acc:#e0115f;--blu:#1f6feb}
-*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:#f4f6f9}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:#f4f6f9;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 header{display:flex;align-items:center;gap:16px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--b)}header h1{font-size:17px;margin:0}
 .tabs button{border:1px solid var(--b);background:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;margin-right:4px}.tabs button.on{background:var(--fg);color:#fff;border-color:var(--fg)}
 main{display:flex;gap:14px;padding:14px;align-items:flex-start}.side{width:400px;flex:none;display:flex;flex-direction:column;gap:12px}
@@ -35,9 +40,10 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
 #chips{display:flex;gap:6px;position:relative}.chip{border:1px solid var(--b);background:#fff;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer;white-space:nowrap}.chip.ok{border-color:#7cc492;background:#effaf2;color:#17602d}.chip.off{color:var(--mut)}.chip.man{border-color:#9bbcf5;background:#eef4ff;color:#1a4fa8}
 .pop{position:absolute;z-index:20;top:100%;right:0;margin-top:6px;width:min(560px,80vw);background:#fff;border:1px solid var(--b);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:10px 14px;font-size:12px;text-align:left}
 #warnline{margin:-2px 0 6px;font-size:12px}#warnline .warn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+#storageNudge,#dpiNote{background:#fff6e8;color:#6a4a00;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6d3a8}#storageNudge[hidden],#dpiNote[hidden]{display:none}
 .toolbar2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12px}.toolbar2 .sep{width:1px;height:18px;background:var(--b);margin:0 4px}
 #selbar{background:#eef4ff;border:1px solid #9bbcf5;border-radius:6px;padding:4px 8px;margin-bottom:8px;font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}#selName{font-weight:600;margin-right:6px}#selbar.idle{background:#f7f8fa;border-color:var(--b)}#selbar.idle #selName{font-weight:400;color:var(--mut)}#selbar.idle button{display:none}#selbar{min-height:30px}
-.canvasbox{overflow:auto;max-height:calc(100vh - 150px)}#preview{touch-action:none;outline:none}
+.canvasbox{overflow:auto;max-height:calc(100dvh - 150px)}#preview{touch-action:none;outline:none}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);background:var(--fg);color:#fff;padding:7px 14px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:50}.toast.show{opacity:.95;transform:translateX(-50%)}.toast.bad{background:#b3261e}
 .inrow{display:flex;gap:6px;align-items:center;min-width:0}.inum{flex:none;font-size:11px;font-weight:700;color:#fff;background:#68758a;border-radius:9px;padding:0 6px}
 .lrow,.arow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;margin-top:4px;background:#fff;font-size:12px}.lrow{cursor:pointer}.lrow.sel{border-color:var(--blu);box-shadow:0 0 0 2px rgba(31,111,235,.25)}.lrow.hid{opacity:.5}.lrow.missing{opacity:.45}.lrow.dragging{opacity:.4}
@@ -47,10 +53,20 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
 .leye{border:none;background:none;cursor:pointer;font-size:13px}.lnumtog{border:1px solid #9aa3b0;background:#fff;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:0 4px;line-height:16px;color:#1d2733}.lnumtog.off{color:#b0b6bf;text-decoration:line-through;border-style:dashed}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
 .dropz{border:2px dashed var(--b);border-radius:8px;padding:12px;text-align:center;color:var(--mut);cursor:pointer;font-size:13px;margin-bottom:4px}.dropz.over{border-color:var(--blu);background:#eef4ff}#mkSelPanel.idle .mksize{display:none}.mksend{margin-top:8px;border-top:1px solid var(--b);padding-top:8px}label.chk{display:flex;align-items:center;gap:4px;font-size:12px;flex-direction:row}#mkSendDlg{max-width:520px;border:1px solid var(--b);border-radius:10px;padding:16px 18px;font-size:13px}#mkSendDlg::backdrop{background:rgba(20,25,35,.35)}#mkSendList{max-height:40vh;overflow:auto;margin:8px 0;padding-left:18px}#mkSendList li{margin:2px 0}#mkSendList .gone{color:#a33;text-decoration:line-through}#mkSendList .zero{color:var(--mut)}#mkSendSum b{font-size:14px}.mksize{margin-top:8px;border-top:1px solid var(--b);padding-top:6px}.bgctl{border:1px solid var(--b);border-radius:8px;padding:6px 8px;margin:4px 0 8px;background:#fafbfc}.bgline{display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0}.bgline input[type=range]{flex:1}.bgline .sm,input.sm{width:56px}#mkBgAdj.on{background:#fff1dc;border-color:#e07b00;color:#8a4b00}
 #mkSelPanel .btns{gap:4px;margin-top:6px}#mkSelPanel.idle .btns{display:none}#mkSelName{font-size:12px}#mkSelPanel:not(.idle) #mkSelName{font-weight:600}.mini.on{background:#eef4ff;border-color:#9bbcf5}
-#mkCanvas{touch-action:none;outline:none;box-shadow:none}.mkbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center;overflow:auto;max-height:calc(100vh - 120px)}
+#mkCanvas{touch-action:none;outline:none;box-shadow:none}.mkbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center;overflow:auto;max-height:calc(100dvh - 120px)}
+button,.btn,.mini,.chip,.tabs button{touch-action:manipulation}
+html.big button{min-width:44px;min-height:44px;box-sizing:border-box}
+html.big input,html.big select,html.big textarea{font-size:17px}
+#touchBar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;gap:8px;padding:8px;background:#fff;border-top:1px solid var(--b);flex-wrap:wrap;justify-content:center}
+html.touchui #touchBar{display:flex}
+#touchCtx{position:fixed;z-index:45;display:flex;flex-wrap:wrap;gap:8px;max-width:min(420px,92vw);background:#fff;border:1px solid var(--b);border-radius:10px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+#touchCtx[hidden]{display:none !important}
 .legend span{display:inline-block;width:12px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
+#tabAssets{display:flex;gap:12px;padding:12px;min-height:70dvh}.assetSide{width:200px;flex:none;display:flex;flex-direction:column;gap:4px}.assetSide button{text-align:left}.assetMain{flex:1;min-width:0}.assetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start;overflow:auto;max-height:70dvh}.assetTile{min-width:88px;min-height:88px;border:1px solid var(--b);border-radius:8px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}.assetTile img{width:100%;height:72px;object-fit:contain}.assetTile span,.assetTile small{display:block}.swatch{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;padding:0}#assetSheet,#colorSheet{position:fixed;inset:0;background:rgba(20,25,35,.35);z-index:60;display:flex;align-items:center;justify-content:center}#assetSheet[hidden],#colorSheet[hidden]{display:none!important}.sheet{background:#fff;border-radius:12px;padding:16px;max-width:640px;width:min(640px,94vw);max-height:90dvh;overflow:auto}.avatarWrap{display:flex;gap:16px;padding:12px;flex-wrap:wrap}#avatarPreview svg{width:240px;height:auto;background:#fff;border-radius:12px}.avatarSlot button{margin:2px}@media (max-width:900px){#tabAssets{flex-direction:column}.assetSide{width:auto;flex-direction:row;overflow:auto}}
 </style></head><body>
-<header><h1>✂️ Cricut Print Assistant</h1><div class="tabs"><button class="on" data-tab="tabLayout">Layout</button><button data-tab="tabMock" title="Arrange the stickers into the finished scene (view only, never changes the cut files)">Mockup</button><button data-tab="tabCal">Calibrate</button><button data-tab="tabHow">How to print &amp; cut</button></div><span id="busy" style="display:none">Processing…</span></header>
+<div id="storageNudge" hidden role="status">Your browser may clear saved work. Use 💾 Save mockup or add the app to your Home Screen. <button type="button" id="storageNudgeHide">Dismiss</button></div>
+<div id="dpiNote" hidden role="status"></div>
+<header><h1>✂️ Cricut Print Assistant</h1><div class="tabs"><button class="on" data-tab="tabLayout" data-grown="1">Layout</button><button data-tab="tabAssets" id="tabAssetsBtn">Assets</button><button data-tab="tabMock" title="Arrange the stickers into the finished scene (view only, never changes the cut files)">Mockup</button><button data-tab="tabAvatar" id="tabAvatarBtn" hidden>Avatar</button><button data-tab="tabCal" data-grown="1">Calibrate</button><button data-tab="tabHow" data-grown="1">How to print &amp; cut</button><button type="button" id="kidMode" title="Bigger buttons and fewer tabs">🧒 Kid mode</button><button type="button" id="grownups" hidden title="Hold for 2 seconds">Grown-ups</button></div><span id="busy" style="display:none">Processing…</span></header>
 
 <div id="tabLayout" class="tab"><main>
 <div class="side">
@@ -69,7 +85,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
   </div>
   <div class="panel"><h2 class="ph" style="cursor:default"><span>Images</span><span class="psum grow" id="imgSummary"></span></h2>
     <div id="drop">Drop PNG / JPG / SVG here, or click to choose<br><small>Transparent PNGs get a contour cut. Nothing is uploaded; it all stays in this page.</small></div>
-    <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none">
+    <input type="file" id="file" multiple accept="image/png,image/jpeg,image/svg+xml,.svg,.png,.jpg,.jpeg,.webp,.gif" style="display:none">
     <div class="imgtools" id="imgTools" style="display:none"><input type="search" id="ifilter" placeholder="Filter by name…"><span class="muted" id="filterNote" style="font-size:11px"></span><button class="mini" id="collapseAll" title="Collapse every image card">Collapse all</button><button class="mini" id="expandAll">Expand all</button></div>
     <div id="items"></div>
   </div>
@@ -134,7 +150,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
   <div class="btns" style="justify-content:flex-end"><button class="btn sec" id="mkSendCancel">Cancel</button><button class="btn" id="mkSendOk">Send to Layout</button></div></dialog>
   <div class="panel" data-col="images"><h2 class="ph"><span>Images</span><span class="psum grow"></span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
     <div id="mkDrop" class="dropz">Drop PNG / JPG / SVG here, or click to choose<br><small>Added to the shared image list (also on the Layout tab, qty 1). Transparent PNGs get a contour cut.</small></div>
-    <input type="file" id="mkFile" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none"><div id="mkAdd"></div></div>
+    <input type="file" id="mkFile" multiple accept="image/png,image/jpeg,image/svg+xml,.svg,.png,.jpg,.jpeg,.webp,.gif" style="display:none"><div id="mkAdd"></div></div>
   <div class="panel" data-col="guide"><h2 class="ph"><span>Assembly guide &amp; export</span><span class="psum grow"></span><button class="pchev" title="Collapse" aria-expanded="true">▾</button></h2>
     <div class="row"><label>Show<select id="mkGuide"><option value="off">Finished mockup</option><option value="outline">Guide: numbered outlines only</option><option value="ghost">Guide: ghosted images + numbered outlines</option></select></label><label>Ghost opacity<input type="range" id="mkGhost" min="0.05" max="0.8" step="0.05"></label></div>
     <div class="row" id="mkNumRow"><label>Numbers<select id="mkNumShow"><option value="all">All (except ones hidden with #)</option><option value="none">None: outlines + legend only</option></select></label><label>Number size <span id="mkNumSizeV" class="muted"></span><input type="range" id="mkNumSize" min="50" max="200" step="10"></label><button class="mini" id="mkNumAll" style="align-self:end" title="Show every number again">Show all numbers</button></div>
@@ -180,11 +196,21 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
     <p class="muted">Shrink = how much smaller your printer prints than the file (3.00% = 7.76 in instead of 8.000). Compensation = how much the tool enlarges the print PDF; true size needs 1/(1 − shrink) − 1 (3.00% → +3.09%). Rotation and shift describe the uncorrected cut relative to the ink, at the sheet centre.</p></details>
 </div></div>
 
+<div id="tabAssets" class="tab" style="display:none"></div>
+<div id="tabAvatar" class="tab" style="display:none"></div>
 <div id="tabHow" class="tab" style="display:none"><div class="doc">
 <!--HOWTO-->
 </div></div>
+<div id="touchBar" aria-label="Touch actions">
+  <button type="button" id="tbUndo">↺ Undo</button><button type="button" id="tbRedo">↻ Redo</button>
+  <button type="button" id="tbDup">Duplicate</button><button type="button" id="tbDel">Delete</button>
+  <button type="button" id="tbUp">Layer ↑</button><button type="button" id="tbDown">Layer ↓</button>
+  <button type="button" id="tbFlip">Flip</button><button type="button" id="tbRotL">Rotate −15°</button><button type="button" id="tbRotR">Rotate +15°</button>
+</div>
+<div id="touchCtx" hidden role="menu"></div>
 <script id="cstEmbedded" type="application/json">null</script>
 <script>/*JSPDF*/</script>
 <script>/*CORE*/</script>
-<script>/*APP*/</script>
+<script>/*APP*/
+/*MODULES*/</script>
 </body></html>
