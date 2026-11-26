@@ -94,6 +94,13 @@ const PASS1 = { T1: [-2.25, -5.5], T2: [2, -4.5], T3: [-1, -1.75], T4: [-3.75, 0
   await p.evaluate(() => { const C = window.CST, nd = (nm) => C.MK.nodes.filter(n => C.items.find(i => i.id === n.itemId).name === nm); C.mkSelect(nd('bear_headset.png')[0]); document.querySelector('#mkDup').click(); C.mkSelect(nd('rug.png')[0]); document.querySelector('#mkDel').click(); C.mkSelect(null); }); await wait(500);
   await p.click('#mkSend'); await wait(400); await shot('17_send_to_layout_dialog.png');
   await p.click('#mkSendOk'); await wait(2000); await shot('18_layout_after_send.png');
+  // assembly steps: numbers by layer order, one number hidden with the layer's # toggle, the selected piece's checkbox
+  await p.click('.tabs button[data-tab=tabMock]'); await wait(800); await p.select('#mkGuide', 'outline'); await wait(400);
+  await p.evaluate(() => { const C = window.CST, nd = (nm) => C.MK.nodes.filter(n => C.items.find(i => i.id === n.itemId).name === nm); const n = nd('floor_lamp.png')[0];
+    document.querySelector(`#mkLayers .lrow[data-uid="${n.uid}"] .lnumtog`).click(); C.mkSelect(nd('bear_headset.png')[1]); window.scrollTo(0, 0); }); await wait(500);
+  await shot('20_guide_step_numbers.png');
+  const gp = await p.evaluate(() => window.CST.guidePNG()); fs.writeFileSync(path.join(IMG, '21_guide_png_legend.png'), Buffer.from(gp.split(',')[1], 'base64')); console.log('wrote docs/images/21_guide_png_legend.png');
+  await p.select('#mkGuide', 'off'); await wait(300);
   // how-to tab
   await p.click('.tabs button[data-tab=tabHow]'); await wait(400); await shot('19_howto_tab.png');
   await b.close();

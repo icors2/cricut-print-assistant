@@ -34,7 +34,7 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
   - A bleed (edge colours stretched ≈ 1.3 mm past the cut) hides small drift.
   - Automatic packing with rotation, spilling onto more sheets if needed. **Fill** raises a quantity until the sheet is full.
   - Interactive canvas: drag pieces by hand, with snapping to margins, neighbours and spacing. Rotate, duplicate, delete, nudge with the arrow keys, move between sheets, zoom. Hand placement exports exactly.
-  - Undo/redo, collapsible image cards, filter by name, status chips, optional printed piece numbers.
+  - Undo/redo, collapsible image cards, filter by name, status chips, optional printed piece numbers (they match the Mockup guide's assembly steps).
   - Save / open a project file (`.json`, images included).
 - **Exports:** a print PDF (300 dpi images, vector-exact placement) and one cut SVG per sheet.
 - **Calibration (Calibrate tab):**
@@ -48,7 +48,8 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
   - Move, rotate, flip, layer, hide, add copies.
   - Resize with corner handles or typed sizes. Sizes are shared with the Layout tab.
   - Backdrop presets, a colour and a **background image** with Fit / Fill / Stretch / True size / Tile, scale, offset, drag-to-pan, 90° turns and opacity.
-  - **Assembly guide** with numbered outlines (PNG, or a true-size PDF).
+  - **Assembly guide** with numbered outlines (PNG, or a true-size PDF). The numbers give the order to stick: #1 is the bottom layer (goes on first) and the top layer is last, so overlaps come out right. Each copy has its own step.
+  - **Crowded spots:** hide single numbers (the **#** toggle per layer) or all of them. The legend still lists every step. There's also a number size slider.
   - **📤 Send to Layout** turns the Layers list into the cut sheet: same images, qty = number of copies, same sizes.
   - Moving, rotating, flipping and layering in the mockup never change the print/cut files.
 - **How to print & cut** tab: the whole workflow and troubleshooting, inside the tool.
@@ -56,6 +57,10 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
 | Calibrate | Mockup | Send to Layout |
 |---|---|---|
 | ![](docs/images/10_calibrate_verdict.png) | ![](docs/images/13_mockup_scene.png) | ![](docs/images/17_send_to_layout_dialog.png) |
+
+| Assembly steps (one number hidden) | Guide PNG with the step legend |
+|---|---|
+| ![](docs/images/20_guide_step_numbers.png) | ![](docs/images/21_guide_png_legend.png) |
 
 ## Quick start
 

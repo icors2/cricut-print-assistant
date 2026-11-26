@@ -177,8 +177,8 @@ const FILES = ['wall_panel.png', 'floor_boards.png', 'window.png', 'sofa.png', '
   ok(e2.pdf !== e0.pdf && e2.svgs.join('\n') === e0.svgs.join('\n') && e2.code === e0.code && e2.pos === e0.pos, 'numbers ON: print PDF changes, cut SVGs byte-identical, sheet code and positions unchanged');
   fs.writeFileSync(path.join(OUT, 'sample-numbered-PRINT.pdf'), Buffer.from(e2.pdf, 'base64'));
   const tn = execFileSync('pdftotext', [path.join(OUT, 'sample-numbered-PRINT.pdf'), '-']).toString(), got = (tn.match(/\b\d+\b/g) || []).map(Number);
-  const want = lab.map(l => +l.t);
-  ok(JSON.stringify(got.slice().sort((a, b) => a - b)) === JSON.stringify(want.slice().sort((a, b) => a - b)), `numbered PDF text = the piece numbers (${got.length} labels: ${[...new Set(got)].sort((a, b) => a - b).join(',')})`);
+  const want = lab.filter(l => l.t !== 'sp').map(l => +l.t), nsp = (tn.match(/\bsp\b/g) || []).length;
+  ok(JSON.stringify(got.slice().sort((a, b) => a - b)) === JSON.stringify(want.slice().sort((a, b) => a - b)) && nsp === lab.length - want.length, `numbered PDF text = the piece numbers = assembly steps (${got.length} step labels: ${[...new Set(got)].sort((a, b) => a - b).join(',')}; ${nsp} spare copies labelled "sp")`);
   execFileSync('pdftoppm', ['-r', '60', '-f', '1', '-l', '1', '-png', path.join(OUT, 'sample-numbered-PRINT.pdf'), '/tmp/numbered']);
   await p.evaluate(() => window.scrollTo(0, 0)); await p.screenshot({ path: path.join(OUT, 'ui_layout_numbers.png') });
   // with calibration on, the numbers follow the print compensation (cut SVG still only changes with calibration, never with numbers)

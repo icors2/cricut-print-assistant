@@ -47,14 +47,16 @@ sample_output/              # test output (git-ignored, kept with .gitkeep)
 - Processing & layout.
 - Manual placement (pins).
 - Export: `buildPDF`, cut SVGs.
-- Optional piece numbers.
+- Optional piece numbers: `pieceLabels` uses `cutStepLabels(layout)` (the mockup's assembly steps) or falls back to `numOf`.
 - Calibration (targets, sheets, readings).
 - Wizard UI.
 - Preview.
 - UI wiring.
 - Undo/redo.
 - Interactive canvas.
-- Mockup (incl. background image: `mkBgRect`, `renderMkBg`, `mkBgToBackdrop`).
+- Mockup, including:
+  - the background image: `mkBgRect`, `renderMkBg`, `mkBgToBackdrop`;
+  - assembly steps: `mkSteps`, `legendRows`, `mkNumPos`, and the per-node `noNum` flag plus `MK.num = { show, size }`.
 - Send to Layout: `mkSendPlan`, `mkSendOpen`, `mkSendApply`.
 
 Everything the tests need is exposed on `window.CST`.
@@ -95,6 +97,12 @@ It writes the result to `index.html` and to `app/cricut_print_assistant.html`, t
    - Mockup moves, rotations, flips, layers, hiding, the guide and the background never change the print PDF or cut SVGs (`mock_test`, `mock_bg_test`).
    - Piece numbers OFF gives byte-identical output to the old behaviour. Numbers ON changes only the PDF, never the SVG.
    - Send to Layout gives the same exports as the equivalent hand-made layout (`mock_send_test`).
+9. **Assembly steps:**
+   - `mkSteps()` numbers the visible `MK.nodes` in array order. Index 0 is the bottom layer, drawn first. So #1 goes on first, every copy gets its own step, hidden layers get none, and the steps are always 1..N.
+   - The Layers list, the Selected panel, the canvas badges, the Guide PNG/PDF and their legends, the Layout card badges (`mkCardNums`) and the printed piece numbers all derive from it.
+   - Printed labels (`cutStepLabels`): copies of one image take its ascending steps in reading order (sheet, then `round(y·10)`, then x). Pieces beyond the mockup copies get `sp`. With no visible step, it falls back to the image number.
+   - Hiding a number (`noNum`, or `MK.num.show = 'none'`) only removes the badge. The step stays reserved and stays in the legend.
+   - None of this touches the cut SVG or the sheet code.
    - Hand-placed pins export exactly where they were dropped (`drag_test`).
 6. **Sizes are shared:** a mockup resize changes the item's real size, so the Layout and the cut change too. That's intended. Everything else in the Mockup is view-only.
 7. **Undo:** a Layout-tab change, including Send to Layout and Reset to auto-pack, is one undo step.
@@ -119,6 +127,7 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `persist_test.js`, `proj_test.js` | Storage, export/import, the embedded calibration, project save/open |
 | `drag_test.js` | Hand placement, snapping, undo, pins in exports |
 | `mock_test.js`, `mock_resize_test.js`, `mock_bg_test.js`, `mock_send_test.js` | The Mockup and its byte-identity guarantees |
+| `mock_steps_test.js` | Assembly-step numbering, number hiding (view/PNG/PDF), undo/persist, cut-sheet labels = guide steps |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
 Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene), plus the committed background test images in `samples/bg/`. All the art is made up.
@@ -135,6 +144,7 @@ Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene),
 ## Ideas backlog
 
 - Web Worker for `processItem`.
+- Leader lines/callouts that move crowded guide numbers into a margin, and "hide numbers in a selection box" (today: per-piece # toggles, Numbers: None, the size slider).
 - Score/draw layers (a separate SVG per operation).
 - Kiss-cut sheet outline option.
 - More paper presets and custom sizes in the UI.

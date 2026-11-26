@@ -43,7 +43,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
 .lrow,.arow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--b);border-radius:6px;margin-top:4px;background:#fff;font-size:12px}.lrow{cursor:pointer}.lrow.sel{border-color:var(--blu);box-shadow:0 0 0 2px rgba(31,111,235,.25)}.lrow.hid{opacity:.5}.lrow.missing{opacity:.45}.lrow.dragging{opacity:.4}
 .lrow img,.arow img,.limg{width:26px;height:26px;object-fit:contain;flex:none;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/8px 8px;border-radius:3px}.lname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.arow .lname{white-space:normal}
 .lnum{flex:none;min-width:20px;height:20px;border-radius:10px;border:1.5px solid #2b2f36;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
-.lhandle{cursor:grab;color:var(--mut);padding:0 2px;touch-action:none;user-select:none}.leye{border:none;background:none;cursor:pointer;font-size:13px}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
+.lhandle{cursor:grab;color:var(--mut);padding:0 2px;touch-action:none;user-select:none}.leye{border:none;background:none;cursor:pointer;font-size:13px}.lnumtog{border:1px solid #9aa3b0;background:#fff;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:0 4px;line-height:16px;color:#1d2733}.lnumtog.off{color:#b0b6bf;text-decoration:line-through;border-style:dashed}#mkLayers{position:relative;max-height:42vh;overflow:auto}.lmark{position:absolute;left:0;right:0;height:3px;background:var(--blu);border-radius:2px;pointer-events:none}
 .dropz{border:2px dashed var(--b);border-radius:8px;padding:12px;text-align:center;color:var(--mut);cursor:pointer;font-size:13px;margin-bottom:4px}.dropz.over{border-color:var(--blu);background:#eef4ff}#mkSelPanel.idle .mksize{display:none}.mksend{margin-top:8px;border-top:1px solid var(--b);padding-top:8px}label.chk{display:flex;align-items:center;gap:4px;font-size:12px;flex-direction:row}#mkSendDlg{max-width:520px;border:1px solid var(--b);border-radius:10px;padding:16px 18px;font-size:13px}#mkSendDlg::backdrop{background:rgba(20,25,35,.35)}#mkSendList{max-height:40vh;overflow:auto;margin:8px 0;padding-left:18px}#mkSendList li{margin:2px 0}#mkSendList .gone{color:#a33;text-decoration:line-through}#mkSendList .zero{color:var(--mut)}#mkSendSum b{font-size:14px}.mksize{margin-top:8px;border-top:1px solid var(--b);padding-top:6px}.bgctl{border:1px solid var(--b);border-radius:8px;padding:6px 8px;margin:4px 0 8px;background:#fafbfc}.bgline{display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0}.bgline input[type=range]{flex:1}.bgline .sm,input.sm{width:56px}#mkBgAdj.on{background:#fff1dc;border-color:#e07b00;color:#8a4b00}
 #mkSelPanel .btns{gap:4px;margin-top:6px}#mkSelPanel.idle .btns{display:none}#mkSelName{font-size:12px}#mkSelPanel:not(.idle) #mkSelName{font-weight:600}.mini.on{background:#eef4ff;border-color:#9bbcf5}
 #mkCanvas{touch-action:none;outline:none;box-shadow:none}.mkbox{background:#cfd5de;border-radius:8px;padding:10px;text-align:center;overflow:auto;max-height:calc(100vh - 120px)}
@@ -117,6 +117,7 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
   </div>
   <div class="panel" id="mkSelPanel"><h2>Selected piece</h2><div id="mkSelName"></div>
     <div class="btns"><span style="font-size:12px">Angle °</span><input type="number" step="1" id="mkAngle" style="width:70px;padding:3px 5px;border:1px solid var(--b);border-radius:5px"><button class="mini" id="mkRotL" title="−15°">↺ 15°</button><button class="mini" id="mkRotR" title="+15° (R)">↻ 15°</button><button class="mini" id="mkRot0">0°</button><button class="mini" id="mkFlip" title="Mirror left-right (F)">⇋ Flip</button></div>
+    <div class="btns"><label class="chk" title="Untick to hide this piece's number on the guide (canvas, Guide PNG and PDF). Its outline and legend entry stay, and it keeps its step so the order stays right."><input type="checkbox" id="mkSelNum"> Show this piece's number in the guide</label></div>
     <div class="btns"><button class="mini" id="mkFront" title="Shift+]">⤒ To front</button><button class="mini" id="mkFwd" title="]">↑ Forward</button><button class="mini" id="mkBack" title="[">↓ Backward</button><button class="mini" id="mkToBack" title="Shift+[">⤓ To back</button><button class="mini" id="mkDup" title="D">⧉ Add another</button><button class="mini" id="mkDel" title="Delete">🗑 Remove</button></div>
     <div class="mksize"><div class="grid" style="grid-template-columns:1fr auto 1fr">
       <label><span>Width (<span class="mku"></span>)</span><input type="number" step="any" id="mkSW"></label><button type="button" class="link" id="mkSLink" style="align-self:end;margin-bottom:3px">🔗</button><label><span>Height (<span class="mku"></span>)</span><input type="number" step="any" id="mkSH"></label></div>
@@ -133,8 +134,9 @@ table{border-collapse:collapse}td,th{border:1px solid var(--b);padding:4px 8px;t
     <input type="file" id="mkFile" multiple accept=".png,.jpg,.jpeg,.svg,.webp,.gif,image/*" style="display:none"><div id="mkAdd"></div></div>
   <div class="panel"><h2>Assembly guide &amp; export</h2>
     <div class="row"><label>Show<select id="mkGuide"><option value="off">Finished mockup</option><option value="outline">Guide: numbered outlines only</option><option value="ghost">Guide: ghosted images + numbered outlines</option></select></label><label>Ghost opacity<input type="range" id="mkGhost" min="0.05" max="0.8" step="0.05"></label></div>
+    <div class="row" id="mkNumRow"><label>Numbers<select id="mkNumShow"><option value="all">All (except ones hidden with #)</option><option value="none">None: outlines + legend only</option></select></label><label>Number size <span id="mkNumSizeV" class="muted"></span><input type="range" id="mkNumSize" min="50" max="200" step="10"></label><button class="mini" id="mkNumAll" style="align-self:end" title="Show every number again">Show all numbers</button></div>
     <div class="btns"><button class="btn sec" id="mkExpPNG">⬇ Mockup PNG</button><button class="btn sec" id="mkExpGuidePNG">⬇ Guide PNG</button><button class="btn sec" id="mkExpGuidePDF">⬇ Guide PDF (true size)</button></div>
-    <p class="muted" style="font-size:12px;margin:8px 0 0">The guide shows each piece's outline with its number (#n = image n in the Layout list), plus a legend. Print the PDF at 100%: it's the backdrop at true size (enlarged for your printer when calibration is on). Turn on "Print piece numbers" on the Layout tab to number the stickers on the cut sheet too.</p></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">The guide numbers every piece in the order to stick them on: #1 is the bottom layer (goes on first), the top layer gets the highest number. Each copy has its own step; hidden layers are skipped. Crowded spot? Click a layer's # (or untick it under Selected piece) to hide just that number, or set Numbers to None. The legend still lists every step. Print the PDF at 100%: it's the backdrop at true size (enlarged for your printer when calibration is on). Turn on "Print piece numbers" on the Layout tab to number the stickers on the cut sheet too.</p></div>
 </div>
 <div class="stage">
   <div class="toolbar2"><button class="mini" id="mkUndo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="mini" id="mkRedo" title="Redo (Ctrl+Y)">↷ Redo</button><span class="sep"></span>
@@ -1388,7 +1390,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
   }
   // ---------- optional piece numbers on the print (OFF by default; print PDF + preview only, never the cut SVG) ----------
-  const numOf = (it) => items.indexOf(it) + 1; // #n = the image's position in the list; the Mockup guide uses the same numbers
+  const numOf = (it) => items.indexOf(it) + 1; // image number = position in the list (printed numbers when there is no mockup)
+  /** assembly steps: #n = application order in the Mockup, #1 = the bottom-most visible layer (goes on first). Every copy has its own step; hidden layers get none, so the steps stay 1..N */
+  function mkSteps() { const m = new Map(); let k = 0; for (const n of MK.nodes) { if (n.hidden || !nodeItem(n)) continue; m.set(n, ++k); } return m; }
+  /** steps of one image, ascending */
+  const stepsOf = (it, st) => { const o = []; for (const [n, k] of (st || mkSteps())) if (nodeItem(n) === it) o.push(k); return o; };
+  /** short badge text for an image card / the Add list: its steps, or its image number when the mockup is empty */
+  function stepBadge(it, st) { st = st || mkSteps(); if (!st.size) return { t: '#' + numOf(it), tip: `Image ${numOf(it)}: printed as #${numOf(it)} when "Print piece numbers" is on (no mockup yet)` };
+    const s = stepsOf(it, st); if (!s.length) return { t: 'sp', tip: 'Not in the mockup (or only hidden layers): printed as "sp" (spare) when "Print piece numbers" is on' };
+    return { t: '#' + (s.length > 3 ? s.slice(0, 2).join(',#') + ',…' : s.join(',#')), tip: `Assembly step${s.length > 1 ? 's' : ''} #${s.join(', #')} in the Mockup guide (#1 goes on first). "Print piece numbers" prints these on the cut sheet.` }; }
+  /** printed piece numbers with a mockup: each piece = an assembly step. Copies of one image take that image's steps in reading order
+   *  (sheet 1 first, then top to bottom, left to right); pieces beyond the copies in the mockup print 'sp' (spare). No visible mockup piece -> null (image numbers, as before). */
+  function cutStepLabels(L) { const st = mkSteps(); if (!st.size || !L) return null; const by = new Map(), out = new Map();
+    for (const [n, k] of st) { const it = nodeItem(n); if (!by.has(it)) by.set(it, []); by.get(it).push(k); }
+    const all = []; L.sheets.forEach((pl, si) => pl.forEach(e => all.push({ si, e, ry: Math.round(e.y * 10) })));
+    all.sort((a, b) => a.si - b.si || a.ry - b.ry || a.e.x - b.e.x);
+    const used = new Map(); for (const { e } of all) { const s = by.get(e.it) || [], i = used.get(e.it) || 0; used.set(e.it, i + 1); out.set(e.key, i < s.length ? String(s[i]) : 'sp'); }
+    return out; }
   const flatCache = new WeakMap();
   function flatLoops(p) { let f = flatCache.get(p); if (f) return f;
     f = p.loops.map(l => { const pts = []; let cx = 0, cy = 0;
@@ -1402,8 +1420,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return c % 2 === 1; }
   /** label boxes for one sheet: on the waste inside the piece's cut box (contour corners) or just outside it, ≥ LABEL_CLEAR from every cut; inside the sticker only as a last resort */
   const LABEL_H = 0.085, LABEL_CLEAR = 0.03;
-  function pieceLabels(pl, sh) { const out = [], H = LABEL_H, mg = LABEL_CLEAR, pm = Math.max(S.printerMargin || 0, 0.05);
-    for (const e of pl) { const t = String(numOf(e.it)), W = 0.05 * t.length + 0.045, x = e.x, y = e.y, w = e.p.cutW, h = e.p.cutH, gap = Math.max(mg, (S.spacing - H) / 2);
+  function pieceLabels(pl, sh) { const out = [], H = LABEL_H, mg = LABEL_CLEAR, pm = Math.max(S.printerMargin || 0, 0.05), SL = cutStepLabels(layout);
+    for (const e of pl) { const t = SL ? (SL.get(e.key) || 'sp') : String(numOf(e.it)), W = 0.05 * t.length + 0.045, x = e.x, y = e.y, w = e.p.cutW, h = e.p.cutH, gap = Math.max(mg, (S.spacing - H) / 2);
       const c = [];
       for (const [fx, fy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) c.push([x + mg + fx * (w - W - 2 * mg), y + mg + fy * (h - H - 2 * mg)]);
       c.push([x + w / 2 - W / 2, y + h + gap], [x, y + h + gap], [x + w - W, y + h + gap], [x + w / 2 - W / 2, y - H - gap], [x, y - H - gap], [x + w - W, y - H - gap], [x - W - gap, y + h / 2 - H / 2], [x + w + gap, y + h / 2 - H / 2]);
@@ -1674,7 +1692,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (it.lockAR == null) it.lockAR = true;
       const card = document.createElement('div'); card.className = 'item' + (it.collapsed ? ' collapsed' : '') + (sel.itemId === it.id ? ' sel' : ''); card.dataset.id = it.id;
       const p = processed(it, false);
-      card.innerHTML = `<div class="ihead"><img src="${it.dataURL}" alt=""><div class="ititle"><div class="inrow"><span class="inum" title="Piece number (Mockup guide / printed numbers)">#${numOf(it)}</span><div class="iname" title="${esc(it.name)}">${esc(it.name)}</div></div><div class="isum">${cardSummary(it)}</div></div><button class="x" title="Remove this image">✕</button><button class="chev" title="${it.collapsed ? 'Expand' : 'Collapse'}" aria-expanded="${!it.collapsed}">▾</button></div>
+      card.innerHTML = `<div class="ihead"><img src="${it.dataURL}" alt=""><div class="ititle"><div class="inrow"><span class="inum" data-iid="${it.id}"></span><div class="iname" title="${esc(it.name)}">${esc(it.name)}</div></div><div class="isum">${cardSummary(it)}</div></div><button class="x" title="Remove this image">✕</button><button class="chev" title="${it.collapsed ? 'Expand' : 'Collapse'}" aria-expanded="${!it.collapsed}">▾</button></div>
         <div class="ibody"><div class="grid">
           <label>Width (${S.unit})<span class="wrow"><span data-f="w"></span><button type="button" class="link${it.lockAR ? ' on' : ''}" title="${it.lockAR ? 'Aspect ratio locked: width and height change together. Click to unlink.' : 'Aspect ratio unlocked: width and height change separately. Click to link.'}">${it.lockAR ? '🔗' : '⛓︎‍💥'}</button></span></label><label>Height (${S.unit})<span data-f="h"></span></label><label>Qty<span class="qrow"><span data-f="q"></span><button type="button" class="pp fill" title="Raise the quantity until the current sheet(s) are full">Fill</button></span></label>
           <label>Scale % <span class="hint">100% = original size (${it.isSvg ? 'SVG\'s own size' : 'image pixels at ' + BASE_DPI + ' dpi'}: ${fmtLen(it.baseWIn)} wide)</span><span class="pctrow"><span data-f="pct"></span>${[25, 50, 75, 100].map(v => `<button type="button" class="pp" data-p="${v}">${v}%</button>`).join('')}</span></label>
@@ -1703,7 +1721,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       $('.ihead', card).onclick = (ev) => { if (ev.target.closest('button')) return; selectItem(it); };
       list.append(card);
     }
-    applyFilter(); renderImgSummary();
+    applyFilter(); renderImgSummary(); mkCardNums();
   }
   function setCollapsed(it, card, v) { it.collapsed = v; card = card || cardOf(it); if (!card) return; card.classList.toggle('collapsed', v); const b = $('.chev', card); b.title = v ? 'Expand' : 'Collapse'; b.setAttribute('aria-expanded', String(!v)); }
   const cardOf = (it) => $(`#items .item[data-id="${it.id}"]`);
@@ -1713,7 +1731,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function renderImgSummary() { const L = layout, el = $('#imgSummary'); if (!el || !L) return; const n = L.sheets.reduce((t, s) => t + s.length, 0), want = items.reduce((t, i) => t + i.qty, 0);
     el.textContent = items.length ? `${items.length} image${items.length === 1 ? '' : 's'} · ${n}${want > n ? '/' + want : ''} piece${want === 1 ? '' : 's'} · ${L.sheets.length} sheet${L.sheets.length === 1 ? '' : 's'}` : '';
     $('#imgTools').style.display = items.length ? '' : 'none'; }
-  function refreshCardSummaries() { for (const it of items) { const c = cardOf(it); if (c) $('.isum', c).innerHTML = cardSummary(it); } renderImgSummary(); }
+  function refreshCardSummaries() { for (const it of items) { const c = cardOf(it); if (c) $('.isum', c).innerHTML = cardSummary(it); } renderImgSummary(); mkCardNums(); }
   function highlightCards() { $$('#items .item').forEach(c => c.classList.toggle('sel', sel.itemId != null && c.dataset.id === String(sel.itemId))); }
   function selectItem(it) { sel = { key: null, itemId: it ? it.id : null }; highlightCards();
     if (it && layout) { const onCur = (layout.sheets[curSheet] || []).some(e => e.it === it); if (!onCur) { const si = layout.sheets.findIndex(s => s.some(e => e.it === it)); if (si >= 0) { curSheet = si; renderStatus(); } } }
@@ -1982,13 +2000,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
   // ---------- Mockup / Assemble (view only: never changes the cut layout, sizes or any export of the Layout tab) ----------
   const MK_PRESETS = { 'letter-P': ['Letter portrait', 8.5, 11], 'letter-L': ['Letter landscape', 11, 8.5], 'a4-P': ['A4 portrait', 8.268, 11.693], 'a4-L': ['A4 landscape', 11.693, 8.268], 'sq12': ['12 × 12 in', 12, 12], '8x10': ['8 × 10 in', 8, 10], '10x8': ['10 × 8 in', 10, 8], '5x7': ['5 × 7 in', 5, 7], 'custom': ['Custom size', null, null] };
-  const mkDefault = () => ({ v: 1, bg: { preset: 'letter-P', w: 8.5, h: 11, color: '#fbf3ec', img: null, fit: 'fill', scale: 100, ox: 0, oy: 0, rot: 0, opacity: 1, dpi: 150 }, guide: 'off', ghost: 0.3, snap: true, nodes: [], skip: {}, nextUid: 1 });
-  function mkLoad(d) { const m = mkDefault(); if (!d || typeof d !== 'object') return m; Object.assign(m, d); m.bg = Object.assign(mkDefault().bg, d.bg || {}); m.skip = d.skip || {};
-    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden }));
+  const mkDefault = () => ({ v: 1, bg: { preset: 'letter-P', w: 8.5, h: 11, color: '#fbf3ec', img: null, fit: 'fill', scale: 100, ox: 0, oy: 0, rot: 0, opacity: 1, dpi: 150 }, guide: 'off', ghost: 0.3, snap: true, num: { show: 'all', size: 100 }, nodes: [], skip: {}, nextUid: 1 });
+  const mkNumDef = () => ({ show: 'all', size: 100 });
+  function mkLoad(d) { const m = mkDefault(); if (!d || typeof d !== 'object') return m; Object.assign(m, d); m.bg = Object.assign(mkDefault().bg, d.bg || {}); m.skip = d.skip || {}; m.num = Object.assign(mkNumDef(), d.num || {});
+    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden, noNum: !!n.noNum }));
     m.nextUid = Math.max(m.nextUid || 1, ...m.nodes.map(n => (n.uid || 0) + 1)); m.nodes.forEach(n => { if (!n.uid) n.uid = m.nextUid++; }); return m; }
   let MK = (() => { try { return mkLoad(JSON.parse(STORE.get('cst.mockup') || 'null')); } catch (e) { return mkDefault(); } })();
-  const mkSerial = (withIdx) => ({ v: 1, bg: MK.bg, guide: MK.guide, ghost: MK.ghost, snap: MK.snap, skip: MK.skip, nextUid: MK.nextUid,
-    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
+  const mkSerial = (withIdx) => ({ v: 1, bg: MK.bg, guide: MK.guide, ghost: MK.ghost, snap: MK.snap, skip: MK.skip, nextUid: MK.nextUid, num: MK.num,
+    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (n.noNum) o.noNum = true; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
   let mkSaveT = null;
   function mkAutosave() { clearTimeout(mkSaveT); mkSaveT = setTimeout(() => { try { STORE.set('cst.mockup', JSON.stringify(mkSerial(false))); }
     catch (e) { try { STORE.set('cst.mockup', JSON.stringify(Object.assign(mkSerial(false), { bg: Object.assign({}, MK.bg, { img: null }) }))); } catch (e2) { /* storage full */ } } }, 250); }
@@ -2014,7 +2033,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     for (let y = 0.25; y + h <= B.h - 0.1; y += 0.25) for (let x = 0.25; x + w <= B.w - 0.1; x += 0.25) { if (boxes.every(b => x + w + g <= b.x0 || b.x1 + g <= x || y + h + g <= b.y0 || b.y1 + g <= y)) return { x: x + w / 2, y: y + h / 2 }; }
     return { x: B.w / 2 + (Math.random() - 0.5) * 0.5, y: B.h / 2 + (Math.random() - 0.5) * 0.5 }; }
   function mkAdd(it, near) { const p = processed(it, false), c = near ? { x: Math.min(MK.bg.w, near.x + 0.35), y: Math.min(MK.bg.h, near.y + 0.35) } : mkFreeSpot(p.cutW, p.cutH);
-    const n = { uid: MK.nextUid++, name: it.name, itemId: it.id, x: c.x, y: c.y, rot: near ? near.rot : 0, flip: near ? near.flip : false, hidden: false }; MK.nodes.push(n); delete MK.skip[it.name]; return n; }
+    const n = { uid: MK.nextUid++, name: it.name, itemId: it.id, x: c.x, y: c.y, rot: near ? near.rot : 0, flip: near ? near.flip : false, hidden: false, noNum: false }; MK.nodes.push(n); delete MK.skip[it.name]; return n; }
   /** one instance of every image (unless the user deleted all of an image's instances); keeps dormant nodes of images not loaded right now */
   function mkEnsure() { let added = 0; for (const it of items) if (!MK.nodes.some(n => nodeItem(n) === it) && !MK.skip[it.name]) { mkAdd(it); added++; } return added; }
   const mkLive = () => MK.nodes.filter(n => nodeItem(n));
@@ -2037,9 +2056,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (o.mode !== 'outline') { g.save(); g.globalAlpha = o.mode === 'ghost' ? (o.ghost != null ? o.ghost : MK.ghost) : 1; g.clip(P, 'evenodd'); const pr = G.p.print; g.drawImage(pr.canvas, pr.x, pr.y, pr.w, pr.h); g.restore(); }
       if (marks) { g.lineWidth = Math.max(1.2, sc / 60) / sc; g.strokeStyle = '#2b2f36'; g.setLineDash([6 / sc, 3 / sc]); g.stroke(P); g.setLineDash([]); }
       g.restore(); }
-    if (marks) { const r = Math.max(0.09, 11 / sc); g.font = `bold ${r * 1.15}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      const pos = mkNumPos(live, r * 1.15);
-      for (const [n, G] of live) { const t = String(numOf(G.it)), [x, y] = pos.get(n); g.beginPath(); g.arc(x, y, r * (t.length > 1 ? 1.15 : 1), 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5 / sc; g.strokeStyle = '#2b2f36'; g.stroke(); g.fillStyle = '#1d2733'; g.fillText(t, x, y + r * 0.06); } }
+    if (marks && MK.num.show !== 'none') { const st = mkSteps(), r = Math.max(0.09, 11 / sc) * mkNumScale(); g.font = `bold ${r * 1.15}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      const shown = live.filter(([n]) => !n.noNum), pos = mkNumPos(shown, r * 1.15, live);
+      for (const [n] of shown) { const t = String(st.get(n)), [x, y] = pos.get(n); g.beginPath(); g.arc(x, y, r * badgeK(t), 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5 / sc; g.strokeStyle = '#2b2f36'; g.stroke(); g.fillStyle = '#1d2733'; g.fillText(t, x, y + r * 0.06); } }
     if (o.ui) {
       g.strokeStyle = '#e0115f'; g.lineWidth = 1 / sc; g.setLineDash([4 / sc, 3 / sc]); for (const l of mkSnapLines) { g.beginPath(); if (l.x != null) { g.moveTo(l.x, -1); g.lineTo(l.x, B.h + 1); } else { g.moveTo(-1, l.y); g.lineTo(B.w + 1, l.y); } g.stroke(); } g.setLineDash([]);
       const n = mkSel, G = n && !n.hidden && ng(n);
@@ -2049,10 +2068,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const hy = -H / 2 - 24 / sc; g.beginPath(); g.moveTo(0, -G.h / 2); g.lineTo(0, hy); g.stroke(); g.beginPath(); g.arc(0, hy, 6 / sc, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.stroke(); g.restore(); } }
     g.restore(); }
   /** number badge spots: on the piece itself where no piece in front covers it, away from other badges; falls back to the centre */
-  function mkNumPos(list, r) { const out = new Map(), used = []; hitCtx = hitCtx || document.createElement('canvas').getContext('2d');
+  const mkNumScale = () => Math.max(0.3, Math.min(3, (+MK.num.size || 100) / 100));
+  const badgeK = (t) => t.length > 2 ? 1.4 : t.length > 1 ? 1.15 : 1;
+  function mkNumPos(list, r, all) { all = all || list; const out = new Map(), used = []; hitCtx = hitCtx || document.createElement('canvas').getContext('2d');
     const onPiece = (n, G, x, y) => { const [lx, ly] = toLocal(n, x, y); return Math.abs(lx) <= G.w / 2 && Math.abs(ly) <= G.h / 2 && hitCtx.isPointInPath(loopPath(G.p), lx + G.w / 2, ly + G.h / 2, 'evenodd'); };
     const order = MK.nodes;
-    for (const [n, G] of list) { const b = nodeAABB(n, G), above = list.filter(([m]) => order.indexOf(m) > order.indexOf(n));
+    for (const [n, G] of list) { const b = nodeAABB(n, G), above = all.filter(([m]) => order.indexOf(m) > order.indexOf(n));
       const good = (x, y) => used.every(([u, v]) => Math.hypot(u - x, v - y) >= 2.3 * r) && [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dy]) => onPiece(n, G, x + dx, y + dy) && !above.some(([m, H]) => onPiece(m, H, x + dx, y + dy)));
       const cand = [[n.x, n.y]]; const N = 9; for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) cand.push([b.x0 + (b.x1 - b.x0) * i / N, b.y0 + (b.y1 - b.y0) * j / N]);
       cand.sort((p, q) => Math.hypot(p[0] - n.x, p[1] - n.y) - Math.hypot(q[0] - n.x, q[1] - n.y));
@@ -2095,10 +2116,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   // undo / redo (positions, angles, flips, order, visibility, backdrop)
   const mkSizes = () => items.map(it => [it.id, it.wIn, it.hIn, it.pct, it.lockAR]);
-  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip]);
-  const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip) });
-  function mkCommit() { const s = mkSnap(); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
-  function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
+  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num]);
+  const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
+  function mkCommit() { mkCardNums(); const s = mkSnap(); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); }
+  function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); MK.num = Object.assign(mkNumDef(), s.num || {}); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
     let sized = false; for (const [id, w, h, pct, lock] of s.sizes || []) { const it = items.find(i => i.id === id); if (it && (it.wIn !== w || it.hIn !== h || it.lockAR !== lock)) { it.wIn = w; it.hIn = h; it.pct = pct; it.lockAR = lock; sized = true; } }
     if (sized) refresh(true); else renderMock(true); }
   /** image size is shared with the Layout tab (and every copy on the cut sheet) */
@@ -2119,35 +2140,36 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     mkBgLoad(); const B = MK.bg;
     $('#mkPreset').value = B.preset in MK_PRESETS ? B.preset : 'custom'; $('#mkW').value = +toU(B.w).toFixed(3); $('#mkH').value = +toU(B.h).toFixed(3); $('#mkColor').value = B.color || '#ffffff'; renderMkBg();
     $$('.mku').forEach(e => e.textContent = S.unit); $('#mkGuide').value = MK.guide; $('#mkGhost').value = MK.ghost; $('#mkSnap').checked = MK.snap !== false;
+    $('#mkNumShow').value = MK.num.show === 'none' ? 'none' : 'all'; $('#mkNumSize').value = Math.round(+MK.num.size || 100); $('#mkNumSizeV').textContent = $('#mkNumSize').value + '%'; $('#mkNumRow').style.display = MK.guide === 'off' ? 'none' : '';
     $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     // layers (front first)
-    const L = $('#mkLayers'); L.innerHTML = ''; const order = MK.nodes.slice().reverse();
+    const L = $('#mkLayers'); L.innerHTML = ''; const order = MK.nodes.slice().reverse(), st = mkSteps(), gm = MK.guide !== 'off';
     if (!MK.nodes.length) L.innerHTML = '<div class="empty">No pieces yet. Add images on the Layout tab.</div>';
     for (const n of order) { const it = nodeItem(n), row = document.createElement('div'); row.className = 'lrow' + (n === mkSel ? ' sel' : '') + (n.hidden ? ' hid' : '') + (it ? '' : ' missing'); row.dataset.uid = n.uid;
       const same = it ? MK.nodes.filter(m => nodeItem(m) === it) : [], idx = same.indexOf(n);
-      row.innerHTML = `<span class="lhandle" title="Drag to reorder">⋮⋮</span><span class="lnum">${it ? numOf(it) : '–'}</span>${it ? `<img src="${it.dataURL}" alt="">` : '<span class="limg"></span>'}<span class="lname" title="${esc(n.name || '')}">${esc(it ? it.name : (n.name || '?') + ' (image not loaded)')}${same.length > 1 ? ` <span class="muted">(${idx + 1})</span>` : ''}</span><button class="leye" title="${n.hidden ? 'Show' : 'Hide'}">${n.hidden ? '◌' : '👁'}</button><button class="x" title="Remove from the mockup">✕</button>`;
+      row.innerHTML = `<span class="lhandle" title="Drag to reorder">⋮⋮</span><span class="lnum" title="${st.get(n) ? `Assembly step ${st.get(n)}: #1 (bottom layer) goes on first` : 'Hidden layers get no step'}">${st.get(n) || '–'}</span>${it ? `<img src="${it.dataURL}" alt="">` : '<span class="limg"></span>'}<span class="lname" title="${esc(n.name || '')}">${esc(it ? it.name : (n.name || '?') + ' (image not loaded)')}${same.length > 1 ? ` <span class="muted">(${idx + 1})</span>` : ''}</span>${gm ? `<button class="lnumtog${n.noNum ? ' off' : ''}" title="${n.noNum ? 'Number hidden on the guide (outline and legend still show it). Click to show it.' : 'Hide this number on the guide (keeps the outline, the legend entry and its step)'}">#</button>` : ''}<button class="leye" title="${n.hidden ? 'Show' : 'Hide'}">${n.hidden ? '◌' : '👁'}</button><button class="x" title="Remove from the mockup">✕</button>`;
       row.onclick = (ev) => { if (ev.target.closest('button') || ev.target.closest('.lhandle')) return; mkSelect(n); };
       $('.leye', row).onclick = () => { n.hidden = !n.hidden; if (n.hidden && mkSel === n) mkSel = null; mkChanged(true); };
-      $('.x', row).onclick = () => mkDelete(n);
+      $('.x', row).onclick = () => mkDelete(n); if (gm) $('.lnumtog', row).onclick = () => { n.noNum = !n.noNum; mkChanged(true); };
       $('.lhandle', row).addEventListener('pointerdown', (ev) => mkLayerDrag(ev, n, row));
       L.append(row); }
     // add list
     const A = $('#mkAdd'); A.innerHTML = '';
     if (!items.length) A.innerHTML = '<div class="empty">Add images on the Layout tab first.</div>';
     for (const it of items) { const k = MK.nodes.filter(n => nodeItem(n) === it).length, p = processed(it, false), r = document.createElement('div'); r.className = 'arow';
-      r.innerHTML = `<span class="lnum">${numOf(it)}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
+      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/^#/, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
       $('button', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); }; A.append(r); }
     renderMkSel(); renderMockCanvas(); }
   function renderMkSel() { const P = $('#mkSelPanel'), n = mkSel, G = n && ng(n); $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     P.classList.toggle('idle', !G); $$('#mkSelPanel button, #mkSelPanel input').forEach(b => b.disabled = !G);
     if (!G) { $('#mkSelName').textContent = 'Click a piece to select it. Drag to move, drag the round handle to rotate (Shift = 15° steps).'; return; }
-    const i = MK.nodes.indexOf(n); $('#mkSelName').textContent = `#${numOf(G.it)} ${G.it.name} · ${fmtShort(G.w)} × ${fmtShort(G.h)} · layer ${MK.nodes.length - i} of ${MK.nodes.length}`;
+    const i = MK.nodes.indexOf(n), sn = mkSteps().get(n); $('#mkSelName').textContent = `${sn ? `Step #${sn}` : 'Hidden'} · ${G.it.name} · ${fmtShort(G.w)} × ${fmtShort(G.h)} · layer ${MK.nodes.length - i} of ${MK.nodes.length}`;
     if (document.activeElement !== $('#mkAngle')) $('#mkAngle').value = +(+n.rot).toFixed(1);
     const it = G.it; if (it.lockAR == null) it.lockAR = true;
     if (document.activeElement !== $('#mkSW')) $('#mkSW').value = +toU(it.wIn).toFixed(4); if (document.activeElement !== $('#mkSH')) $('#mkSH').value = +toU(it.hIn).toFixed(4); if (document.activeElement !== $('#mkSPct')) $('#mkSPct').value = +pctOf(it).toFixed(1);
     const lk = $('#mkSLink'); lk.classList.toggle('on', !!it.lockAR); lk.textContent = it.lockAR ? '🔗' : '⛓︎‍💥'; lk.title = it.lockAR ? 'Aspect ratio locked (corner handles too; hold Shift to unlock while dragging). Click to unlink.' : 'Aspect ratio unlocked: W and H change separately. Click to link.';
-    const copies = MK.nodes.filter(m => nodeItem(m) === it).length; $('#mkSizeNote').textContent = `Size applies to every copy of #${numOf(it)} (${copies} here, qty ${it.qty} on the cut sheet) and to the Layout tab. Cut size ${fmtShort(G.w)} × ${fmtShort(G.h)}.`;
-    $('#mkFlip').classList.toggle('on', !!n.flip);
+    const copies = MK.nodes.filter(m => nodeItem(m) === it).length; $('#mkSizeNote').textContent = `Size applies to every copy of ${it.name} (${copies} here, qty ${it.qty} on the cut sheet) and to the Layout tab. Cut size ${fmtShort(G.w)} × ${fmtShort(G.h)}.`;
+    $('#mkFlip').classList.toggle('on', !!n.flip); $('#mkSelNum').checked = !n.noNum;
     $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', +r.dataset.uid === n.uid)); }
   function mkSelect(n) { mkSel = n; $$('#mkLayers .lrow').forEach(r => r.classList.toggle('sel', n && +r.dataset.uid === n.uid)); const r = n && $(`#mkLayers .lrow[data-uid="${n.uid}"]`); if (r) r.scrollIntoView({ block: 'nearest' }); renderMkSel(); renderMockCanvas(); }
   function mkDelete(n) { const it = nodeItem(n); MK.nodes = MK.nodes.filter(m => m !== n); if (it && !MK.nodes.some(m => nodeItem(m) === it)) MK.skip[it.name] = true; if (mkSel === n) mkSel = null; mkChanged(true); }
@@ -2238,7 +2260,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $('#mkUndo').onclick = mkUndoFn; $('#mkRedo').onclick = mkRedoFn;
     $('#mkZoomIn').onclick = () => mkZoom((MK.zoom || 1) * 1.25); $('#mkZoomOut').onclick = () => mkZoom((MK.zoom || 1) / 1.25); $('#mkZoomFit').onclick = () => mkZoom(1);
     $('#mkSnap').onchange = () => { MK.snap = $('#mkSnap').checked; mkAutosave(); };
-    $('#mkGuide').onchange = () => { MK.guide = $('#mkGuide').value; mkAutosave(); renderMockCanvas(); };
+    $('#mkGuide').onchange = () => { MK.guide = $('#mkGuide').value; mkAutosave(); renderMock(true); };
+    $('#mkNumShow').onchange = () => { MK.num.show = $('#mkNumShow').value; mkChanged(true); };
+    $('#mkNumSize').oninput = () => { MK.num.size = +$('#mkNumSize').value; $('#mkNumSizeV').textContent = MK.num.size + '%'; renderMockCanvas(); }; $('#mkNumSize').onchange = () => { MK.num.size = +$('#mkNumSize').value; mkChanged(false); };
+    $('#mkNumAll').onclick = () => { MK.nodes.forEach(n => { n.noNum = false; }); MK.num.show = 'all'; mkChanged(true); };
+    $('#mkSelNum').onchange = () => { if (mkSel) { mkSel.noNum = !$('#mkSelNum').checked; mkChanged(true); } };
     $('#mkGhost').oninput = () => { MK.ghost = +$('#mkGhost').value; mkAutosave(); renderMockCanvas(); };
     $('#mkPreset').onchange = () => { const v = $('#mkPreset').value, P = MK_PRESETS[v]; MK.bg.preset = v; if (P && P[1]) { MK.bg.w = P[1]; MK.bg.h = P[2]; } mkChanged(true); };
     const dim = (k) => () => { const v = fromU(parseFloat($(k === 'w' ? '#mkW' : '#mkH').value)); if (isFinite(v) && v >= 1 && v <= 120) { MK.bg[k] = v; MK.bg.preset = 'custom'; mkChanged(true); } };
@@ -2296,14 +2322,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function mkRaster(mode, dpi, extraH) { const B = MK.bg, sc = Math.min(dpi, 5000 / Math.max(B.w, B.h)), c = document.createElement('canvas'); c.width = Math.round(B.w * sc); c.height = Math.round(B.h * sc) + (extraH ? Math.round(extraH * sc) : 0);
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); mkDraw(g, { sc, pad: 0, mode, ui: false }); return { c, g, sc }; }
   const guideMode = () => MK.guide === 'off' ? 'outline' : MK.guide;
-  function legendRows() { const seen = new Map(); for (const n of mkLive()) { if (n.hidden) continue; const it = nodeItem(n); seen.set(it, (seen.get(it) || 0) + 1); }
-    return [...seen.entries()].sort((a, b) => numOf(a[0]) - numOf(b[0])).map(([it, k]) => ({ n: numOf(it), it, k })); }
+  /** one row per assembly step, in order: step, image, size; noNum = its number is hidden on the picture */
+  function legendRows() { const out = []; for (const [n, k] of mkSteps()) { const it = nodeItem(n), p = processed(it, false); out.push({ n: k, it, node: n, w: p.cutW, h: p.cutH, noNum: MK.num.show === 'none' || !!n.noNum }); } return out; }
+  const legendNote = (r) => r.noNum ? ' (number not shown on the picture)' : '';
   function mockPNG() { return mkRaster('off', 150).c.toDataURL('image/png'); }
-  function guidePNG() { const rows = legendRows(), lh = 0.32, cols = 2, extra = 0.5 + Math.ceil(rows.length / cols) * lh, r = mkRaster(guideMode(), 150, extra), g = r.g, sc = r.sc, B = MK.bg;
+  function guidePNG() { const rows = legendRows(), B = MK.bg, lh = 0.36, cols = B.w >= 6 ? 2 : 1, extra = 0.62 + Math.ceil(rows.length / cols) * lh, r = mkRaster(guideMode(), 150, extra), g = r.g, sc = r.sc;
     g.save(); g.scale(sc, sc); g.translate(0, B.h); g.fillStyle = '#fff'; g.fillRect(0, 0, B.w, extra); g.strokeStyle = '#999'; g.lineWidth = 1 / sc; g.beginPath(); g.moveTo(0, 0.02); g.lineTo(B.w, 0.02); g.stroke();
-    g.fillStyle = '#1d2733'; g.font = `bold ${0.17}px sans-serif`; g.textBaseline = 'middle'; g.fillText('Assembly guide: put each sticker on its numbered outline', 0.2, 0.22);
-    g.font = `${0.15}px sans-serif`; rows.forEach((r, i) => { const x = 0.2 + (i % cols) * (B.w / cols), y = 0.5 + Math.floor(i / cols) * lh + lh / 2; g.beginPath(); g.arc(x + 0.1, y, 0.1, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.strokeStyle = '#2b2f36'; g.lineWidth = 1.2 / sc; g.stroke();
-      g.fillStyle = '#1d2733'; g.textAlign = 'center'; g.fillText(String(r.n), x + 0.1, y + 0.005); g.textAlign = 'left'; g.fillText(`${r.it.name}${r.k > 1 ? ` ×${r.k}` : ''}`, x + 0.28, y); });
+    g.fillStyle = '#1d2733'; g.font = `bold ${0.17}px sans-serif`; g.textBaseline = 'middle'; g.fillText(`Assembly guide: stick them on in order, #1 first (bottom layer) to #${rows.length} last (top)`, 0.2, 0.22);
+    g.font = `${0.12}px sans-serif`; g.fillStyle = '#5b6573'; g.fillText('Each copy has its own step. "Print piece numbers" on the Layout tab prints the same numbers on the cut sheet.', 0.2, 0.43);
+    rows.forEach((r, i) => { const x = 0.2 + (i % cols) * (B.w / cols), y = 0.62 + Math.floor(i / cols) * lh + lh / 2, t = String(r.n), rr = 0.1 * badgeK(t);
+      g.beginPath(); g.arc(x + 0.13, y, rr, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.strokeStyle = '#2b2f36'; g.lineWidth = 1.2 / sc; g.stroke();
+      g.font = `bold ${0.13}px sans-serif`; g.fillStyle = '#1d2733'; g.textAlign = 'center'; g.fillText(t, x + 0.13, y + 0.005); g.textAlign = 'left';
+      const p = processed(r.it, false), k = Math.min(0.28 / p.cutW, 0.28 / p.cutH); g.save(); g.translate(x + 0.5 - p.cutW * k / 2, y - p.cutH * k / 2); g.scale(k, k); g.drawImage(p.print.canvas, p.print.x, p.print.y, p.print.w, p.print.h); g.restore();
+      g.font = `${0.14}px sans-serif`; g.fillStyle = '#1d2733'; g.fillText(r.it.name, x + 0.72, y - 0.05); g.font = `${0.11}px sans-serif`; g.fillStyle = '#6b7380'; g.fillText(`${fmtShort(r.w)} × ${fmtShort(r.h)}${legendNote(r)}`, x + 0.72, y + 0.1); });
     g.restore(); return r.c.toDataURL('image/png'); }
   /** printable true-size guide: page = backdrop. Vector numbered outlines (+ faint images when "ghosted"), legend on page 2. Uses the print compensation when calibration is on, so it measures true size on paper. */
   function guidePDF() { const B = MK.bg, live = mkLive().filter(n => !n.hidden); if (!live.length) throw new Error('Nothing in the mockup yet.');
@@ -2317,22 +2348,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const T = (lx, ly) => { lx -= G.w / 2; ly -= G.h / 2; if (n.flip) lx = -lx; const x = n.x + lx * c - ly * s, y = n.y + lx * s + ly * c, [a, b] = P(x, y); return [a * PT, b * PT]; };
       for (const poly of flatLoops(G.p)) { if (poly.length < 2) continue; const pts = poly.map(([x, y]) => T(x, y)), d = []; for (let i = 1; i < pts.length; i++) d.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]); doc.lines(d, pts[0][0], pts[0][1], [1, 1], 'S', true); } }
     doc.setLineDashPattern([], 0); doc.setLineWidth(0.8);
-    const npos = mkNumPos(live.map(n => [n, ng(n)]), 0.125);
-    for (const n of live) { const G = ng(n), t = String(numOf(G.it)), [a, b] = P(...npos.get(n)), r = (t.length > 1 ? 0.125 : 0.105) * PT; doc.setFillColor(255, 255, 255); doc.circle(a * PT, b * PT, r, 'FD'); doc.setFontSize(10); doc.setTextColor(20); doc.text(t, a * PT, b * PT + 3.4, { align: 'center' }); }
+    const st = mkSteps(), ns = mkNumScale(), allG = live.map(n => [n, ng(n)]), shown = MK.num.show === 'none' ? [] : allG.filter(([n]) => !n.noNum), npos = mkNumPos(shown, 0.125 * ns, allG);
+    for (const [n] of shown) { const t = String(st.get(n)), [a, b] = P(...npos.get(n)), r = 0.105 * badgeK(t) * ns * PT; doc.setFillColor(255, 255, 255); doc.circle(a * PT, b * PT, r, 'FD'); doc.setFontSize(10 * ns); doc.setTextColor(20); doc.text(t, a * PT, b * PT + 3.4 * ns, { align: 'center' }); }
     // legend page (Letter)
     doc.addPage([8.5 * PT, 11 * PT], 'portrait'); doc.setTextColor(20); doc.setFontSize(15); doc.text('Assembly guide – legend', 0.6 * PT, 0.8 * PT); doc.setFontSize(9); doc.setTextColor(90);
     doc.text(`Page 1 is the scene at true size (${B.w.toFixed(2)} × ${B.h.toFixed(2)} in${k.ex !== 1 || k.ey !== 1 ? `, enlarged ${fmtPct(k.ex - 1)} / ${fmtPct(k.ey - 1)} for your calibrated printer` : ''}). Print at 100% / Actual size.`, 0.6 * PT, 1.08 * PT, { maxWidth: 7.3 * PT });
-    doc.text('Each sticker is numbered: #n = image n in the Layout list. Turn on "Print piece numbers" on the Layout tab to print the same numbers next to the stickers on the cut sheet.', 0.6 * PT, 1.36 * PT, { maxWidth: 7.3 * PT });
-    let y = 1.9; for (const r of legendRows()) { if (y > 10.4) { doc.addPage([8.5 * PT, 11 * PT], 'portrait'); y = 0.8; }
-      doc.setDrawColor(40); doc.setFillColor(255, 255, 255); doc.circle(0.8 * PT, y * PT, 0.13 * PT, 'FD'); doc.setFontSize(10); doc.setTextColor(20); doc.text(String(r.n), 0.8 * PT, y * PT + 3.4, { align: 'center' });
+    doc.text('Stick them on in order: #1 first (the bottom layer), the highest number last (the top), so every sticker goes over the ones it overlaps. Each copy has its own step. Turn on "Print piece numbers" on the Layout tab to print the same step numbers next to the stickers on the cut sheet (copies of one image take its steps in reading order: sheet 1 first, top to bottom, left to right).', 0.6 * PT, 1.36 * PT, { maxWidth: 7.3 * PT });
+    let y = 2.2; for (const r of legendRows()) { if (y > 10.4) { doc.addPage([8.5 * PT, 11 * PT], 'portrait'); y = 0.8; }
+      doc.setDrawColor(40); doc.setFillColor(255, 255, 255); doc.circle(0.8 * PT, y * PT, 0.13 * badgeK(String(r.n)) * PT, 'FD'); doc.setFontSize(10); doc.setTextColor(20); doc.text(String(r.n), 0.8 * PT, y * PT + 3.4, { align: 'center' });
       try { const pr = processed(r.it, false), k2 = Math.min(0.5 / pr.cutW, 0.5 / pr.cutH); doc.addImage(canvasURL(pr), pr.print.hasAlpha ? 'PNG' : 'JPEG', 1.1 * PT, (y - 0.25) * PT, pr.print.w * k2 * PT, pr.print.h * k2 * PT, undefined, 'FAST'); } catch (e) { /* thumbnail optional */ }
-      const pr = processed(r.it, false); doc.setFontSize(11); doc.text(`${r.it.name}${r.k > 1 ? `  ×${r.k} in the scene` : ''}`, 1.8 * PT, y * PT + 1); doc.setFontSize(8); doc.setTextColor(110); doc.text(`${fmtShort(pr.cutW)} × ${fmtShort(pr.cutH)} · qty on cut sheet: ${r.it.qty}`, 1.8 * PT, y * PT + 11);
+      const pr = processed(r.it, false); doc.setFontSize(11); doc.text(`Step ${r.n}: ${r.it.name}`, 1.8 * PT, y * PT + 1); doc.setFontSize(8); doc.setTextColor(110); doc.text(`${fmtShort(pr.cutW)} × ${fmtShort(pr.cutH)}${legendNote(r)}`, 1.8 * PT, y * PT + 11);
       y += 0.62; }
     doc.setTextColor(0); doc.setDrawColor(0); doc.setFillColor(0); return doc; }
+  /** image-card badges on the Layout tab = the image's assembly steps (they change with the mockup) */
+  function mkCardNums() { const st = mkSteps(); for (const el of document.querySelectorAll('.inum[data-iid]')) { const it = items.find(i => String(i.id) === el.dataset.iid); if (!it) continue; const b = stepBadge(it, st); el.textContent = b.t; el.title = b.tip; } }
   // test / automation hooks (local only)
   window.CST = { saveToolCopy, get EMBEDDED() { return EMBEDDED; }, STORE, exportCal, importCalData, calStatusLine, getCal, saveCal, onCompute, choose, renderCalTable, currentState, stateCode, get lastResult() { return lastResult; }, S, get items() { return items; }, setPct, pctOf, BASE_DPI, addFromDataURL, computeLayout, buildPDF, buildSVGs, buildCalPDF, buildCalSVG, computeCalibration, getCorr, setCorr, drawPreview, refresh, sheetDims, calTargets, get layout() { return layout; }, cache,
     get manual() { return manual; }, set manual(v) { manual = v; }, pinLayout, resetAuto, selectPiece, selectItem, get sel() { return sel; }, get curSheet() { return curSheet; }, set curSheet(v) { curSheet = v; },
-    get MK() { return MK; }, mkSetSize, mkGeom: (n) => { const G = ng(n); return G && { w: G.w, h: G.h }; }, renderMock, mkSelect, get mkSel() { return mkSel; }, get mkView() { return mkView; }, mkOrder, mockPNG, guidePNG, guidePDF, pieceLabels, insidePiece, numOf, mkUndo: () => mkUndoFn(), mkRedo: () => mkRedoFn(), mkFitBackdrop, mkSendPlan, mkSendApply, mkSendOpen, mkBgRect, mkBgToBackdrop, imgDpi, set mkBgAdj(v) { mkBgAdj = !!v; renderMkBg(); renderMockCanvas(); }, get mkBgAdj() { return mkBgAdj; },
+    get MK() { return MK; }, mkSetSize, mkGeom: (n) => { const G = ng(n); return G && { w: G.w, h: G.h }; }, renderMock, mkSelect, get mkSel() { return mkSel; }, get mkView() { return mkView; }, mkOrder, mockPNG, guidePNG, guidePDF, pieceLabels, mkSteps, legendRows, cutStepLabels, stepBadge, insidePiece, numOf, mkUndo: () => mkUndoFn(), mkRedo: () => mkRedoFn(), mkFitBackdrop, mkSendPlan, mkSendApply, mkSendOpen, mkBgRect, mkBgToBackdrop, imgDpi, set mkBgAdj(v) { mkBgAdj = !!v; renderMkBg(); renderMockCanvas(); }, get mkBgAdj() { return mkBgAdj; },
     rotatePiece, moveToSheet, duplicatePiece, deletePiece, nudge, fillQty, undo, redo, get undoDepth() { return undoStack.length; }, get view() { return view; }, setZoom, saveProject, loadProject, findSpot };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

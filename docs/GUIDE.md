@@ -73,7 +73,13 @@ Click **Print PDF** and **Cut SVG** in the Export panel. You get one PDF (one pa
 - The **print PDF** is the full sheet with your images (plus bleed) and four tiny corner marks.
 - The **cut SVG** is 8 × 10.5 in on Letter (the sheet minus 0.25 in on each side). It holds all cuts as one compound path, plus four 1 mm corner squares that pin its size and position. Don't edit it.
 
-Optional: **Print piece numbers** adds a tiny #n next to each sticker on the print, matching the Mockup guide. The cut file isn't affected.
+Optional: **Print piece numbers** adds a tiny number next to each sticker on the print. The cut file isn't affected.
+
+- With a mockup, the number is the piece's **assembly step** from the Mockup guide, so the sticker labelled 7 on the sheet is step #7 in the guide ([section 8](#8-mockup-plan-the-finished-scene)).
+- Copies of the same image are identical, so they share out that image's steps in reading order: sheet 1 first, then top to bottom, left to right. Any copy works for any of its steps.
+- Pieces beyond the copies in the mockup (a higher qty) print **sp**, for spare.
+- With no visible mockup pieces, the number is the image's position in the list.
+- Each image card's badge shows what will print, e.g. `#4,#8,#9`.
 
 ## 5. Calibrate (once per printer + paper size)
 
@@ -146,11 +152,27 @@ The **Mockup** tab shows how the stickers go together, for example a dollhouse r
 
   ![Resizing in the mockup](images/15_mockup_resize.png)
 
-- **Assembly guide**: set *Show* to "numbered outlines" or "ghosted images + numbered outlines". Each piece gets its image number (#n = image n in the Layout list).
+- **Assembly guide**: set *Show* to "numbered outlines" or "ghosted images + numbered outlines".
 
   ![Guide outlines](images/14_mockup_guide_outline.png)
 
-- **Exports**: Mockup PNG, Guide PNG (with a legend) and Guide PDF. The PDF prints at true size, so you can lay the stickers on it.
+  - **The numbers are the order to stick them on.** #1 is the bottom-most visible layer and goes on first. The top layer gets the highest number, so every sticker goes over the ones it overlaps.
+  - Each copy has its own step; hidden (👁) layers are skipped, so the steps always run 1, 2, 3… with no gaps.
+  - Reorder the layers and the steps renumber at once. The Layers list shows each layer's step in its circle, and *Selected piece* shows "Step #n".
+
+- **Crowded spots**: when lots of small stickers sit close together, the numbers become unreadable.
+  - Click the **#** button next to a layer's eye, or untick **Show this piece's number in the guide** under *Selected piece*. That number disappears from the canvas, the Guide PNG and the Guide PDF.
+  - The piece keeps its outline and its step. Its legend row stays too, marked "number not shown on the picture", so the order is still complete.
+  - **Numbers: None** hides all numbers (outlines + legend only). **Number size** scales the badges (50–200%), and **Show all numbers** brings every number back.
+  - All of this is saved with the mockup and in project files, and Undo covers it.
+
+  ![Step numbers, one hidden](images/20_guide_step_numbers.png)
+
+- **Exports**: Mockup PNG, Guide PNG and Guide PDF.
+  - Both guides have a legend: one row per step, in order, with the step number, a thumbnail, the image name and its size.
+  - The PDF prints at true size, so you can lay the stickers on it.
+
+  ![Guide PNG with the legend](images/21_guide_png_legend.png)
 
 Moving, rotating, flipping, layering and hiding never change the print PDF or the cut SVG. Only size changes do, on purpose.
 
