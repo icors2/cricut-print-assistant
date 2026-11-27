@@ -16,21 +16,30 @@
     const slots = $('#avatarSlots'); if (!slots) return;
     const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const pals = (C.assets.palettes && C.assets.palettes()) || [];
-    const presets = (cat.presets || []).length ? '<div class="avatarSlot avatarPresets"><b>Characters</b> ' + cat.presets.map(pr => `<button type="button" data-preset="${esc(pr.id)}" aria-label="${esc(pr.name || pr.id)}">${esc(pr.name || pr.id)}</button>`).join('') + '</div>' : '';
+    const th = (it) => it.thumb ? `<img alt="" width="40" height="40" data-thumb="${esc(it.id)}" data-thumb-kind="${it.slot ? 'part' : 'preset'}"> ` : '';
+    const presets = (cat.presets || []).length ? '<div class="avatarSlot avatarPresets"><b>Characters</b> ' + cat.presets.map(pr => `<button type="button" data-preset="${esc(pr.id)}" aria-label="${esc(pr.name || pr.id)}">${th(pr)}${esc(pr.name || pr.id)}</button>`).join('') + '</div>' : '';
+    const used = new Set(C.avatar.resolve(spec).flatMap(x => x.part.regions || []));
     const colors = Object.entries(cat.colorSlots || {}).map(([cs, def]) => {
+      if (!(def.regions || []).some(r => used.has(r))) return '';
       const pal = pals.find(x => x.id === def.palette); if (!pal || !pal.colors.length) return '';
       const cur = (spec.colors || {})[cs] || def.default;
       return `<div class="avatarSlot avatarColors"><b>${esc(def.name || cs)}</b> ` + pal.colors.map(c => `<button type="button" data-color="${esc(cs)}" data-hex="${c}" aria-pressed="${c === cur}" aria-label="${esc(def.name || cs)} ${c}" style="background:${c}">&nbsp;</button>`).join('') + '</div>';
     }).join('');
     slots.innerHTML = presets + colors + (cat.slots || []).map(slot => {
-      const opts = (cat.parts || []).filter(p => p.slot === slot.id && !p.hiddenInPicker);
+      const opts = (cat.parts || []).filter(p => p.slot === slot.id && !p.hiddenInPicker && C.avatar.fits(p, spec.parts.body));
       if (!opts.length) return '';
+      const req = slot.id === 'body' || C.avatar.requiredSlots(spec).includes(slot.id);
       const cur = spec.parts[slot.id] || '';
       const locked = !!(spec.locks && spec.locks[slot.id]);
       return `<div class="avatarSlot"><b>${slot.name}</b> <button type="button" data-lock="${slot.id}" aria-pressed="${locked}" aria-label="Lock ${slot.name}">${locked ? '🔒' : '🔓'}</button>`
-        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${esc(p.name)}">${esc(p.name)}</button>`).join('')
+        + (req ? '' : `<button type="button" data-clear="${slot.id}" aria-pressed="${!cur}" aria-label="No ${esc(slot.name)}">None</button>`)
+        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${esc(p.name)}">${th(p)}${esc(p.name)}</button>`).join('')
         + `</div>`;
     }).join('');
+    for (const img of slots.querySelectorAll('img[data-thumb]')) {
+      const list = img.dataset.thumbKind === 'part' ? cat.parts : cat.presets, it = (list || []).find(x => x.id === img.dataset.thumb);
+      if (it && C.assets.avatarThumb) C.assets.avatarThumb(it).then(u => { if (u) img.src = u; }).catch(() => {});
+    }
   }
   async function thumb() {
     const svg = await C.avatar.compose(spec);
@@ -68,7 +77,8 @@
       const part = e.target.closest('[data-part]');
       push();
       if (lock) { const id = lock.dataset.lock; spec.locks[id] = !spec.locks[id]; }
-      const pre = e.target.closest('[data-preset]'), col = e.target.closest('[data-color]');
+      const pre = e.target.closest('[data-preset]'), col = e.target.closest('[data-color]'), clr = e.target.closest('[data-clear]');
+      if (clr) spec.parts[clr.dataset.clear] = null;
       if (pre) {
         const pr = (C.assets.avatarParts().presets || []).find(x => x.id === pre.dataset.preset);
         if (pr) spec = Object.assign({ schema: 'cpa-avatar-spec/1', locks: {} }, { template: spec.template, locks: spec.locks || {} }, JSON.parse(JSON.stringify({ name: pr.name, parts: pr.parts || {}, colors: pr.colors || {}, partColors: pr.partColors || {} })));
@@ -78,7 +88,13 @@
         const id = part.dataset.part;
         const P = C.assets.avatarParts();
         const p = (P.parts || []).find(x => x.id === id);
-        spec.parts[p.slot] = id;
+        const req = p.slot === 'body' || C.avatar.requiredSlots(spec).includes(p.slot);
+        spec.parts[p.slot] = (!req && spec.parts[p.slot] === id) ? null : id;  // tap a chosen item again to take it off
+        if (p.slot === 'body') {
+          // Switching animals: drop clothes that don't fit, and fill any slot the new body needs.
+          spec = C.avatar.clean(spec);
+          for (const sl of C.avatar.requiredSlots(spec)) if (!spec.parts[sl]) { const o = (P.parts || []).find(x => x.slot === sl && !x.hiddenInPicker && C.avatar.fits(x, id)); if (o) spec.parts[sl] = o.id; }
+        }
       }
       draw();
     });
@@ -120,6 +136,6 @@
       bar.parentNode.insertBefore(b, bar.nextSibling);
     }
   }
-  C.registerModule('avatar_ui', { boot, get spec() { return spec; } });
+  C.avatar_ui = C.registerModule('avatar_ui', { boot, get spec() { return spec; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

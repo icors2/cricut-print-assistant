@@ -58,8 +58,18 @@
       if (!pt.file || /^\/|^[a-z]+:|\.\./i.test(pt.file)) E(at + '.file', 'relative path required');
       if (!pt.license) E(at + '.license', 'required');
       for (const [k, a] of Object.entries(pt.anchors || {})) if (!Array.isArray(a) || a.length !== 2) E(at + '.anchors.' + k, '[x, y]');
+      if (pt.canvas && !canvasTemplate(pt.canvas)) E(at + '.canvas', '{ px: [w, h], dpi } or { viewBox, sizeIn }');
+      if (pt.bodies != null && (!Array.isArray(pt.bodies) || !pt.bodies.every(b => typeof b === 'string'))) E(at + '.bodies', 'array of body part ids');
     });
     return err;
+  }
+  // A part's own artboard: { px: [w, h], dpi: 300 } (raster art) or { viewBox: [x, y, w, h], sizeIn: { w, h } }.
+  function canvasTemplate(cv) {
+    if (!cv || typeof cv !== 'object') return null;
+    let vb = cv.viewBox, sz = cv.sizeIn;
+    if (Array.isArray(cv.px) && cv.px.length === 2) { vb = vb || [0, 0, cv.px[0], cv.px[1]]; if (!sz && cv.dpi > 0) sz = { w: cv.px[0] / cv.dpi, h: cv.px[1] / cv.dpi }; }
+    if (!Array.isArray(vb) || vb.length !== 4 || !(vb[2] > 0 && vb[3] > 0) || !sz || !(sz.w > 0 && sz.h > 0 && sz.w <= 11 && sz.h <= 11)) return null;
+    return { viewBox: vb, sizeIn: { w: Math.round(sz.w * 10000) / 10000, h: Math.round(sz.h * 10000) / 10000 }, anchors: cv.anchors || {} };
   }
   function addAvatar(doc, pack, resolver, base) {
     state.avatarSrc = state.avatarSrc.filter(x => x.pack !== pack);
@@ -71,10 +81,11 @@
     if (!state.avatarSrc.length) return null;
     // Private packs first, so their template and presets are the default; the public core comes last.
     const srcs = state.avatarSrc.slice().sort((a, b) => (a.pack === 'core') - (b.pack === 'core'));
-    const M = { schema: 'cpa-avatar/1', template: srcs[0].doc.template, templates: {}, slots: [], colorSlots: {}, parts: [], presets: [], sources: srcs.map(x => x.pack) };
+    const M = { schema: 'cpa-avatar/1', template: srcs[0].doc.template, templates: {}, requiredBy: {}, slots: [], colorSlots: {}, parts: [], presets: [], sources: srcs.map(x => x.pack) };
     const slotIds = new Map(), partIds = new Set(), presetIds = new Set();
     for (const x of srcs) {
       const d = x.doc; M.templates[x.pack] = d.template;
+      M.requiredBy[x.pack] = (d.slots || []).filter(sl => sl.required).map(sl => sl.id);
       for (const sl of d.slots || []) if (!slotIds.has(sl.id)) { slotIds.set(sl.id, 1); M.slots.push(Object.assign({}, sl)); }
       for (const [k, v] of Object.entries(d.colorSlots || {})) {
         if (!M.colorSlots[k]) M.colorSlots[k] = Object.assign({}, v, { regions: (v.regions || []).slice() });
@@ -92,9 +103,44 @@
     M.slots.sort((a, b) => a.z - b.z);
     return (avatarMerged = M);
   }
+  // Artboard a part is drawn on: its own canvas, else (body-specific parts) its first body's canvas, else its source template.
   function avatarTemplate(part) {
     const M = mergedAvatar(); if (!M) return null;
+    if (part && part.canvas) { const t = canvasTemplate(part.canvas); if (t) return t; }
+    if (part && part.bodies && part.bodies.length) {
+      const b = M.parts.find(x => x.id === part.bodies[0] && x.slot === 'body');
+      if (b && b.canvas) { const t = canvasTemplate(b.canvas); if (t) return t; }
+    }
     return (part && M.templates[part._pack]) || M.template;
+  }
+  async function blobToDataURL(b) { return new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); }); }
+  async function urlDataURL(url, mime) {
+    if (url == null) return null;
+    const u = String(url);
+    if (u.startsWith('data:')) return mime && /^data:application\/octet-stream/.test(u) ? 'data:' + mime + u.slice(u.indexOf(';')) : u;
+    const r = await fetch(u); if (!r.ok) return null;
+    const b = await r.blob(); return blobToDataURL(mime && b.type !== mime ? new Blob([b], { type: mime }) : b);
+  }
+  // Raster parts (PNG) are embedded in the composed SVG as data URLs.
+  async function partDataURL(part) {
+    const mime = /\.png$/i.test(part.file) ? 'image/png' : /\.webp$/i.test(part.file) ? 'image/webp' : /\.jpe?g$/i.test(part.file) ? 'image/jpeg' : null;
+    const src = state.avatarSrc.find(x => x.pack === (part._pack || 'core'));
+    const paths = src && src.pack !== 'core' && src.base ? [src.base + part.file, part.file] : [part.file];
+    for (const path of paths) {
+      let u = null;
+      try {
+        if (src && src.pack !== 'core') u = await urlDataURL(await src.resolver(path), mime);
+        else if (state.files[path]) u = await urlDataURL(state.files[path], mime);
+        else if (/^https?:$/.test(location.protocol)) u = await urlDataURL('assets/' + path, mime);
+      } catch (e) { u = null; }
+      if (u) return u;
+    }
+    return null;
+  }
+  // Optional thumbnails for presets/parts (path inside the pack, next to parts.json).
+  async function avatarThumb(item) {
+    if (!item || !item.thumb) return null;
+    return partDataURL({ _pack: item._pack || item.pack, file: item.thumb });
   }
   function mergePalettes(list) {
     for (const pal of list || []) {
@@ -256,7 +302,7 @@
   }
 
   C.assets = C.registerModule('assets', {
-    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate,
+    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
     // One button per category id, even when several packs declare the same category.

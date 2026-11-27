@@ -153,7 +153,7 @@ Add new rows when you make a design decision, with the reason, and never rewrite
 - BUILD.md §14: P1–P4 code is done. Still open: at least 30 real catalog assets, a full avatar set, and the physical iPad checklist (§12.3).
 - `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, the three UI modules, and `remote_packs.js` (optional pack sync, off in the public build).
 - `deploy/cloudflare-pages/` has an optional private deployment (Pages + private R2 bucket + Access, with a fail-closed `/packs` Function) and `scripts/upload_pack.sh` adds packs to it. Never commit real pack files, bucket contents, emails or account IDs.
-- `assets/` holds five original CC0 placeholders, palettes, and a few avatar parts. Avatar parts are on the 1000 × 1500 kid-v1 artboard; `avatar.js` supports per-source templates and `follows`, and `assets.js` merges avatar parts/presets/palettes from imported packs (`test/avatar_pack_test.js`). `tools/build_assets.js --private --root <outside folder>` validates private packs. `sw.js` is generated. Do not hand-edit `index.html`, `app/*.html`, `sw.js`, or `assets/thumbs/`.
+- `assets/` holds five original CC0 placeholders, palettes, and a few avatar parts. Avatar parts are on the 1000 × 1500 kid-v1 artboard; `avatar.js` supports per-source templates and `follows`, and `assets.js` merges avatar parts/presets/palettes from imported packs (`test/avatar_pack_test.js`). `tools/build_assets.js --private --root <outside folder>` validates private packs. Raster (PNG) parts, per-body `canvas` {px, dpi}, `bodies`/`exclusive` body-specific clothing: `test/avatar_raster_test.js`. `sw.js` is generated. Do not hand-edit `index.html`, `app/*.html`, `sw.js`, or `assets/thumbs/`.
 
 ## 7. Where to start
 

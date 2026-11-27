@@ -63,7 +63,7 @@ html.touchui #touchBar{display:flex}
 #touchCtx{position:fixed;z-index:45;display:flex;flex-wrap:wrap;gap:8px;max-width:min(420px,92vw);background:#fff;border:1px solid var(--b);border-radius:10px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 #touchCtx[hidden]{display:none !important}
 .legend span{display:inline-block;width:12px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
-#tabAssets{display:flex;gap:12px;padding:12px;min-height:70dvh}.assetSide{width:200px;flex:none;display:flex;flex-direction:column;gap:4px}.assetSide button{text-align:left}.assetMain{flex:1;min-width:0}.assetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start;overflow:auto;max-height:70dvh}.assetTile{min-width:88px;min-height:88px;border:1px solid var(--b);border-radius:8px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}.assetTile img{width:100%;height:72px;object-fit:contain}.assetTile span,.assetTile small{display:block}.swatch{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;padding:0}#assetSheet,#colorSheet{position:fixed;inset:0;background:rgba(20,25,35,.35);z-index:60;display:flex;align-items:center;justify-content:center}#assetSheet[hidden],#colorSheet[hidden]{display:none!important}.sheet{background:#fff;border-radius:12px;padding:16px;max-width:640px;width:min(640px,94vw);max-height:90dvh;overflow:auto}.avatarWrap{display:flex;gap:16px;padding:12px;flex-wrap:wrap}#avatarPreview svg{width:240px;height:auto;background:#fff;border-radius:12px}.avatarSlot button{margin:2px}@media (max-width:900px){#tabAssets{flex-direction:column}.assetSide{width:auto;flex-direction:row;overflow:auto}}
+#tabAssets{display:flex;gap:12px;padding:12px;min-height:70dvh}.assetSide{width:200px;flex:none;display:flex;flex-direction:column;gap:4px}.assetSide button{text-align:left}.assetMain{flex:1;min-width:0}.assetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start;overflow:auto;max-height:70dvh}.assetTile{min-width:88px;min-height:88px;border:1px solid var(--b);border-radius:8px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}.assetTile img{width:100%;height:72px;object-fit:contain}.assetTile span,.assetTile small{display:block}.swatch{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;padding:0}#assetSheet,#colorSheet{position:fixed;inset:0;background:rgba(20,25,35,.35);z-index:60;display:flex;align-items:center;justify-content:center}#assetSheet[hidden],#colorSheet[hidden]{display:none!important}.sheet{background:#fff;border-radius:12px;padding:16px;max-width:640px;width:min(640px,94vw);max-height:90dvh;overflow:auto}.avatarWrap{display:flex;gap:16px;padding:12px;flex-wrap:wrap}#avatarPreview svg{width:240px;height:auto;background:#fff;border-radius:12px}.avatarSlot button{margin:2px}.avatarSlot img{vertical-align:middle;object-fit:contain}@media (max-width:900px){#tabAssets{flex-direction:column}.assetSide{width:auto;flex-direction:row;overflow:auto}}
 </style></head><body>
 <div id="storageNudge" hidden role="status">Your browser may clear saved work. Use 💾 Save mockup or add the app to your Home Screen. <button type="button" id="storageNudgeHide">Dismiss</button></div>
 <div id="dpiNote" hidden role="status"></div>
@@ -2968,8 +2968,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (!pt.file || /^\/|^[a-z]+:|\.\./i.test(pt.file)) E(at + '.file', 'relative path required');
       if (!pt.license) E(at + '.license', 'required');
       for (const [k, a] of Object.entries(pt.anchors || {})) if (!Array.isArray(a) || a.length !== 2) E(at + '.anchors.' + k, '[x, y]');
+      if (pt.canvas && !canvasTemplate(pt.canvas)) E(at + '.canvas', '{ px: [w, h], dpi } or { viewBox, sizeIn }');
+      if (pt.bodies != null && (!Array.isArray(pt.bodies) || !pt.bodies.every(b => typeof b === 'string'))) E(at + '.bodies', 'array of body part ids');
     });
     return err;
+  }
+  // A part's own artboard: { px: [w, h], dpi: 300 } (raster art) or { viewBox: [x, y, w, h], sizeIn: { w, h } }.
+  function canvasTemplate(cv) {
+    if (!cv || typeof cv !== 'object') return null;
+    let vb = cv.viewBox, sz = cv.sizeIn;
+    if (Array.isArray(cv.px) && cv.px.length === 2) { vb = vb || [0, 0, cv.px[0], cv.px[1]]; if (!sz && cv.dpi > 0) sz = { w: cv.px[0] / cv.dpi, h: cv.px[1] / cv.dpi }; }
+    if (!Array.isArray(vb) || vb.length !== 4 || !(vb[2] > 0 && vb[3] > 0) || !sz || !(sz.w > 0 && sz.h > 0 && sz.w <= 11 && sz.h <= 11)) return null;
+    return { viewBox: vb, sizeIn: { w: Math.round(sz.w * 10000) / 10000, h: Math.round(sz.h * 10000) / 10000 }, anchors: cv.anchors || {} };
   }
   function addAvatar(doc, pack, resolver, base) {
     state.avatarSrc = state.avatarSrc.filter(x => x.pack !== pack);
@@ -2981,10 +2991,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (!state.avatarSrc.length) return null;
     // Private packs first, so their template and presets are the default; the public core comes last.
     const srcs = state.avatarSrc.slice().sort((a, b) => (a.pack === 'core') - (b.pack === 'core'));
-    const M = { schema: 'cpa-avatar/1', template: srcs[0].doc.template, templates: {}, slots: [], colorSlots: {}, parts: [], presets: [], sources: srcs.map(x => x.pack) };
+    const M = { schema: 'cpa-avatar/1', template: srcs[0].doc.template, templates: {}, requiredBy: {}, slots: [], colorSlots: {}, parts: [], presets: [], sources: srcs.map(x => x.pack) };
     const slotIds = new Map(), partIds = new Set(), presetIds = new Set();
     for (const x of srcs) {
       const d = x.doc; M.templates[x.pack] = d.template;
+      M.requiredBy[x.pack] = (d.slots || []).filter(sl => sl.required).map(sl => sl.id);
       for (const sl of d.slots || []) if (!slotIds.has(sl.id)) { slotIds.set(sl.id, 1); M.slots.push(Object.assign({}, sl)); }
       for (const [k, v] of Object.entries(d.colorSlots || {})) {
         if (!M.colorSlots[k]) M.colorSlots[k] = Object.assign({}, v, { regions: (v.regions || []).slice() });
@@ -3002,9 +3013,44 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     M.slots.sort((a, b) => a.z - b.z);
     return (avatarMerged = M);
   }
+  // Artboard a part is drawn on: its own canvas, else (body-specific parts) its first body's canvas, else its source template.
   function avatarTemplate(part) {
     const M = mergedAvatar(); if (!M) return null;
+    if (part && part.canvas) { const t = canvasTemplate(part.canvas); if (t) return t; }
+    if (part && part.bodies && part.bodies.length) {
+      const b = M.parts.find(x => x.id === part.bodies[0] && x.slot === 'body');
+      if (b && b.canvas) { const t = canvasTemplate(b.canvas); if (t) return t; }
+    }
     return (part && M.templates[part._pack]) || M.template;
+  }
+  async function blobToDataURL(b) { return new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); }); }
+  async function urlDataURL(url, mime) {
+    if (url == null) return null;
+    const u = String(url);
+    if (u.startsWith('data:')) return mime && /^data:application\/octet-stream/.test(u) ? 'data:' + mime + u.slice(u.indexOf(';')) : u;
+    const r = await fetch(u); if (!r.ok) return null;
+    const b = await r.blob(); return blobToDataURL(mime && b.type !== mime ? new Blob([b], { type: mime }) : b);
+  }
+  // Raster parts (PNG) are embedded in the composed SVG as data URLs.
+  async function partDataURL(part) {
+    const mime = /\.png$/i.test(part.file) ? 'image/png' : /\.webp$/i.test(part.file) ? 'image/webp' : /\.jpe?g$/i.test(part.file) ? 'image/jpeg' : null;
+    const src = state.avatarSrc.find(x => x.pack === (part._pack || 'core'));
+    const paths = src && src.pack !== 'core' && src.base ? [src.base + part.file, part.file] : [part.file];
+    for (const path of paths) {
+      let u = null;
+      try {
+        if (src && src.pack !== 'core') u = await urlDataURL(await src.resolver(path), mime);
+        else if (state.files[path]) u = await urlDataURL(state.files[path], mime);
+        else if (/^https?:$/.test(location.protocol)) u = await urlDataURL('assets/' + path, mime);
+      } catch (e) { u = null; }
+      if (u) return u;
+    }
+    return null;
+  }
+  // Optional thumbnails for presets/parts (path inside the pack, next to parts.json).
+  async function avatarThumb(item) {
+    if (!item || !item.thumb) return null;
+    return partDataURL({ _pack: item._pack || item.pack, file: item.thumb });
   }
   function mergePalettes(list) {
     for (const pal of list || []) {
@@ -3166,7 +3212,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   C.assets = C.registerModule('assets', {
-    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate,
+    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
     // One button per category id, even when several packs declare the same category.
@@ -3292,10 +3338,31 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function cat() { return C.assets && C.assets.avatarParts(); }
   function partsById() { const P = cat(); return new Map((P && P.parts || []).map(p => [p.id, p])); }
   function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const isRaster = (part) => part.kind === 'raster' || /\.(png|webp|jpe?g)$/i.test(part.file || '');
+  // Body-specific parts list the bodies they fit in `bodies`. A body marked `exclusive` only takes parts that list it.
+  function fits(part, bodyId) {
+    if (!part || part.slot === 'body') return true;
+    if (part.bodies && part.bodies.length) return !!bodyId && part.bodies.includes(bodyId);
+    const body = bodyId && partsById().get(bodyId);
+    return !(body && body.exclusive);
+  }
+  // Required slots come from the parts.json that the chosen body belongs to.
+  function requiredSlots(spec) {
+    const P = cat(), body = spec && spec.parts && spec.parts.body && partsById().get(spec.parts.body);
+    const src = body ? body._pack : (P.sources || [])[0];
+    if (P.requiredBy && src && P.requiredBy[src]) return P.requiredBy[src];
+    return P.slots.filter(s => s.required).map(s => s.id);
+  }
+  // Drop parts that don't fit the chosen body (e.g. after switching animals). Returns a new spec.
+  function clean(spec) {
+    const out = JSON.parse(JSON.stringify(spec || {})), parts = partsById(), body = (out.parts || {}).body;
+    for (const [slot, id] of Object.entries(out.parts || {})) if (id && slot !== 'body' && !fits(parts.get(id), body)) out.parts[slot] = null;
+    return out;
+  }
   function validate(spec) {
     const P = cat(); if (!P) return ['parts unavailable'];
     const err = [], slots = new Set(P.slots.map(s => s.id)), parts = partsById();
-    for (const s of P.slots) if (s.required && !(spec.parts || {})[s.id]) err.push('missing ' + s.id);
+    for (const id of requiredSlots(spec)) if (!(spec.parts || {})[id]) err.push('missing ' + id);
     for (const [slot, id] of Object.entries(spec.parts || {})) {
       if (!slots.has(slot)) err.push('unknown slot ' + slot);
       if (!id) continue;
@@ -3307,11 +3374,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function resolve(spec) {
     const P = cat(); if (!P) return [];
     const parts = partsById(), chosen = Object.assign({}, spec.parts);
-    for (const id of Object.values(spec.parts || {})) { const p = id && parts.get(id); if (p && p.pairs && !chosen[parts.get(p.pairs).slot]) chosen[parts.get(p.pairs).slot] = p.pairs; }
+    for (const id of Object.values(spec.parts || {})) { const p = id && parts.get(id), q = p && p.pairs && parts.get(p.pairs); if (q && !chosen[q.slot]) chosen[q.slot] = p.pairs; }
     for (const id of Object.values(chosen)) { const p = id && parts.get(id); if (!p) continue; for (const [slot, sid] of Object.entries(p.swapTo || {})) chosen[slot] = sid; }
     for (const id of Object.values(chosen)) { const p = id && parts.get(id); if (!p) continue; for (const h of p.hides || []) chosen[h] = null; }
     const z = new Map(P.slots.map((s, i) => [s.id, s.z * 1000 + i]));
-    return Object.entries(chosen).filter(([, id]) => id).map(([slot, id]) => ({ slot, part: parts.get(id) })).filter(x => x.part).sort((a, b) => z.get(a.slot) - z.get(b.slot));
+    return Object.entries(chosen).filter(([, id]) => id).map(([slot, id]) => ({ slot, part: parts.get(id) })).filter(x => x.part && z.has(x.slot) && fits(x.part, chosen.body)).sort((a, b) => z.get(a.slot) - z.get(b.slot));
   }
   async function svgOf(part) {
     const key = (part._pack || 'core') + '|' + part.id;
@@ -3348,6 +3415,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const err = validate(spec); if (err.length) throw new Error(err.join('; '));
     const T = outTemplate(spec), [x, y, w, h] = T.viewBox, layers = [];
     for (const { slot, part } of resolve(spec)) {
+      const m = mapper(tplOf(part), T), [dx, dy] = followOffset(part, spec, T), tf = [];
+      if (dx || dy) tf.push('translate(' + dx + ' ' + dy + ')');
+      if (!m.same) { const [fx, fy] = tplOf(part).viewBox; tf.push('translate(' + x + ' ' + y + ') scale(' + +m.sx.toFixed(6) + ' ' + +m.sy.toFixed(6) + ') translate(' + -fx + ' ' + -fy + ')'); }
+      const open = '<g data-slot="' + slot + '" data-part="' + part.id + '"' + (tf.length ? ' transform="' + tf.join(' ') + '"' : '') + '>';
+      if (isRaster(part)) {
+        // A raster part covers its whole artboard (same canvas as its body, stacked with zero offset).
+        const key = (part._pack || 'core') + '|' + part.id + '|img';
+        let u = partSvg.get(key); if (!u) { u = await C.assets.partDataURL(part); if (u) partSvg.set(key, u); }
+        if (!u || !/^data:image\/(png|webp|jpeg);/.test(u)) throw new Error('part not loaded: ' + part.id);
+        const [fx, fy, fw, fh] = tplOf(part).viewBox;
+        layers.push(open + '<image href="' + u + '" x="' + fx + '" y="' + fy + '" width="' + fw + '" height="' + fh + '" preserveAspectRatio="none"/></g>');
+        continue;
+      }
       let t = await svgOf(part); if (!t) throw new Error('part not loaded: ' + part.id);
       const map = {};
       for (const [cs, def] of Object.entries(P.colorSlots || {})) for (const r of def.regions) if ((part.regions || []).includes(r)) map[r] = (spec.colors || {})[cs] || def.default;
@@ -3356,24 +3436,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const pre = part.id.replace(/[^a-z0-9]/gi, '_') + '__';
       const inner = t.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
         .replace(/\bid="([^"]+)"/g, 'id="' + pre + '$1"').replace(/url\(#([^)]+)\)/g, 'url(#' + pre + '$1)').replace(/href="#([^"]+)"/g, 'href="#' + pre + '$1"');
-      const m = mapper(tplOf(part), T), [dx, dy] = followOffset(part, spec, T), tf = [];
-      if (dx || dy) tf.push('translate(' + dx + ' ' + dy + ')');
-      if (!m.same) { const [fx, fy] = tplOf(part).viewBox; tf.push('translate(' + x + ' ' + y + ') scale(' + +m.sx.toFixed(6) + ' ' + +m.sy.toFixed(6) + ') translate(' + -fx + ' ' + -fy + ')'); }
-      layers.push('<g data-slot="' + slot + '" data-part="' + part.id + '"' + (tf.length ? ' transform="' + tf.join(' ') + '"' : '') + '>' + inner + '</g>');
+      layers.push(open + inner + '</g>');
     }
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + x + ' ' + y + ' ' + w + ' ' + h + '" width="' + T.sizeIn.w + 'in" height="' + T.sizeIn.h + 'in" data-cst-natw-in="' + T.sizeIn.w + '">' + layers.join('') + '</svg>';
   }
   function randomize(seed, locks, base) {
     const P = cat(); if (!P) return base || { parts: {} };
     const r = rng(seed), spec = base ? JSON.parse(JSON.stringify(base)) : { schema: 'cpa-avatar-spec/1', template: P.template.id, parts: {}, colors: {}, partColors: {} };
-    spec.seed = seed; locks = locks || {};
-    for (const s of P.slots) {
+    spec.seed = seed; locks = locks || {}; spec.parts = spec.parts || {};
+    const order = P.slots.filter(s => s.id === 'body').concat(P.slots.filter(s => s.id !== 'body'));
+    for (const s of order) {
       if (locks[s.id]) continue;
-      const opts = P.parts.filter(p => p.slot === s.id && !p.hiddenInPicker);
+      const opts = P.parts.filter(p => p.slot === s.id && !p.hiddenInPicker && fits(p, spec.parts.body));
       if (!opts.length) { spec.parts[s.id] = null; continue; }
-      spec.parts[s.id] = (!s.required && r() < 0.25) ? null : opts[Math.floor(r() * opts.length)].id;
+      const req = s.id === 'body' || requiredSlots(spec).includes(s.id);
+      spec.parts[s.id] = (!req && r() < 0.25) ? null : opts[Math.floor(r() * opts.length)].id;
     }
-    return spec;
+    return clean(spec);
   }
   async function toItem(spec) {
     const svg = await compose(spec), T = outTemplate(spec);
@@ -3387,7 +3466,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const n = C.mkAdd(it); C.mkSelect(n); C.mkCommit(); C.refresh(true);
     return it;
   }
-  C.avatar = C.registerModule('avatar', { compose, validate, resolve, randomize, toItem, followOffset, outTemplate });
+  C.avatar = C.registerModule('avatar', { compose, validate, resolve, randomize, toItem, followOffset, outTemplate, fits, clean, requiredSlots, isRaster });
 })();
 
 /* Assets tab: categories, search, details, kid mode, private packs. */
@@ -3758,21 +3837,30 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const slots = $('#avatarSlots'); if (!slots) return;
     const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const pals = (C.assets.palettes && C.assets.palettes()) || [];
-    const presets = (cat.presets || []).length ? '<div class="avatarSlot avatarPresets"><b>Characters</b> ' + cat.presets.map(pr => `<button type="button" data-preset="${esc(pr.id)}" aria-label="${esc(pr.name || pr.id)}">${esc(pr.name || pr.id)}</button>`).join('') + '</div>' : '';
+    const th = (it) => it.thumb ? `<img alt="" width="40" height="40" data-thumb="${esc(it.id)}" data-thumb-kind="${it.slot ? 'part' : 'preset'}"> ` : '';
+    const presets = (cat.presets || []).length ? '<div class="avatarSlot avatarPresets"><b>Characters</b> ' + cat.presets.map(pr => `<button type="button" data-preset="${esc(pr.id)}" aria-label="${esc(pr.name || pr.id)}">${th(pr)}${esc(pr.name || pr.id)}</button>`).join('') + '</div>' : '';
+    const used = new Set(C.avatar.resolve(spec).flatMap(x => x.part.regions || []));
     const colors = Object.entries(cat.colorSlots || {}).map(([cs, def]) => {
+      if (!(def.regions || []).some(r => used.has(r))) return '';
       const pal = pals.find(x => x.id === def.palette); if (!pal || !pal.colors.length) return '';
       const cur = (spec.colors || {})[cs] || def.default;
       return `<div class="avatarSlot avatarColors"><b>${esc(def.name || cs)}</b> ` + pal.colors.map(c => `<button type="button" data-color="${esc(cs)}" data-hex="${c}" aria-pressed="${c === cur}" aria-label="${esc(def.name || cs)} ${c}" style="background:${c}">&nbsp;</button>`).join('') + '</div>';
     }).join('');
     slots.innerHTML = presets + colors + (cat.slots || []).map(slot => {
-      const opts = (cat.parts || []).filter(p => p.slot === slot.id && !p.hiddenInPicker);
+      const opts = (cat.parts || []).filter(p => p.slot === slot.id && !p.hiddenInPicker && C.avatar.fits(p, spec.parts.body));
       if (!opts.length) return '';
+      const req = slot.id === 'body' || C.avatar.requiredSlots(spec).includes(slot.id);
       const cur = spec.parts[slot.id] || '';
       const locked = !!(spec.locks && spec.locks[slot.id]);
       return `<div class="avatarSlot"><b>${slot.name}</b> <button type="button" data-lock="${slot.id}" aria-pressed="${locked}" aria-label="Lock ${slot.name}">${locked ? '🔒' : '🔓'}</button>`
-        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${esc(p.name)}">${esc(p.name)}</button>`).join('')
+        + (req ? '' : `<button type="button" data-clear="${slot.id}" aria-pressed="${!cur}" aria-label="No ${esc(slot.name)}">None</button>`)
+        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${esc(p.name)}">${th(p)}${esc(p.name)}</button>`).join('')
         + `</div>`;
     }).join('');
+    for (const img of slots.querySelectorAll('img[data-thumb]')) {
+      const list = img.dataset.thumbKind === 'part' ? cat.parts : cat.presets, it = (list || []).find(x => x.id === img.dataset.thumb);
+      if (it && C.assets.avatarThumb) C.assets.avatarThumb(it).then(u => { if (u) img.src = u; }).catch(() => {});
+    }
   }
   async function thumb() {
     const svg = await C.avatar.compose(spec);
@@ -3810,7 +3898,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const part = e.target.closest('[data-part]');
       push();
       if (lock) { const id = lock.dataset.lock; spec.locks[id] = !spec.locks[id]; }
-      const pre = e.target.closest('[data-preset]'), col = e.target.closest('[data-color]');
+      const pre = e.target.closest('[data-preset]'), col = e.target.closest('[data-color]'), clr = e.target.closest('[data-clear]');
+      if (clr) spec.parts[clr.dataset.clear] = null;
       if (pre) {
         const pr = (C.assets.avatarParts().presets || []).find(x => x.id === pre.dataset.preset);
         if (pr) spec = Object.assign({ schema: 'cpa-avatar-spec/1', locks: {} }, { template: spec.template, locks: spec.locks || {} }, JSON.parse(JSON.stringify({ name: pr.name, parts: pr.parts || {}, colors: pr.colors || {}, partColors: pr.partColors || {} })));
@@ -3820,7 +3909,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const id = part.dataset.part;
         const P = C.assets.avatarParts();
         const p = (P.parts || []).find(x => x.id === id);
-        spec.parts[p.slot] = id;
+        const req = p.slot === 'body' || C.avatar.requiredSlots(spec).includes(p.slot);
+        spec.parts[p.slot] = (!req && spec.parts[p.slot] === id) ? null : id;  // tap a chosen item again to take it off
+        if (p.slot === 'body') {
+          // Switching animals: drop clothes that don't fit, and fill any slot the new body needs.
+          spec = C.avatar.clean(spec);
+          for (const sl of C.avatar.requiredSlots(spec)) if (!spec.parts[sl]) { const o = (P.parts || []).find(x => x.slot === sl && !x.hiddenInPicker && C.avatar.fits(x, id)); if (o) spec.parts[sl] = o.id; }
+        }
       }
       draw();
     });
@@ -3862,7 +3957,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       bar.parentNode.insertBefore(b, bar.nextSibling);
     }
   }
-  C.registerModule('avatar_ui', { boot, get spec() { return spec; } });
+  C.avatar_ui = C.registerModule('avatar_ui', { boot, get spec() { return spec; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 

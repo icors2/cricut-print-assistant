@@ -72,6 +72,7 @@ function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
   if (fs.existsSync(partsPath)) {
     const parts = JSON.parse(fs.readFileSync(partsPath, 'utf8'));
     const slots = new Set((parts.slots || []).map(s => s.id)), ids = new Set();
+    if (PUBLIC && (parts.parts || []).some(p => /\.png$/i.test(p.file || ''))) E('avatar/parts.json', 'public avatar parts must be SVG');
     if (!['cpa-avatar/1', 'cpa-avatar-parts/1'].includes(parts.schema)) E('avatar/parts.json', 'schema must be cpa-avatar/1');
     const tvb = (parts.template && parts.template.viewBox) || [];
     if (tvb.length !== 4 || !(tvb[2] > 0 && tvb[3] > 0)) E('avatar/parts.json', 'template.viewBox must be [x, y, w, h]');
@@ -87,6 +88,21 @@ function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
       for (const k of ['pairs']) if (p[k] && !(parts.parts || []).some(q => q.id === p[k])) E(p.id, k + ' points at a missing part ' + p[k]);
       const rel = p.file && partFile(p.file);
       if (!rel) E(p.id, 'missing file ' + p.file);
+      else if (/\.png$/i.test(rel)) {
+        // Raster part (PNG): RGBA on the canvas of its body (or its own `canvas`), stacked with zero offset.
+        const buf = fs.readFileSync(path.join(ROOT, rel));
+        if (buf.readUInt32BE(0) !== 0x89504e47) E(p.id, 'not a PNG');
+        else {
+          if (buf.length > BUDGET.png) E(p.id, 'PNG part is ' + buf.length + ' bytes (budget ' + BUDGET.png + ')');
+          const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20), ct = buf[25];
+          if (ct !== 6) warn.push(p.id + ': PNG is not RGBA (colour type ' + ct + ')');
+          const owner = p.canvas ? p : (p.bodies || []).map(id => (parts.parts || []).find(q => q.id === id)).find(Boolean);
+          const cv = owner && owner.canvas;
+          if (p.bodies) for (const id of p.bodies) { const b = (parts.parts || []).find(q => q.id === id); if (!b || b.slot !== 'body') E(p.id, 'bodies lists ' + id + ', which is not a body part'); }
+          if (!cv || !Array.isArray(cv.px)) E(p.id, 'raster parts need a canvas (on the part or its first body)');
+          else if (cv.px[0] !== w || cv.px[1] !== h) E(p.id, 'PNG is ' + w + '×' + h + ' but its canvas is ' + cv.px.join('×'));
+        }
+      }
       else {
         const buf = fs.readFileSync(path.join(ROOT, rel));
         if (buf.length > BUDGET.part) E(p.id, 'part is ' + buf.length + ' bytes');
