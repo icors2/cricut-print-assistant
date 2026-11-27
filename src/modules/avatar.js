@@ -28,15 +28,39 @@
     return Object.entries(chosen).filter(([, id]) => id).map(([slot, id]) => ({ slot, part: parts.get(id) })).filter(x => x.part).sort((a, b) => z.get(a.slot) - z.get(b.slot));
   }
   async function svgOf(part) {
-    if (partSvg.has(part.id)) return partSvg.get(part.id);
+    const key = (part._pack || 'core') + '|' + part.id;
+    if (partSvg.has(key)) return partSvg.get(key);
     const t = await C.assets.partFile(part);
-    if (t) partSvg.set(part.id, t);
+    if (t && C.assets.badPartSvg && C.assets.badPartSvg(t)) throw new Error('part has unsafe SVG: ' + part.id);
+    if (t) partSvg.set(key, t);
     return t;
+  }
+  function tplOf(part) { return (C.assets.avatarTemplate && C.assets.avatarTemplate(part)) || cat().template; }
+  // The output artboard is the chosen body's template (else the first source's). Parts drawn on another
+  // template are mapped onto it, viewBox to viewBox, so packs with different artboard sizes mix.
+  function outTemplate(spec) {
+    const body = spec && spec.parts && spec.parts.body && partsById().get(spec.parts.body);
+    return body ? tplOf(body) : cat().template;
+  }
+  function mapper(from, to) {
+    const [fx, fy, fw, fh] = from.viewBox, [tx, ty, tw, th] = to.viewBox, sx = tw / fw, sy = th / fh;
+    return { sx, sy, pt: (p) => [tx + (p[0] - fx) * sx, ty + (p[1] - fy) * sy], same: sx === 1 && sy === 1 && fx === tx && fy === ty };
+  }
+  // §4.5 follows: shift by bodyAnchor − templateAnchor, both in output units. A body may declare its own anchors.
+  function followOffset(part, spec, out) {
+    if (!part.follows || part.slot === 'body') return [0, 0];
+    const body = spec.parts && spec.parts.body && partsById().get(spec.parts.body);
+    const ptT = tplOf(part), bT = body ? tplOf(body) : out;
+    const a = (body && body.anchors && body.anchors[part.follows]) || (bT.anchors || {})[part.follows];
+    const b = (ptT.anchors || {})[part.follows];
+    if (!a || !b) return [0, 0];
+    const A = mapper(bT, out).pt(a), B = mapper(ptT, out).pt(b);
+    return [Math.round((A[0] - B[0]) * 100) / 100, Math.round((A[1] - B[1]) * 100) / 100];
   }
   async function compose(spec) {
     const P = cat(); if (!P) throw new Error("These avatar parts aren't available here.");
     const err = validate(spec); if (err.length) throw new Error(err.join('; '));
-    const T = P.template, [x, y, w, h] = T.viewBox, layers = [];
+    const T = outTemplate(spec), [x, y, w, h] = T.viewBox, layers = [];
     for (const { slot, part } of resolve(spec)) {
       let t = await svgOf(part); if (!t) throw new Error('part not loaded: ' + part.id);
       const map = {};
@@ -46,7 +70,10 @@
       const pre = part.id.replace(/[^a-z0-9]/gi, '_') + '__';
       const inner = t.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
         .replace(/\bid="([^"]+)"/g, 'id="' + pre + '$1"').replace(/url\(#([^)]+)\)/g, 'url(#' + pre + '$1)').replace(/href="#([^"]+)"/g, 'href="#' + pre + '$1"');
-      layers.push('<g data-slot="' + slot + '" data-part="' + part.id + '">' + inner + '</g>');
+      const m = mapper(tplOf(part), T), [dx, dy] = followOffset(part, spec, T), tf = [];
+      if (dx || dy) tf.push('translate(' + dx + ' ' + dy + ')');
+      if (!m.same) { const [fx, fy] = tplOf(part).viewBox; tf.push('translate(' + x + ' ' + y + ') scale(' + +m.sx.toFixed(6) + ' ' + +m.sy.toFixed(6) + ') translate(' + -fx + ' ' + -fy + ')'); }
+      layers.push('<g data-slot="' + slot + '" data-part="' + part.id + '"' + (tf.length ? ' transform="' + tf.join(' ') + '"' : '') + '>' + inner + '</g>');
     }
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + x + ' ' + y + ' ' + w + ' ' + h + '" width="' + T.sizeIn.w + 'in" height="' + T.sizeIn.h + 'in" data-cst-natw-in="' + T.sizeIn.w + '">' + layers.join('') + '</svg>';
   }
@@ -63,10 +90,10 @@
     return spec;
   }
   async function toItem(spec) {
-    const svg = await compose(spec);
+    const svg = await compose(spec), T = outTemplate(spec);
     const dataURL = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-    const it = await C.addFromDataURL('Avatar', dataURL, dataURL, true, {
-      wIn: 2, hIn: 3, shape: 'contour', offsetIn: 0.04,
+    const it = await C.addFromDataURL(spec.name || 'Avatar', dataURL, dataURL, true, {
+      wIn: T.sizeIn.w, hIn: T.sizeIn.h, shape: 'contour', offsetIn: 0.04,
       asset: { id: null, pack: null, packVersion: null, kind: 'avatar', recolor: null, avatar: spec }
     });
     const q = C.processed(it, false);
@@ -74,5 +101,5 @@
     const n = C.mkAdd(it); C.mkSelect(n); C.mkCommit(); C.refresh(true);
     return it;
   }
-  C.avatar = C.registerModule('avatar', { compose, validate, resolve, randomize, toItem });
+  C.avatar = C.registerModule('avatar', { compose, validate, resolve, randomize, toItem, followOffset, outTemplate });
 })();

@@ -3,7 +3,9 @@
   'use strict';
   const C = window.CST, SCHEMA = 'cpa-catalog/1', PUBLIC_LICENSES = new Set(['CC0-1.0']);
   const ID_RE = /^[a-z0-9]+(\.[a-z0-9-]+){2}$/, SOURCES = ['original', 'ai-generated-by-owner', 'cc0-third-party'];
-  const state = { source: 'none', packs: [], byId: new Map(), warnings: [], palettes: [], avatar: null, files: {} };
+  const state = { source: 'none', packs: [], byId: new Map(), warnings: [], palettes: [], avatarSrc: [], files: {} };
+  const AV_SCHEMAS = new Set(['cpa-avatar/1', 'cpa-avatar-parts/1']), BAD_PART = /<script|<foreignObject|\son[a-z]+\s*=|javascript:/i;
+  let avatarMerged = null;
   const textCache = new Map(), LRU = 64;
 
   function validateCatalog(cat, opt) {
@@ -38,6 +40,96 @@
     return err;
   }
 
+  /* Avatar parts (§4.5). Every source (core + each pack with avatar/parts.json) keeps its own template;
+     avatarParts() returns one merged catalog whose parts remember their source (_pack/_tpl). */
+  function validateAvatar(doc) {
+    const err = [], E = (path, msg) => err.push({ path, msg });
+    if (!doc || !AV_SCHEMAS.has(doc.schema)) { E('schema', 'must be "cpa-avatar/1"'); return err; }
+    const T = doc.template || {}, vb = T.viewBox, sz = T.sizeIn || {};
+    if (!Array.isArray(vb) || vb.length !== 4 || !vb.every(n => typeof n === 'number' && isFinite(n)) || !(vb[2] > 0 && vb[3] > 0)) E('template.viewBox', '[x, y, w, h] with w, h > 0');
+    if (!(sz.w > 0 && sz.h > 0 && sz.w <= 11 && sz.h <= 11)) E('template.sizeIn', 'w/h in inches, 0-11');
+    for (const [k, a] of Object.entries(T.anchors || {})) if (!Array.isArray(a) || a.length !== 2 || !a.every(n => typeof n === 'number')) E('template.anchors.' + k, '[x, y]');
+    if (!Array.isArray(doc.slots) || !doc.slots.length) E('slots', 'required');
+    const slots = new Set((doc.slots || []).map(x => x.id)), seen = new Set();
+    (doc.parts || []).forEach((pt, i) => {
+      const at = 'parts[' + i + ']';
+      if (!pt.id || seen.has(pt.id)) E(at + '.id', 'missing or duplicate'); seen.add(pt.id);
+      if (!slots.has(pt.slot)) E(at + '.slot', 'unknown slot ' + pt.slot);
+      if (!pt.file || /^\/|^[a-z]+:|\.\./i.test(pt.file)) E(at + '.file', 'relative path required');
+      if (!pt.license) E(at + '.license', 'required');
+      for (const [k, a] of Object.entries(pt.anchors || {})) if (!Array.isArray(a) || a.length !== 2) E(at + '.anchors.' + k, '[x, y]');
+    });
+    return err;
+  }
+  function addAvatar(doc, pack, resolver, base) {
+    state.avatarSrc = state.avatarSrc.filter(x => x.pack !== pack);
+    state.avatarSrc.push({ pack, doc, resolver, base: base || '' });
+    avatarMerged = null;
+  }
+  function mergedAvatar() {
+    if (avatarMerged) return avatarMerged;
+    if (!state.avatarSrc.length) return null;
+    // Private packs first, so their template and presets are the default; the public core comes last.
+    const srcs = state.avatarSrc.slice().sort((a, b) => (a.pack === 'core') - (b.pack === 'core'));
+    const M = { schema: 'cpa-avatar/1', template: srcs[0].doc.template, templates: {}, slots: [], colorSlots: {}, parts: [], presets: [], sources: srcs.map(x => x.pack) };
+    const slotIds = new Map(), partIds = new Set(), presetIds = new Set();
+    for (const x of srcs) {
+      const d = x.doc; M.templates[x.pack] = d.template;
+      for (const sl of d.slots || []) if (!slotIds.has(sl.id)) { slotIds.set(sl.id, 1); M.slots.push(Object.assign({}, sl)); }
+      for (const [k, v] of Object.entries(d.colorSlots || {})) {
+        if (!M.colorSlots[k]) M.colorSlots[k] = Object.assign({}, v, { regions: (v.regions || []).slice() });
+        else for (const r of v.regions || []) if (!M.colorSlots[k].regions.includes(r)) M.colorSlots[k].regions.push(r);
+      }
+      for (const pt of d.parts || []) {
+        if (partIds.has(pt.id)) { state.warnings.push('duplicate avatar part skipped: ' + pt.id); continue; }
+        partIds.add(pt.id); M.parts.push(Object.assign({}, pt, { _pack: x.pack }));
+      }
+      for (const pr of d.presets || []) {
+        const id = presetIds.has(pr.id) ? x.pack + ':' + pr.id : pr.id; presetIds.add(id);
+        M.presets.push(Object.assign({}, pr, { id, pack: x.pack }));
+      }
+    }
+    M.slots.sort((a, b) => a.z - b.z);
+    return (avatarMerged = M);
+  }
+  function avatarTemplate(part) {
+    const M = mergedAvatar(); if (!M) return null;
+    return (part && M.templates[part._pack]) || M.template;
+  }
+  function mergePalettes(list) {
+    for (const pal of list || []) {
+      if (!pal || !pal.id || !Array.isArray(pal.colors)) continue;
+      const have = state.palettes.find(x => x.id === pal.id);
+      if (!have) state.palettes.push({ id: pal.id, name: pal.name || pal.id, colors: pal.colors.filter(c => /^#[0-9a-f]{6}$/i.test(c)) });
+      else for (const c of pal.colors) if (/^#[0-9a-f]{6}$/i.test(c) && !have.colors.includes(c)) have.colors.push(c);
+    }
+  }
+  async function urlText(url) {
+    if (url == null) return null;
+    if (String(url).startsWith('data:')) return decodeDataURL(String(url));
+    const r = await fetch(url); return r.ok ? r.text() : null;
+  }
+  async function readPackJSON(resolver, path) {
+    try { const t = await urlText(await resolver(path)); return t ? JSON.parse(t) : null; } catch (e) { return null; }
+  }
+  // Avatar parts and palettes that ride inside a pack (pack.json "avatar"/"palettes" or the default paths).
+  async function loadPackExtras(cat, resolver, strict) {
+    const pid = cat.pack.id;
+    const avPath = (cat.avatar && typeof cat.avatar === 'object' ? cat.avatar.parts : cat.avatar) || 'avatar/parts.json';
+    const base = avPath.includes('/') ? avPath.replace(/[^/]*$/, '') : '';
+    const doc = await readPackJSON(resolver, avPath);
+    if (doc) {
+      const errs = validateAvatar(doc);
+      if (errs.length) {
+        if (strict) throw Object.assign(new Error(errs.map(e => 'avatar ' + e.path + ': ' + e.msg).join('\n')), { errors: errs });
+        state.warnings.push.apply(state.warnings, errs.map(e => pid + ' avatar: ' + e.path + ' ' + e.msg));
+      } else addAvatar(doc, pid, resolver, base);
+    }
+    for (const pp of [cat.palettes || 'palettes.json', base + 'palettes.json']) {
+      const pal = await readPackJSON(resolver, pp); if (pal && Array.isArray(pal.palettes)) { mergePalettes(pal.palettes); break; }
+    }
+  }
+
   function addPack(cat, src, resolver) {
     const errs = validateCatalog(cat, { publicRepo: src === 'public' });
     if (errs.length) {
@@ -45,7 +137,10 @@
       state.warnings.push.apply(state.warnings, errs.map(e => 'catalog: ' + e.path + ' ' + e.msg));
     }
     const pack = { id: cat.pack.id, meta: cat.pack, src, resolver, categories: cat.categories || [] };
+    state.packs = state.packs.filter(p => !(p.id === pack.id && p.src === src));
     state.packs.push(pack);
+    if (src !== 'public') pack.ready = loadPackExtras(cat, resolver, false).catch(e => { state.warnings.push(pack.id + ': ' + e.message); });
+    else pack.ready = Promise.resolve();
     (cat.assets || []).forEach(a => {
       if (state.byId.has(a.id)) { state.warnings.push('duplicate id skipped: ' + a.id); return; }
       state.byId.set(a.id, Object.assign({ pack: pack.id }, a));
@@ -65,7 +160,7 @@
       const B = JSON.parse(bundled.textContent);
       state.files = B.files || {};
       state.palettes = (B.palettes && B.palettes.palettes) || [];
-      state.avatar = B.avatar || null;
+      if (B.avatar) addAvatar(B.avatar, 'core', (p) => state.files[p], '');
       addPack(B.catalog, 'public', (p) => state.files[p]);
       state.source = 'bundled';
     } else if (/^https?:$/.test(location.protocol)) {
@@ -75,11 +170,16 @@
           addPack(await r.json(), 'public', (p) => 'assets/' + p);
           state.source = 'fetch';
           try { const pal = await fetch('assets/palettes.json', { cache: 'no-cache' }); if (pal.ok) { const P = await pal.json(); state.palettes = P.palettes || []; } } catch (e) { /* no palettes */ }
-          try { const av = await fetch('assets/avatar/parts.json', { cache: 'no-cache' }); if (av.ok) state.avatar = await av.json(); } catch (e) { /* no avatar parts */ }
+          try { const av = await fetch('assets/avatar/parts.json', { cache: 'no-cache' }); if (av.ok) addAvatar(await av.json(), 'core', (p) => 'assets/' + p, ''); } catch (e) { /* no avatar parts */ }
         }
       } catch (e) { state.warnings.push('catalog fetch failed: ' + e.message); }
     }
-    if (C.idbPacks) { for (const p of await C.idbPacks()) addPack(p.catalog, 'pack', (path) => C.idbFileURL(p.id, path)); if (state.source === 'none' && state.packs.length) state.source = 'pack'; }
+    if (C.idbPacks) {
+      const added = [];
+      for (const p of await C.idbPacks()) { try { added.push(addPack(p.catalog, 'pack', (path) => C.idbFileURL(p.id, path))); } catch (e) { state.warnings.push('pack ' + p.id + ': ' + e.message); } }
+      await Promise.all(added.map(p => p.ready));
+      if (state.source === 'none' && state.packs.length) state.source = 'pack';
+    }
     C.bus.emit('assets:ready', { source: state.source, count: state.byId.size });
   }
 
@@ -156,21 +256,30 @@
   }
 
   C.assets = C.registerModule('assets', {
-    load, file, search, addAsset, validateCatalog, addPack,
+    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
     categories: () => state.packs.flatMap(p => p.categories).sort((a, b) => (a.order || 0) - (b.order || 0)),
     palettes: () => state.palettes.slice(),
-    avatarParts: () => state.avatar,
+    avatarParts: () => mergedAvatar(),
     partFile: async (part) => {
+      const src = state.avatarSrc.find(x => x.pack === (part._pack || 'core'));
+      if (src && src.pack !== 'core') {
+        for (const path of src.base ? [src.base + part.file, part.file] : [part.file]) {
+          let t = null; try { t = await urlText(await src.resolver(path)); } catch (e) { t = null; }
+          if (t) return t;
+        }
+        return null;
+      }
       const hit = state.files[part.file];
       if (hit) return String(hit).startsWith('data:') ? decodeDataURL(hit) : hit;
       if (/^https?:$/.test(location.protocol)) { const r = await fetch('assets/' + part.file); if (r.ok) return r.text(); }
       return null;
     },
+    badPartSvg: (t) => BAD_PART.test(t || ''),
     get source() { return state.source; },
     get warnings() { return state.warnings.slice(); },
-    get packs() { return state.packs.map(p => ({ id: p.id, meta: p.meta, src: p.src, count: [...state.byId.values()].filter(a => a.pack === p.id).length })); },
+    get packs() { const M = mergedAvatar(); return state.packs.map(p => ({ id: p.id, meta: p.meta, src: p.src, count: [...state.byId.values()].filter(a => a.pack === p.id).length, avatarParts: M ? M.parts.filter(x => x._pack === p.id).length : 0 })); },
   });
   if (document.readyState !== 'loading') load(); else document.addEventListener('DOMContentLoaded', load);
 })();

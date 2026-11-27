@@ -1,10 +1,19 @@
 #!/usr/bin/env node
 /* Validate assets/ and render thumbnails in headless Chrome.
-   Usage: node tools/build_assets.js [--check] [--root assets] */
+   Usage: node tools/build_assets.js [--check] [--root assets] [--private]
+   --private validates a private pack folder (LicenseRef-Private etc. allowed, pack.json accepted,
+   avatar-only packs allowed). It refuses to run on anything inside this repo, so the public
+   assets/ check (CC0-1.0 only) can't be relaxed by accident. */
 const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');
 const puppeteer = require(path.join(__dirname, '..', 'test', 'node_modules', 'puppeteer-core'));
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const ROOT = path.resolve(arg('--root') || path.join(__dirname, '..', 'assets')), CHECK = process.argv.includes('--check');
+const PRIVATE = process.argv.includes('--private'), REPO = path.resolve(__dirname, '..');
+if (PRIVATE && (ROOT === REPO || ROOT.startsWith(REPO + path.sep))) {
+  console.error('✗ --private is only for pack folders outside the repo (got ' + path.relative(REPO, ROOT) + '). Public assets must be CC0-1.0.');
+  process.exit(2);
+}
+const PUBLIC = !PRIVATE;
 const BUDGET = { svg: 150e3, png: 1.5e6, thumb: 15e3, part: 40e3 };
 const BAD_SVG = [/<script/i, /<foreignObject/i, /<style/i, /@import/i, /<image\b/i, /(xlink:)?href\s*=\s*"(?!#)/i];
 const HEX = /^#[0-9a-f]{6}$/;
@@ -23,8 +32,11 @@ function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
 
 (async () => {
   const errors = [], warn = [], E = (p, m) => errors.push(p + ': ' + m);
-  const cat = JSON.parse(fs.readFileSync(path.join(ROOT, 'catalog.json'), 'utf8'));
-  for (const e of loadValidator()(cat, { publicRepo: true, fileExists: exists })) {
+  const catFile = ['catalog.json'].concat(PRIVATE ? ['pack.json'] : []).find(f => exists(f));
+  const partsRel = (PRIVATE && !exists('avatar/parts.json') && exists('parts.json')) ? 'parts.json' : path.join('avatar', 'parts.json');
+  if (!catFile && !(PRIVATE && exists(partsRel))) { console.error('✗ no catalog.json' + (PRIVATE ? ', pack.json or avatar/parts.json' : '') + ' in ' + ROOT); process.exit(1); }
+  const cat = catFile ? JSON.parse(fs.readFileSync(path.join(ROOT, catFile), 'utf8')) : { schema: 'cpa-catalog/1', pack: { id: 'avatar' }, categories: [], assets: [] };
+  for (const e of loadValidator()(cat, { publicRepo: PUBLIC, fileExists: exists })) {
     if (!CHECK && /\.files\.thumb$/.test(e.path) && /missing file/.test(e.msg)) continue;
     E(e.path, e.msg);
   }
@@ -56,19 +68,32 @@ function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
       for (const c of p.colors || []) if (!HEX.test(c)) E('palettes.' + p.id, 'bad colour ' + c);
     }
   }
-  const partsPath = path.join(ROOT, 'avatar', 'parts.json');
+  const partsPath = path.join(ROOT, partsRel);
   if (fs.existsSync(partsPath)) {
     const parts = JSON.parse(fs.readFileSync(partsPath, 'utf8'));
-    const slots = new Set((parts.slots || []).map(s => s.id));
+    const slots = new Set((parts.slots || []).map(s => s.id)), ids = new Set();
+    if (!['cpa-avatar/1', 'cpa-avatar-parts/1'].includes(parts.schema)) E('avatar/parts.json', 'schema must be cpa-avatar/1');
+    const tvb = (parts.template && parts.template.viewBox) || [];
+    if (tvb.length !== 4 || !(tvb[2] > 0 && tvb[3] > 0)) E('avatar/parts.json', 'template.viewBox must be [x, y, w, h]');
+    const anchors = (parts.template && parts.template.anchors) || {};
+    // Part files resolve against the assets root (core) or, in a pack, against the parts.json folder.
+    const partFile = (f) => [f, path.join(path.dirname(partsRel), f)].find(x => exists(x));
     for (const p of parts.parts || []) {
+      if (ids.has(p.id)) E(p.id, 'duplicate part id'); ids.add(p.id);
       if (!slots.has(p.slot)) E(p.id, 'unknown slot ' + p.slot);
-      if (p.license !== 'CC0-1.0') E(p.id, 'public parts must be CC0-1.0');
-      if (!p.file || !exists(p.file)) E(p.id, 'missing file ' + p.file);
+      if (PUBLIC && p.license !== 'CC0-1.0') E(p.id, 'public parts must be CC0-1.0');
+      if (!p.license) E(p.id, 'license required');
+      if (p.follows && !anchors[p.follows] && !(p.anchors && p.anchors[p.follows])) E(p.id, 'follows unknown anchor ' + p.follows);
+      for (const k of ['pairs']) if (p[k] && !(parts.parts || []).some(q => q.id === p[k])) E(p.id, k + ' points at a missing part ' + p[k]);
+      const rel = p.file && partFile(p.file);
+      if (!rel) E(p.id, 'missing file ' + p.file);
       else {
-        const buf = fs.readFileSync(path.join(ROOT, p.file));
+        const buf = fs.readFileSync(path.join(ROOT, rel));
         if (buf.length > BUDGET.part) E(p.id, 'part is ' + buf.length + ' bytes');
         const t = buf.toString('utf8');
         for (const re of BAD_SVG) if (re.test(t)) E(p.id, 'SVG contains a forbidden construct ' + re);
+        const vb = /viewBox="\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(t);
+        if (vb && tvb.length === 4 && vb.slice(1).map(Number).some((n, i) => Math.abs(n - tvb[i]) > 0.01)) E(p.id, 'viewBox ' + vb.slice(1).join(' ') + ' ≠ template ' + tvb.join(' '));
       }
     }
   }
@@ -101,5 +126,5 @@ function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
   }
   warn.forEach(w => console.warn('⚠ ' + w));
   if (errors.length) { errors.forEach(e => console.error('✗ ' + e)); process.exit(1); }
-  console.log('✓ ' + cat.assets.length + ' assets OK' + (CHECK ? ' (check only)' : ''));
+  console.log('✓ ' + cat.assets.length + ' assets OK' + (CHECK ? ' (check only)' : '') + (PRIVATE ? ' (private pack)' : ''));
 })().catch(e => { console.error(e); process.exit(1); });

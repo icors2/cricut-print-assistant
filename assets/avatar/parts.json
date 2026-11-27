@@ -1,11 +1,17 @@
 {
-  "schema": "cpa-avatar-parts/1",
+  "schema": "cpa-avatar/1",
   "template": {
     "id": "kid-v1",
     "file": "templates/avatar-kid-v1.svg",
-    "viewBox": [0, 0, 600, 900],
+    "viewBox": [0, 0, 1000, 1500],
     "sizeIn": { "w": 2, "h": 3 },
-    "anchors": { "head": [300, 240] }
+    "anchors": {
+      "head": [500, 400], "neck": [500, 590],
+      "shoulderL": [330, 650], "shoulderR": [670, 650],
+      "handL": [250, 960], "handR": [750, 960],
+      "waist": [500, 930],
+      "footL": [420, 1440], "footR": [580, 1440]
+    }
   },
   "slots": [
     { "id": "hairBack", "name": "Hair (back)", "z": 10, "optional": true },
@@ -26,10 +32,10 @@
     { "id": "core.avatar.face-round", "slot": "face", "name": "Round face", "file": "avatar/face/face-round.svg", "regions": ["skin"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
     { "id": "core.avatar.eyes-happy", "slot": "eyes", "name": "Happy eyes", "file": "avatar/eyes/eyes-happy.svg", "regions": ["iris"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
     { "id": "core.avatar.mouth-smile", "slot": "mouth", "name": "Smile", "file": "avatar/mouth/mouth-smile.svg", "regions": [], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
-    { "id": "core.avatar.hair-bob-front", "slot": "hairFront", "name": "Bob", "file": "avatar/hair/bob-front.svg", "pairs": "core.avatar.hair-bob-back", "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
-    { "id": "core.avatar.hair-bob-back", "slot": "hairBack", "name": "Bob (back)", "file": "avatar/hair/bob-back.svg", "hiddenInPicker": true, "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
-    { "id": "core.avatar.hair-short-back", "slot": "hairBack", "name": "Short back", "file": "avatar/hair/short-back.svg", "hiddenInPicker": true, "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
-    { "id": "core.avatar.hat-beanie", "slot": "hat", "name": "Beanie", "file": "avatar/hat/beanie.svg", "hides": ["hairFront"], "swapTo": { "hairBack": "core.avatar.hair-short-back" }, "regions": ["hat", "pompom"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" }
+    { "id": "core.avatar.hair-bob-front", "slot": "hairFront", "name": "Bob", "file": "avatar/hair/bob-front.svg", "pairs": "core.avatar.hair-bob-back", "follows": "head", "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
+    { "id": "core.avatar.hair-bob-back", "slot": "hairBack", "name": "Bob (back)", "file": "avatar/hair/bob-back.svg", "hiddenInPicker": true, "follows": "head", "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
+    { "id": "core.avatar.hair-short-back", "slot": "hairBack", "name": "Short back", "file": "avatar/hair/short-back.svg", "hiddenInPicker": true, "follows": "head", "regions": ["hair"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" },
+    { "id": "core.avatar.hat-beanie", "slot": "hat", "name": "Beanie", "file": "avatar/hat/beanie.svg", "hides": ["hairFront"], "swapTo": { "hairBack": "core.avatar.hair-short-back" }, "follows": "head", "regions": ["hat", "pompom"], "license": "CC0-1.0", "author": "Cricut Print Assistant contributors", "source": "original" }
   ],
   "presets": [
     {

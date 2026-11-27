@@ -14,12 +14,21 @@
     const cat = C.assets.avatarParts(); if (!cat) { box.innerHTML = '<p>These avatar parts aren\'t available here.</p>'; return; }
     try { box.innerHTML = await C.avatar.compose(spec); } catch (e) { box.innerHTML = '<p>' + e.message + '</p>'; }
     const slots = $('#avatarSlots'); if (!slots) return;
-    slots.innerHTML = (cat.slots || []).map(slot => {
-      const opts = (cat.parts || []).filter(p => p.slot === slot.id);
+    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const pals = (C.assets.palettes && C.assets.palettes()) || [];
+    const presets = (cat.presets || []).length ? '<div class="avatarSlot avatarPresets"><b>Characters</b> ' + cat.presets.map(pr => `<button type="button" data-preset="${esc(pr.id)}" aria-label="${esc(pr.name || pr.id)}">${esc(pr.name || pr.id)}</button>`).join('') + '</div>' : '';
+    const colors = Object.entries(cat.colorSlots || {}).map(([cs, def]) => {
+      const pal = pals.find(x => x.id === def.palette); if (!pal || !pal.colors.length) return '';
+      const cur = (spec.colors || {})[cs] || def.default;
+      return `<div class="avatarSlot avatarColors"><b>${esc(def.name || cs)}</b> ` + pal.colors.map(c => `<button type="button" data-color="${esc(cs)}" data-hex="${c}" aria-pressed="${c === cur}" aria-label="${esc(def.name || cs)} ${c}" style="background:${c}">&nbsp;</button>`).join('') + '</div>';
+    }).join('');
+    slots.innerHTML = presets + colors + (cat.slots || []).map(slot => {
+      const opts = (cat.parts || []).filter(p => p.slot === slot.id && !p.hiddenInPicker);
+      if (!opts.length) return '';
       const cur = spec.parts[slot.id] || '';
       const locked = !!(spec.locks && spec.locks[slot.id]);
       return `<div class="avatarSlot"><b>${slot.name}</b> <button type="button" data-lock="${slot.id}" aria-pressed="${locked}" aria-label="Lock ${slot.name}">${locked ? '🔒' : '🔓'}</button>`
-        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${p.name}">${p.name}</button>`).join('')
+        + opts.map(p => `<button type="button" data-part="${p.id}" aria-pressed="${p.id === cur}" aria-label="${esc(p.name)}">${esc(p.name)}</button>`).join('')
         + `</div>`;
     }).join('');
   }
@@ -59,6 +68,12 @@
       const part = e.target.closest('[data-part]');
       push();
       if (lock) { const id = lock.dataset.lock; spec.locks[id] = !spec.locks[id]; }
+      const pre = e.target.closest('[data-preset]'), col = e.target.closest('[data-color]');
+      if (pre) {
+        const pr = (C.assets.avatarParts().presets || []).find(x => x.id === pre.dataset.preset);
+        if (pr) spec = Object.assign({ schema: 'cpa-avatar-spec/1', locks: {} }, { template: spec.template, locks: spec.locks || {} }, JSON.parse(JSON.stringify({ name: pr.name, parts: pr.parts || {}, colors: pr.colors || {}, partColors: pr.partColors || {} })));
+      }
+      if (col) { spec.colors = Object.assign({}, spec.colors, { [col.dataset.color]: col.dataset.hex }); }
       if (part) {
         const id = part.dataset.part;
         const P = C.assets.avatarParts();
@@ -91,7 +106,10 @@
     });
     C.bus.on('assets:ready', () => {
       const cat = C.assets.avatarParts();
-      if (cat && !Object.keys(spec.parts).length && cat.presets && cat.presets[0]) spec.parts = Object.assign({}, cat.presets[0].parts);
+      if (cat && cat.presets && cat.presets[0]) {
+        const known = new Set((cat.parts || []).map(x => x.id)), stale = Object.values(spec.parts).some(id => id && !known.has(id));
+        if (!Object.keys(spec.parts).length || stale) { const pr = cat.presets[0]; spec.parts = Object.assign({}, pr.parts); spec.colors = Object.assign({}, pr.colors); spec.partColors = Object.assign({}, pr.partColors); }
+      }
       draw(); loadGallery();
     });
     C.bus.on('avatar:edit', (item) => { editing = item; if (item.asset && item.asset.avatar) spec = JSON.parse(JSON.stringify(item.asset.avatar)); else alert("These avatar parts aren't available here."); draw(); document.querySelector('[data-tab=tabAvatar]').click(); });

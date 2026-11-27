@@ -391,7 +391,7 @@ or a single **JSON** file, which is easier to make with scripts:
     "viewBox": [0, 0, 1000, 1500],
     "sizeIn": { "w": 2.0, "h": 3.0 },
     "anchors": {
-      "head": [500, 380], "neck": [500, 590],
+      "head": [500, 400], "neck": [500, 590],
       "shoulderL": [330, 650], "shoulderR": [670, 650],
       "handL": [250, 960], "handR": [750, 960],
       "waist": [500, 930],
@@ -447,7 +447,10 @@ or a single **JSON** file, which is easier to make with scripts:
 - `anchors` matter only for:
   - body variants with different proportions: a body part may declare its own `anchors`, and parts with `"follows": "<anchor>"` get shifted by `bodyAnchor − templateAnchor`;
   - future poses.
-- With no `follows`, a part isn't moved.
+- With no `follows`, a part isn't moved. Clothes (`top`, `bottom`, `shoes`) are normally drawn **in place on the body they fit** and have no `follows`; the shoulder/hand/foot anchors are drawing guides, not hard limits. If a body variant has a different silhouette (e.g. a slimmer chibi torso), either draw clothes for that body, or give that body its own `anchors` (e.g. `"shoulderL": [380, 660]`) and set `"follows": "shoulderL"`/`"neck"`/`"waist"` on the clothes that should move with it.
+- **Template size per source.** Each `parts.json` (core or a pack) keeps its own `template.viewBox`. The composed SVG uses the chosen body's template (its `viewBox` and `sizeIn`); parts from a source with a different artboard are mapped onto it viewBox-to-viewBox, and `follows` offsets are computed in the output units. The core template is 1000 × 1500 = 2 × 3 in.
+- **Avatar parts in packs.** A `.cpapack.zip` may carry `avatar/parts.json` (point elsewhere with `"avatar": "path/parts.json"` in `pack.json`), its SVGs, and `palettes.json` (at the zip root or next to `parts.json`). Part `file` paths are relative to the `parts.json` folder. The loader merges every pack's parts, slots, colour slots and presets into `CST.assets.avatarParts()` (pack presets first; a preset id that clashes with an earlier one is prefixed `<pack>:`), and merges palettes by id. A broken `avatar/parts.json` makes the import fail with the JSON path. Both `cpa-avatar/1` and the older `cpa-avatar-parts/1` schema names are accepted.
+- Validate a private pack folder (outside the repo) with `node tools/build_assets.js --check --private --root <folder>`. `--private` allows `LicenseRef-Private`, accepts `pack.json` and avatar-only packs, and refuses to run on any folder inside the repo, so the public `assets/` check stays CC0-only.
 - `pairs`: choosing the part also adds its partner in the partner's slot (front + back hair).
 - `hides`: these slots are dropped while this part is chosen.
 - `swapTo`: replaces the part in those slots (e.g. a short back-hair under a beanie).
@@ -1721,7 +1724,7 @@ Rules (✔︎ = the validator enforces it):
 - The z-order comes from the slot (§4.5); don't fake it with clipping. Hair that falls behind the head goes in the `hairBack` slot.
 - **Overlap rule:** every part overlaps the body or head by at least 12 units (about 0.6 mm), so the flattened silhouette is one piece. Hats must touch the hair or the head. Held items must touch a hand.
 - Faces must read at 2 × 3 in: eyes at least 40 units wide and outlines at least 8 units.
-- Body variants (later) can declare their own `anchors`; parts with `follows` are shifted by the difference.
+- Body variants can declare their own `anchors`; parts with `follows` are shifted by the difference (§4.5). Clothes are drawn on the body they fit unless they `follow` an anchor.
 
 ### 17.5 Thumbnails
 

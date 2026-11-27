@@ -64,7 +64,7 @@
   function renderPacks() {
     const grid = $('#assetGrid');
     const packs = C.assets.packs.filter(p => p.src === 'pack');
-    grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
+    grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
   }
   async function openDetails(asset) {
     const sheet = $('#assetSheet'); if (!sheet) return;
@@ -136,11 +136,18 @@
     }
     const errs = C.assets.validateCatalog(catalog, { publicRepo: false });
     if (errs.length) throw Object.assign(new Error(errs.map(e => e.path + ': ' + e.msg).join('\n')), { errors: errs });
+    const avPath = (catalog.avatar && typeof catalog.avatar === 'object' ? catalog.avatar.parts : catalog.avatar) || 'avatar/parts.json';
+    if (files[avPath]) {
+      let doc = null; try { doc = JSON.parse(decodeURIComponent(escape(atob(String(files[avPath]).split(',')[1] || '')))); } catch (e) { try { doc = JSON.parse(files[avPath]); } catch (e2) { doc = null; } }
+      const aerr = doc ? C.assets.validateAvatar(doc) : [{ path: avPath, msg: 'is not valid JSON' }];
+      if (aerr.length) throw Object.assign(new Error(aerr.map(e => 'avatar ' + e.path + ': ' + e.msg).join('\n')), { errors: aerr });
+    }
     const d = await db(), t = d.transaction(['packs', 'files'], 'readwrite');
     t.objectStore('packs').put({ id: catalog.pack.id, meta: catalog.pack, catalog, t: Date.now() });
     for (const [path, url] of Object.entries(files)) t.objectStore('files').put({ blob: url, type: '' }, catalog.pack.id + '/' + path);
     await txDone(t);
-    C.assets.addPack(catalog, 'pack', (path) => idbFileURL(catalog.pack.id, path));
+    const added = C.assets.addPack(catalog, 'pack', (path) => idbFileURL(catalog.pack.id, path));
+    if (added && added.ready) await added.ready;
     C.bus.emit('assets:ready', { source: C.assets.source, count: C.assets.list().length });
   }
   async function deletePack(id) {
