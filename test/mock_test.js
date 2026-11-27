@@ -190,6 +190,13 @@ const FILES = ['wall_panel.png', 'floor_boards.png', 'window.png', 'sofa.png', '
   const e3 = await p.evaluate(() => window.T.exports());
   ok(!(await p.evaluate(() => window.CST.S.numberPieces)) && e3.svgs.join('\n') === e0.svgs.join('\n'), 'numbers OFF again: cut SVG back to the baseline');
   await p.click('[data-tab=tabMock]'); await wait(800);
+  await p.evaluate(() => window.CST.mkSelect(window.T.node('floor_lamp.png')));
+  await p.click('#mkAnchor'); await wait(200);
+  let [k0, k1] = await dragN('floor_lamp.png', 1.2, 0.8, { alt: true });
+  ok(k1.locked && Math.abs(k1.x - k0.x) < 0.02 && Math.abs(k1.y - k0.y) < 0.02, 'an anchored piece does not move (' + (k1.x - k0.x).toFixed(3) + ', ' + (k1.y - k0.y).toFixed(3) + ')');
+  await p.click('#mkAnchor'); await wait(200);
+  let [k2, k3] = await dragN('floor_lamp.png', 1.2, 0.8, { alt: true });
+  ok(!k3.locked && Math.abs(k3.x - k2.x - 1.2) < 0.05 && Math.abs(k3.y - k2.y - 0.8) < 0.05, 'turning Anchor off lets the piece move');
   const beforeRm = await p.evaluate(() => {
     const C = window.CST, it = C.items.find(i => i.name === 'rug.png');
     const n = it && C.MK.nodes.find(nd => nd.itemId === it.id);

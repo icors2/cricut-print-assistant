@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Turn a folder of finished pictures into a private .cpapack.zip.
    node tools/make_pack.js [folder] [--id packid] [--category characters] [--name "My stickers"]
-   A subfolder named rooms, furniture, decor, items, or characters sets the category.
+   A subfolder named rooms, furniture, decor, items, characters, or clothing sets the category.
    Loose pictures, and any other folder, go to items unless --category is set.
    The zip is written in the folder as <id>.cpapack.zip. Import it with + Import pack. */
 const fs = require('fs'), path = require('path'), zlib = require('zlib');
@@ -10,7 +10,8 @@ const CATS = [
   { id: 'furniture', name: 'Furniture', icon: '🛋️', order: 2 },
   { id: 'decor', name: 'Decor', icon: '🖼️', order: 3 },
   { id: 'items', name: 'Items', icon: '🧸', order: 4 },
-  { id: 'characters', name: 'Characters', icon: '🐻', order: 5 }
+  { id: 'characters', name: 'Characters', icon: '🐻', order: 5 },
+  { id: 'clothing', name: 'Clothing', icon: '👕', order: 6 }
 ];
 const KNOWN = new Set(CATS.map(c => c.id));
 const EXT = new Set(['.png', '.jpg', '.jpeg']);
@@ -99,7 +100,7 @@ function walk(dir, rel) {
 }
 function categoryFor(rel, forced) {
   if (forced) return forced;
-  const top = rel.split('/')[0];
+  const top = rel.split('/')[0].toLowerCase();
   if (rel.includes('/') && KNOWN.has(top)) return top;
   return 'items';
 }

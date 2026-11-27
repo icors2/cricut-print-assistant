@@ -9,5 +9,6 @@ sample_output/*
 .DS_Store
 /tmp/
 .wrangler/
+material-kit-2-3.0.0/
 __pycache__/
 *.pyc

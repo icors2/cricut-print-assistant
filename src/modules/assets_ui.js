@@ -82,7 +82,7 @@
     });
     $('#assetHead').textContent = (cats.find(c => c.id === cur) || { name: cur === '__recent' ? 'Recent' : 'All' }).name + ' · ' + list.length;
   }
-  const LIB_CATS = new Set(['rooms', 'furniture', 'decor', 'items', 'characters']);
+  const LIB_CATS = new Set(['rooms', 'furniture', 'decor', 'items', 'characters', 'clothing']);
   const TOKEN_KEY = 'cst.assetWriteToken';
   let packNote = '';
   function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
@@ -92,7 +92,7 @@
     const grid = $('#assetGrid');
     const packs = C.assets.packs.filter(p => p.src === 'pack');
     const rows = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-save="${p.id}">Save to library</button><button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
-    grid.innerHTML = '<p><label>Write token <input id="packToken" type="password" autocomplete="off"></label> <span class="muted">The secret you set with wrangler secret put ASSET_WRITE_TOKEN. Kept for this visit only. Saving publishes the pictures for anyone who opens the site.</span></p><p id="packSaveMsg" class="muted"></p>' + rows;
+    grid.innerHTML = '<p><label>Write token <input id="packToken" type="password" autocomplete="off"></label> <span class="muted">The upload secret for this site. Kept for this visit only. Saving publishes every picture in the pack, under its file name, for anyone who opens the site.</span></p><p id="packSaveMsg" class="muted"></p>' + rows;
     const tok = $('#packToken'); if (tok) tok.value = token();
     const msg = $('#packSaveMsg'); if (msg) msg.textContent = packNote;
   }
@@ -162,17 +162,18 @@
     const library = asset.pack === 'library' ? '<p><label>Name <input id="libName" maxlength="40" value="' + esc(asset.name) + '"></label> '
       + '<label>Category <select id="libCat">' + cats.map(c => '<option value="' + esc(c.id) + '"' + (c.id === asset.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label> '
       + '<label>Write token <input id="libToken" type="password" autocomplete="off"></label> '
-      + '<span class="muted">Same secret as wrangler secret put ASSET_WRITE_TOKEN.</span> '
+      + '<span class="muted">The same upload secret. The name is public.</span> '
       + '<button type="button" id="libRename">Save label</button></p>' : '';
     $('#assetSheetBody').innerHTML = `<h2>${esc(asset.name)}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
       + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => esc(r.name)).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
       + `<p class="muted">License: ${esc(asset.license)}${asset.license === 'LicenseRef-Private' ? ' 🔒' : ''} · ${esc(asset.author || '')}</p>`
       + library
-      + '<p><button type="button" id="assetAdd">Add to scene</button> <button type="button" id="assetAdd2">Add 2</button>'
-      + (asset.role === 'backdrop' ? ' <button type="button" id="assetBg">Use as background</button>' : '') + '</p>';
+      + (asset.role === 'backdrop'
+        ? '<p><button type="button" id="assetBg">Use as background</button></p>'
+        : '<p><button type="button" id="assetAdd">Add to scene</button> <button type="button" id="assetAdd2">Add 2</button></p>');
     sheet.hidden = false;
-    $('#assetAdd').onclick = () => C.assets.addAsset(asset).then(() => toastAdded(asset));
-    $('#assetAdd2').onclick = async () => { await C.assets.addAsset(asset); await C.assets.addAsset(asset); toastAdded(asset); };
+    const add = $('#assetAdd'); if (add) add.onclick = () => C.assets.addAsset(asset).then(() => toastAdded(asset));
+    const add2 = $('#assetAdd2'); if (add2) add2.onclick = async () => { await C.assets.addAsset(asset); await C.assets.addAsset(asset); toastAdded(asset); };
     const bg = $('#assetBg'); if (bg) bg.onclick = () => useBackdrop(asset);
     const ed = $('#assetRecolor'); if (ed) ed.onclick = () => { sheet.hidden = true; C.bus.emit('color:open', { asset }); };
     const ren = $('#libRename');
@@ -188,6 +189,47 @@
     };
     if (svg && C.recolor) { /* preview uses the file as stored */ }
   }
+  let bgCat = '';
+  function ensureBgPick() {
+    let sheet = document.getElementById('bgPickSheet');
+    if (sheet) return sheet;
+    sheet = document.createElement('div');
+    sheet.id = 'bgPickSheet';
+    sheet.hidden = true;
+    sheet.innerHTML = '<div class="sheet" role="dialog" aria-labelledby="bgPickTitle"><h2 id="bgPickTitle">Choose a background</h2><div id="bgPickCats"></div><div id="bgPickGrid" class="assetGrid"></div></div>';
+    sheet.addEventListener('click', (e) => {
+      if (e.target === sheet) { sheet.hidden = true; return; }
+      const catBtn = e.target.closest('[data-bgcat]');
+      if (catBtn && sheet.contains(catBtn)) { bgCat = catBtn.dataset.bgcat; fillBgPick(); return; }
+      const tile = e.target.closest('[data-bg]');
+      if (!tile || !sheet.contains(tile)) return;
+      const asset = C.assets.get(tile.dataset.bg);
+      if (!asset) return;
+      sheet.hidden = true;
+      useBackdrop(asset);
+    });
+    document.body.appendChild(sheet);
+    return sheet;
+  }
+  function fillBgPick() {
+    const sheet = ensureBgPick();
+    const cats = (C.assets.categories() || []).filter(c => c.id && c.id.charAt(0) !== '_');
+    const bar = $('#bgPickCats');
+    bar.innerHTML = '<button type="button" class="mini' + (bgCat ? '' : ' on') + '" data-bgcat="">All</button>'
+      + cats.map(c => '<button type="button" class="mini' + (c.id === bgCat ? ' on' : '') + '" data-bgcat="' + esc(c.id) + '">' + (c.icon || '') + ' ' + esc(c.name) + '</button>').join('');
+    const list = C.assets.search('', bgCat || undefined);
+    const grid = $('#bgPickGrid');
+    grid.innerHTML = list.length ? list.map(a => {
+      const thumb = direct(a) ? 'assets/' + (a.files.thumb || '') : '';
+      return '<button type="button" class="assetTile" data-bg="' + esc(a.id) + '"><img alt="" src="' + thumb + '"><span>' + esc(a.name) + '</span></button>';
+    }).join('') : '<p class="muted">Nothing in this category yet.</p>';
+    list.forEach(a => {
+      if (direct(a)) return;
+      const img = grid.querySelector('[data-bg="' + a.id + '"] img'); if (!img) return;
+      tileThumb(a).then(u => { if (u) img.src = u; }).catch(() => { /* leave blank */ });
+    });
+    sheet.hidden = false;
+  }
   async function useBackdrop(asset) {
     const isSvg = !!asset.files.svg;
     const text = isSvg ? await C.assets.file(asset, 'svg') : null;
@@ -196,14 +238,10 @@
     const fit = document.querySelector('#mkBgFit'); if (fit) fit.value = 'fill';
     C.mkCommit(); C.renderMock(true);
     document.querySelector('[data-tab=tabMock]').click();
+    if (C.toast) C.toast(asset.name + ' set as the background');
   }
   function toastAdded(asset) {
-    const t = $('#toast'); if (!t || !C.toast) { C.toast && C.toast(asset.name + ' added'); return; }
-    t.className = 'toast show'; t.innerHTML = '';
-    t.append(asset.name + ' added to your scene. ');
-    const go = document.createElement('button'); go.type = 'button'; go.textContent = 'Go to Mockup'; go.onclick = () => document.querySelector('[data-tab=tabMock]').click();
-    const un = document.createElement('button'); un.type = 'button'; un.textContent = 'Undo'; un.onclick = () => C.mkUndo();
-    t.append(go, un);
+    if (C.toast) C.toast(asset.name + ' added to your scene');
   }
 
   async function readZip(buf) {
@@ -279,7 +317,7 @@
   }
   function boot() {
     const root = $('#tabAssets'); if (!root) return;
-    root.innerHTML = '<div class="assetSide"><input type="search" id="assetSearch" placeholder="Search" aria-label="Search stickers"><div id="assetCats"></div><button type="button" id="packImport">+ Import pack</button><input id="packFile" type="file" accept=".zip,.json,application/zip,application/json" hidden><button type="button" id="pwaOffline">Make available offline</button></div><div class="assetMain"><div id="assetHead"></div><div id="assetGrid" role="list"></div></div><div id="assetSheet" hidden><div class="sheet" id="assetSheetBody"></div></div>';
+    root.innerHTML = '<div class="assetSide"><input type="search" id="assetSearch" placeholder="Search" aria-label="Search stickers"><div id="assetCats"></div><button type="button" id="packImport">+ Import pack</button><input id="packFile" type="file" accept=".zip,.json,application/zip,application/json" hidden><button type="button" id="pwaOffline">Make available offline</button><button type="button" id="pwaInstall" hidden>Add to Home Screen</button></div><div class="assetMain"><div id="assetHead"></div><div id="assetGrid" class="assetGrid" role="list"></div></div><div id="assetSheet" hidden><div class="sheet" id="assetSheetBody"></div></div>';
     const search = $('#assetSearch'); let timer = 0;
     search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { q = search.value; paint(); }, 120); });
     $('#assetCats').addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (!b) return; cat = b.dataset.cat; paint(); });
@@ -287,6 +325,7 @@
       const tile = e.target.closest('.assetTile'); if (!tile) return;
       const asset = C.assets.get(tile.dataset.id); if (!asset) return;
       if (e.detail === 0) return;
+      if (asset.role === 'backdrop') { useBackdrop(asset); return; }
       C.assets.addAsset(asset).then(() => toastAdded(asset));
     });
     let hold = 0;
@@ -325,6 +364,8 @@
       }
     });
     const off = $('#pwaOffline'); if (off && C.pwa) off.onclick = async () => { const r = await C.pwa.makeOffline(); C.toast(r.ok ? 'Available offline' : 'Could not cache the library'); };
+    const bgPick = $('#mkBgAsset'); if (bgPick) bgPick.onclick = () => fillBgPick();
+    if (C.pwa && C.pwa.bindInstall) C.pwa.bindInstall($('#pwaInstall'));
     const kid = $('#kidMode');
     if (kid) kid.onclick = () => { kidMode(!C.S.ui.kidMode); try { localStorage.setItem('cst.settings', JSON.stringify(C.S)); } catch (e) { /* ignore */ } };
     const grown = $('#grownups'); let gTimer = 0;

@@ -66,10 +66,49 @@
     }
     return { ok: true, count: files.length };
   }
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; const b = document.getElementById('pwaInstall'); if (b && served && !standaloneNow()) b.hidden = false; });
+  function standaloneNow() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+  function ensureGuide() {
+    let sheet = document.getElementById('installSheet');
+    if (sheet) return sheet;
+    sheet = document.createElement('div');
+    sheet.id = 'installSheet';
+    sheet.hidden = true;
+    const ua = navigator.userAgent || '';
+    const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Chrome|Android/.test(ua);
+    const lead = safari ? '' : '<p>On an iPad this has to be done in Safari. Open this page there, then:</p>';
+    sheet.innerHTML = '<div class="sheet" role="dialog" aria-labelledby="installTitle"><h2 id="installTitle">Add to Home Screen</h2>'
+      + lead
+      + '<ol><li>Tap the Share button in Safari, the square with an arrow, in the toolbar.</li>'
+      + '<li>Tap <b>Add to Home Screen</b>.</li>'
+      + '<li>Tap <b>Add</b>. The icon is named Sticker Studio and opens full screen.</li></ol>'
+      + '<p><button type="button" class="btn" id="installClose">Got it</button></p></div>';
+    sheet.addEventListener('click', (e) => { if (e.target === sheet || e.target.id === 'installClose') sheet.hidden = true; });
+    document.body.appendChild(sheet);
+    return sheet;
+  }
+  function bindInstall(btn) {
+    if (!btn) return;
+    const hide = () => { btn.hidden = true; };
+    if (!served || standaloneNow()) { hide(); return; }
+    btn.hidden = false;
+    btn.onclick = async () => {
+      if (standaloneNow()) { hide(); return; }
+      if (deferred) {
+        deferred.prompt();
+        try { const choice = await deferred.userChoice; deferred = null; if (choice && choice.outcome === 'accepted') hide(); }
+        catch (e) { deferred = null; }
+        return;
+      }
+      ensureGuide().hidden = false;
+    };
+    window.addEventListener('appinstalled', hide);
+  }
   C.pwa = C.registerModule('pwa', {
-    register, shareOrDownload, persist, makeOffline,
+    register, shareOrDownload, persist, makeOffline, bindInstall,
     get tried() { return tried; },
-    get standalone() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; },
+    get standalone() { return standaloneNow(); },
   });
   C.bus.on('pwa:update', toastUpdate);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', register);

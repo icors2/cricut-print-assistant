@@ -42,6 +42,7 @@ function serve() {
   const seeded = buildLibraryCatalog(R);
   ok(seeded.catalog.pack.id === 'library' && seeded.catalog.assets.every(a => a.id.startsWith('library.')), 'seed rewrites the starter catalog into the library pack');
   ok(seeded.catalog.categories.some(c => c.id === 'characters' && c.order === 5), 'the starter catalog has a Characters category');
+  ok(seeded.catalog.categories.some(c => c.id === 'clothing' && c.order === 6), 'the starter catalog has a Clothing category');
   ok(seeded.files.length > 5 && seeded.files.every(f => f.key === 'catalog.json' || f.abs), 'seed points at real files (' + seeded.files.length + ')');
 
   const worker = await import('../worker/index.js');
@@ -90,8 +91,8 @@ function serve() {
   }), type: 'application/json' });
   const env2 = { LIBRARY: old, ASSET_WRITE_TOKEN: 'test-token', ASSETS: env.ASSETS };
   const listed = JSON.parse(await (await worker.handleRequest(call('GET', '/assets/catalog.json'), env2)).text());
-  ok(listed.categories.some(c => c.id === 'characters') && listed.assets.length === 0, 'an older library catalog gains Characters');
-  ok(JSON.parse(old.map.get('catalog.json').body).categories.some(c => c.id === 'characters'), 'the merged catalog is written back');
+  ok(listed.categories.some(c => c.id === 'characters') && listed.categories.some(c => c.id === 'clothing' && c.order === 6) && listed.assets.length === 0, 'an older library catalog gains Characters and Clothing');
+  ok(JSON.parse(old.map.get('catalog.json').body).categories.some(c => c.id === 'clothing'), 'the merged catalog is written back');
   const bear = Object.assign({}, entry, { id: 'library.characters.bear', category: 'characters', name: 'Bear' });
   ok((await worker.handleRequest(call('POST', '/api/assets', { entry: bear, png: PNG, thumb: PNG }, 'test-token'), env2)).status === 200, 'a save in Characters is accepted');
 

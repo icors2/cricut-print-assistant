@@ -163,7 +163,7 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `mock_save_test.js` | Collapsible Mockup panels; file save → fresh page → open gives an identical state and exports; IndexedDB named saves, Ctrl+S, rename/delete; image autosave across reloads; low-storage warning |
 | `modules_test.js` | Module registry and event bus; `items:changed` after refresh; a module left out of `ORDER` fails the build |
 | `touch_test.js` | Two-finger pinch and twist, one undo step, 44 px targets; a gesture matches a mouse edit |
-| `pwa_test.js` | Manifest, service worker on localhost, offline reload, cache purge; no registration on file:// |
+| `pwa_test.js` | Manifest, service worker on localhost, offline reload, cache purge; no registration on file://; Add to Home Screen is hidden from a file and shows the iPad steps when served |
 | `ipad_quirks_test.js` | Share-or-download, canvas budget, storage banner, HEIC message |
 | `assets_validator_test.js` | Each broken catalog fails for its own reason |
 | `assets_loader_test.js` | file:// does not fetch; http loads the catalog; the bundle inlines it |

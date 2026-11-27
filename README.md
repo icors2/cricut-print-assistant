@@ -45,9 +45,9 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
   - Bad readings are flagged by name, with fixes such as "X and Y look swapped at T1".
   - Calibration is saved per sheet size in the browser. You can export/import it, it's stored in project files, and you can save a copy of the tool with it built in.
 - **Mockup (Mockup tab):** arrange the stickers into the finished scene (for example a dollhouse room) at true relative size.
-  - Move, rotate, flip, layer, hide, add copies.
+  - Move, rotate, flip, layer, hide, add copies. **Anchor** keeps one copy where it is.
   - Resize with corner handles or typed sizes. Sizes are shared with the Layout tab.
-  - Backdrop presets, a colour and a **background image** with Fit / Fill / Stretch / True size / Tile, scale, offset, drag-to-pan, 90° turns and opacity.
+  - Backdrop presets, a colour and a **background image** (upload one, or choose a library picture) with Fit / Fill / Stretch / True size / Tile, scale, offset, drag-to-pan, 90° turns and opacity.
   - **Assembly guide** with numbered outlines (PNG, or a true-size PDF). The numbers give the order to stick: #1 is the bottom layer (goes on first) and the top layer is last, so overlaps come out right. Each copy has its own step.
   - **Crowded spots:** hide single numbers (the **#** toggle per layer) or all of them. The legend still lists every step. There's also a number size slider.
   - **📤 Send to Layout** turns the Layers list into the cut sheet: same images, qty = number of copies, same sizes.
@@ -61,8 +61,8 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
     - An **autosave with images**, so a refresh brings the whole mockup back.
   - Moving, rotating, flipping and layering in the mockup never change the print/cut files.
 - **How to print & cut** tab: the whole workflow and troubleshooting, inside the tool.
-- **On an iPad:** two-finger pinch and twist on the selected piece, an on-screen action bar, and larger buttons. Add it to the Home Screen to use it offline. Exports can go through the share sheet.
-- **Assets:** a starter set of drawings (rooms, furniture, decor, a teddy) you can drop into the Mockup at a set size. Search, long-press for details, and import a private pack that stays in this browser. **Extract from a picture** saves a named sticker into the shared library on the web version.
+- **On an iPad:** two-finger pinch and twist on the selected piece, an on-screen action bar, and larger buttons. Assets → **Add to Home Screen** shows the Safari steps. Exports can go through the share sheet.
+- **Assets:** a starter set of drawings (rooms, furniture, decor, items, characters, clothing) you can drop into the Mockup at a set size. Search, long-press for details, and import a private pack that stays in this browser. **Extract from a picture** and **Save to library** publish a sticker to the shared library on the web version. Use a public name, not a person's name or a personal photo.
 - **Colours:** recolour a drawing. The cut line does not move. **Surprise** picks a palette with a fixed seed.
 - **Kid mode:** on a touch screen the Layout, Calibrate and How to tabs sit behind a Grown-ups button you hold for 2 seconds. Assets and Mockup stay visible.
 

@@ -6,7 +6,8 @@ const CATEGORIES = [
   { id: 'furniture', name: 'Furniture', icon: '🛋️', order: 2 },
   { id: 'decor', name: 'Decor', icon: '🖼️', order: 3 },
   { id: 'items', name: 'Items', icon: '🧸', order: 4 },
-  { id: 'characters', name: 'Characters', icon: '🐻', order: 5 }
+  { id: 'characters', name: 'Characters', icon: '🐻', order: 5 },
+  { id: 'clothing', name: 'Clothing', icon: '👕', order: 6 }
 ];
 
 function ensureCategories(cat) {

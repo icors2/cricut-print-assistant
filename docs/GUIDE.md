@@ -148,7 +148,7 @@ Every sidebar panel on the Mockup tab collapses: click its title or the ▾ chev
 
 ![Collapsed panels](images/22_mockup_collapsed_panels.png)
 
-The **Mockup** tab shows how the stickers go together, for example a dollhouse room, at their true relative sizes.
+The **Mockup** tab shows how the stickers go together, for example a dollhouse room, at their true relative sizes. **Anchor**, on the selected piece and on its layer row, keeps that copy where it is: drag, resize, rotate and warp do nothing until Anchor is turned off.
 
 ![Mockup](images/13_mockup_scene.png)
 
@@ -206,7 +206,7 @@ Moving, rotating, flipping, layering and hiding never change the print PDF or th
 
 ## 9. Background image
 
-Choose a background image in the Mockup panel. Its sizing controls appear underneath:
+Choose a background image in the Mockup panel. **Upload…** uses a picture from this device. **Choose an asset** uses a library picture as the page behind the scene, and that picture is not added to the cut sheet. The sizing controls appear underneath:
 
 ![Background image](images/16_mockup_background.png)
 
@@ -260,12 +260,12 @@ When the scene looks right, **📤 Send to Layout…** (under the Layers list) m
 
 ## 12. Use it on an iPad
 
-Open the site in Safari, then Share → Add to Home Screen. The icon is "Sticker Studio" and the app opens full screen.
+Open the site in Safari. On the Assets tab, **Add to Home Screen** shows the steps: tap Share (the square with an arrow), then **Add to Home Screen**, then **Add**. The icon is "Sticker Studio" and the app opens full screen. iPad Safari will not install from the button itself. The button is hidden once the page is opened from the Home Screen.
 
 - Pinch with two fingers on the selected piece to resize it, and twist to rotate. One undo puts both back.
 - Pinch empty space to zoom the view. The page itself does not zoom.
 - A long-press shows Undo, Duplicate, Delete, layer, flip and rotate.
-- Buttons are larger on a touch screen.
+- Buttons are larger on a touch screen. On Calibrate, the page leaves room under the last control so the action bar does not cover it.
 - Save a PDF or SVG through the share sheet (Save to Files or AirDrop).
 - A very large picture is printed at a lower dpi instead of crashing the tab. The note under the dpi field says so.
 - A HEIC photo is not accepted. Use a PNG or JPG (on iPhone: Settings → Camera → Formats → Most Compatible).
@@ -274,17 +274,17 @@ Kid mode, which turns on by itself on a touch screen, shows Assets and Mockup. H
 
 ## 13. Assets
 
-The Assets tab lists starter drawings in Rooms, Furniture, Decor, Items, and Characters. Tap one to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. Long-press for the size, the licence and **Add to scene**.
+The Assets tab lists starter drawings in Rooms, Furniture, Decor, Items, Characters, and Clothing, as a grid of cards. The category list, search box, and the buttons beside that grid are the same cards. Tap a sticker to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. A picture marked as a background, such as Sunny room, is not a sticker: a tap sets it as the Mockup background. A short note appears at the bottom-right for a second and a half. Long-press a sticker for the size, the licence and **Add to scene**.
 
-Search ignores accents, so "cafe" finds "café". Rooms can be the Mockup background.
+Search ignores accents, so "cafe" finds "café". A background stays off the cut sheet.
 
-**Extract from a picture** is on the web version. Choose a picture, drag a box around one thing, and optionally remove a plain background. Type a name, pick a category, and type the write token the first time. That token is the secret you chose with `npx wrangler secret put ASSET_WRITE_TOKEN`. The same string goes in the rename field. It is kept for this visit only. **Save to library** puts it in the shared catalog. It does not land on the sheet until you tap the new tile. Family photos do not belong in this library.
+**Extract from a picture** is on the web version. Choose a picture, drag a box around one thing, and optionally remove a plain background. Type a name, pick a category, and type the write token the first time. It is kept for this visit only. **Save to library** puts it in the shared catalog. It does not land on the sheet until you tap the new tile. The name and the picture are public. Do not use a person's name, a photo of someone, or any other personal picture.
 
 **+ Import pack** reads a `.cpapack.zip` or `.cpapack.json`. A private pack stays in this browser and can be exported or deleted. It is never part of the public site.
 
-To pack a folder of finished PNGs or JPGs, run `node tools/make_pack.js` in that folder (or pass the folder path). A subfolder named Rooms, Furniture, Decor, Items, or Characters files the pictures there. Loose pictures go to Items. `--category characters` puts every picture in Characters. The command writes `<id>.cpapack.zip` in the folder.
+To pack a folder of finished PNGs or JPGs, run `node tools/make_pack.js` in that folder (or pass the folder path). A subfolder named Rooms, Furniture, Decor, Items, Characters, or Clothing files the pictures there. Loose pictures go to Items. `--category characters` puts every picture in Characters. The command writes `<id>.cpapack.zip` in the folder.
 
-On **My packs**, **Save to library** copies that pack into the live library. Type the same write token. The pictures are then visible to anyone who opens the site. The token only stops other people from uploading.
+On **My packs**, **Save to library** copies that pack into the live library. Type the same write token. Every picture in the pack is sent, including ones from an earlier save. A picture already in the library can be stored again with a number added to its name. The pictures are then visible to anyone who opens the site. Do not put personal pictures or personal names in the pack.
 
 The five drawings here are placeholders. A larger set is still to come.
 

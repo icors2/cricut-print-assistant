@@ -711,7 +711,7 @@
   // ---------- undo / redo (item sizes, quantities, options and piece positions) ----------
   const UNDO_FIELDS = ['wIn', 'hIn', 'pct', 'qty', 'shape', 'radiusIn', 'offsetIn', 'border', 'rotate', 'lockAR'];
   let undoStack = [], redoStack = [], curSnap = null, follow = null, pendingMock = null;
-  function cloneMkNode(n) { return { uid: n.uid, name: n.name, itemId: n.itemId, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: !!n.hidden, noNum: !!n.noNum, warp: n.warp ? JSON.parse(JSON.stringify(n.warp)) : null }; }
+  function cloneMkNode(n) { return { uid: n.uid, name: n.name, itemId: n.itemId, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: !!n.hidden, noNum: !!n.noNum, locked: !!n.locked, warp: n.warp ? JSON.parse(JSON.stringify(n.warp)) : null }; }
   function snapshot() { const its = items.map(it => [it, Object.fromEntries(UNDO_FIELDS.map(f => [f, it[f]]))]), man = manual ? JSON.parse(JSON.stringify(manual)) : null;
     return { its, man, sig: JSON.stringify([its.map(([it, f]) => [it.id, f]), man]) }; }
   function recordUndo() { const s = snapshot();
@@ -735,13 +735,13 @@
   function redo() { if (!redoStack.length) return; undoStack.push(curSnap); applySnap(redoStack.pop()); toast('Redone'); }
 
   function refresh(itemsChanged) { mkIdbSoon();
-    clearTimeout(dirtyTimer); $('#busy').style.display = '';
+    clearTimeout(dirtyTimer);
     dirtyTimer = setTimeout(() => { try { syncItemWarps(); computeLayout(); recordUndo();
       if (follow) { const i = layout.sheets.findIndex(s => s.some(e => e.key === follow.key)); if (i >= 0) { curSheet = i; toast(follow.msg + (i + 1)); } follow = null; }
       if (itemsChanged !== false) renderItems(); else refreshCardSummaries(); renderStatus(); renderPreview(); if ($('#tabMock').style.display !== 'none') renderMock(); } catch (e) { console.error(e); alert('Error: ' + e.message); } $('#busy').style.display = 'none'; if (window.CST && window.CST.bus) window.CST.bus.emit('items:changed'); }, 30);
   }
   let toastT = null;
-  function toast(msg, bad) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = 'toast', 2600); }
+  function toast(msg, bad) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = 'toast', 1500); }
 
   // ---------- interactive canvas ----------
   /** switch to hand placement, keeping every piece where it is now */
@@ -972,11 +972,11 @@
   const mkDefault = () => ({ v: 1, bg: { preset: 'letter-P', w: 8.5, h: 11, color: '#fbf3ec', img: null, fit: 'fill', scale: 100, ox: 0, oy: 0, rot: 0, opacity: 1, dpi: 150 }, guide: 'off', ghost: 0.3, snap: true, num: { show: 'all', size: 100 }, nodes: [], skip: {}, nextUid: 1 });
   const mkNumDef = () => ({ show: 'all', size: 100 });
   function mkLoad(d) { const m = mkDefault(); if (!d || typeof d !== 'object') return m; Object.assign(m, d); m.bg = Object.assign(mkDefault().bg, d.bg || {}); m.skip = d.skip || {}; m.num = Object.assign(mkNumDef(), d.num || {});
-    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden, noNum: !!n.noNum, warp: warpClean(n.warp) }));
+    m.nodes = (d.nodes || []).map(n => ({ uid: n.uid, name: n.name, itemId: null, i: n.i, x: +n.x || 0, y: +n.y || 0, rot: +n.rot || 0, flip: !!n.flip, hidden: !!n.hidden, noNum: !!n.noNum, locked: !!n.locked, warp: warpClean(n.warp) }));
     m.nextUid = Math.max(m.nextUid || 1, ...m.nodes.map(n => (n.uid || 0) + 1)); m.nodes.forEach(n => { if (!n.uid) n.uid = m.nextUid++; }); return m; }
   let MK = (() => { try { return mkLoad(JSON.parse(STORE.get('cst.mockup') || 'null')); } catch (e) { return mkDefault(); } })();
   const mkSerial = (withIdx) => ({ v: 1, bg: MK.bg, guide: MK.guide, ghost: MK.ghost, snap: MK.snap, skip: MK.skip, nextUid: MK.nextUid, num: MK.num,
-    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (n.noNum) o.noNum = true; if (isWarped(n)) o.warp = n.warp; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
+    nodes: MK.nodes.map(n => { const it = nodeItem(n), o = { uid: n.uid, name: it ? it.name : n.name, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: n.hidden }; if (n.noNum) o.noNum = true; if (n.locked) o.locked = true; if (isWarped(n)) o.warp = n.warp; if (withIdx && it) o.i = items.indexOf(it); return o; }) });
   let mkSaveT = null;
   function mkAutosave() { mkIdbSoon(); mkPanelSums(); clearTimeout(mkSaveT); mkSaveT = setTimeout(() => { try { STORE.set('cst.mockup', JSON.stringify(mkSerial(false))); }
     catch (e) { try { STORE.set('cst.mockup', JSON.stringify(Object.assign(mkSerial(false), { bg: Object.assign({}, MK.bg, { img: null }) }))); } catch (e2) { /* storage full */ } } }, 250); }
@@ -1084,10 +1084,11 @@
       if (G && (mkXf || isWarped(n))) { const P = warpQuad(n, G).map(([x, y]) => boxToWorld(n, G, x, y)); g.save(); g.strokeStyle = '#e07b00'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.stroke(); g.setLineDash([]);
         if (mkXf) { const hs = 6 / sc; g.fillStyle = '#fff'; for (const [x, y] of mkWarpHandles(n, G)) { g.beginPath(); g.arc(x, y, hs, 0, Math.PI * 2); g.fill(); g.stroke(); } for (const [x, y] of mkWarpHandles(n, G).slice(4)) { g.fillStyle = '#e07b00'; g.fillRect(x - hs / 2, y - hs / 2, hs, hs); } }
         g.restore(); }
-      if (G && !mkXf) { const W = G.w * (n._rs ? n._rs[0] : 1), H = G.h * (n._rs ? n._rs[1] : 1); g.save(); g.translate(n.x, n.y); g.rotate(rad(n.rot)); g.strokeStyle = '#1f6feb'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); if (!isWarped(n)) g.strokeRect(-W / 2, -H / 2, W, H); g.setLineDash([]);
+      if (G && !mkXf) { const W = G.w * (n._rs ? n._rs[0] : 1), H = G.h * (n._rs ? n._rs[1] : 1); g.save(); g.translate(n.x, n.y); g.rotate(rad(n.rot)); g.strokeStyle = n.locked ? '#344767' : '#1f6feb'; g.lineWidth = 1.5 / sc; g.setLineDash([5 / sc, 3 / sc]); if (!isWarped(n)) g.strokeRect(-W / 2, -H / 2, W, H); g.setLineDash([]);
+        if (n.locked) { g.restore(); } else {
         g.fillStyle = '#fff'; const hs = 5 / sc; for (const [cx, cy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { g.fillRect(cx * W / 2 - hs, cy * H / 2 - hs, 2 * hs, 2 * hs); g.strokeRect(cx * W / 2 - hs, cy * H / 2 - hs, 2 * hs, 2 * hs); }
         if (n._rs) { g.font = `${12 / sc}px sans-serif`; g.textAlign = 'center'; g.fillStyle = '#1f6feb'; g.fillText(`${fmtShort(W)} × ${fmtShort(H)}`, 0, H / 2 + 18 / sc); }
-        const hy = -H / 2 - 24 / sc; g.beginPath(); g.moveTo(0, -G.h / 2); g.lineTo(0, hy); g.stroke(); g.beginPath(); g.arc(0, hy, 6 / sc, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.stroke(); g.restore(); } }
+        const hy = -H / 2 - 24 / sc; g.beginPath(); g.moveTo(0, -G.h / 2); g.lineTo(0, hy); g.stroke(); g.beginPath(); g.arc(0, hy, 6 / sc, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.stroke(); g.restore(); } } }
     g.restore(); }
   /** number badge spots: on the piece itself where no piece in front covers it, away from other badges; falls back to the centre */
   const mkNumScale = () => Math.max(0.3, Math.min(3, (+MK.num.size || 100) / 100));
@@ -1139,7 +1140,7 @@
   // undo / redo (positions, angles, flips, order, visibility, backdrop)
   const mkSizes = () => items.map(it => [it.id, it.wIn, it.hIn, it.pct, it.lockAR]);
   const mkPaints = () => items.filter(i => i.asset).map(i => [i.id, i.dataURL, JSON.stringify(i.asset.recolor || null), JSON.stringify(i.asset.avatar || null)]);
-  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num, mkPaints().map(p => [p[0], p[1].length, p[2], p[3]])]);
+  const mkSig = () => JSON.stringify([mkSizes(), MK.nodes.map(n => [n.uid, n.name, n.itemId, n.x, n.y, n.rot, n.flip, n.hidden, !!n.noNum, !!n.locked, n.warp || null]), Object.assign({}, MK.bg, { img: (MK.bg.img || '').length }), MK.skip, MK.num, mkPaints().map(p => [p[0], p[1].length, p[2], p[3]])]);
   const mkSnap = () => ({ sig: mkSig(), sizes: mkSizes(), paints: mkPaints(), nodes: MK.nodes.map(n => Object.assign({}, n)), bg: Object.assign({}, MK.bg), skip: Object.assign({}, MK.skip), num: Object.assign({}, MK.num) });
   function mkCommit() { mkCardNums(); const s = mkSnap(); if (syncItemWarps()) refresh(true); if (mkCur && s.sig === mkCur.sig) { mkAutosave(); if (window.CST && window.CST.bus) window.CST.bus.emit('mockup:changed'); return; } if (mkCur) { mkUndo.push(mkCur); if (mkUndo.length > 100) mkUndo.shift(); mkRedo = []; } mkCur = s; mkAutosave(); if (window.CST && window.CST.bus) window.CST.bus.emit('mockup:changed'); }
   function mkApply(s) { MK.nodes = s.nodes.map(n => Object.assign({}, n)); MK.bg = Object.assign({}, s.bg); MK.skip = Object.assign({}, s.skip); MK.num = Object.assign(mkNumDef(), s.num || {}); mkCur = s; if (mkSel) mkSel = MK.nodes.find(n => n.uid === mkSel.uid) || null; mkAutosave();
@@ -1184,8 +1185,9 @@
     if (!MK.nodes.length) L.innerHTML = '<div class="empty">No pieces yet. Add images on the Layout tab.</div>';
     for (const n of order) { const it = nodeItem(n), row = document.createElement('div'); row.className = 'lrow' + (n === mkSel ? ' sel' : '') + (n.hidden ? ' hid' : '') + (it ? '' : ' missing'); row.dataset.uid = n.uid;
       const same = it ? MK.nodes.filter(m => nodeItem(m) === it) : [], idx = same.indexOf(n);
-      row.innerHTML = `<span class="lhandle" title="Drag to reorder">⋮⋮</span><span class="lnum" title="${st.get(n) ? `Assembly step ${st.get(n)}: #1 (bottom layer) goes on first` : 'Hidden layers get no step'}">${st.get(n) || '–'}</span>${it ? `<img src="${it.dataURL}" alt="">` : '<span class="limg"></span>'}<span class="lname" title="${esc(n.name || '')}">${esc(it ? it.name : (n.name || '?') + ' (image not loaded)')}${same.length > 1 ? ` <span class="muted">(${idx + 1})</span>` : ''}</span>${gm ? `<button class="lnumtog${n.noNum ? ' off' : ''}" title="${n.noNum ? 'Number hidden on the guide (outline and legend still show it). Click to show it.' : 'Hide this number on the guide (keeps the outline, the legend entry and its step)'}">#</button>` : ''}<button class="leye" title="${n.hidden ? 'Show' : 'Hide'}">${n.hidden ? '◌' : '👁'}</button><button class="x" title="Remove from the mockup">✕</button>`;
+      row.innerHTML = `<span class="lhandle" title="Drag to reorder">⋮⋮</span><span class="lnum" title="${st.get(n) ? `Assembly step ${st.get(n)}: #1 (bottom layer) goes on first` : 'Hidden layers get no step'}">${st.get(n) || '–'}</span>${it ? `<img src="${it.dataURL}" alt="">` : '<span class="limg"></span>'}<span class="lname" title="${esc(n.name || '')}">${esc(it ? it.name : (n.name || '?') + ' (image not loaded)')}${same.length > 1 ? ` <span class="muted">(${idx + 1})</span>` : ''}</span>${gm ? `<button class="lnumtog${n.noNum ? ' off' : ''}" title="${n.noNum ? 'Number hidden on the guide (outline and legend still show it). Click to show it.' : 'Hide this number on the guide (keeps the outline, the legend entry and its step)'}">#</button>` : ''}<button type="button" class="mklock${n.locked ? ' on' : ''}" title="Anchor this copy so it stays put">${n.locked ? 'Anchor on' : 'Anchor'}</button><button class="leye" title="${n.hidden ? 'Show' : 'Hide'}">${n.hidden ? '◌' : '👁'}</button><button class="x" title="Remove from the mockup">✕</button>`;
       row.onclick = (ev) => { if (ev.target.closest('button') || ev.target.closest('.lhandle')) return; mkSelect(n); };
+      $('.mklock', row).onclick = () => { n.locked = !n.locked; if (n.locked) mkSetXf(false); mkChanged(true); };
       $('.leye', row).onclick = () => { n.hidden = !n.hidden; if (n.hidden && mkSel === n) mkSel = null; mkChanged(true); };
       $('.x', row).onclick = () => mkDelete(n); if (gm) $('.lnumtog', row).onclick = () => { n.noNum = !n.noNum; mkChanged(true); };
       $('.lhandle', row).addEventListener('pointerdown', (ev) => mkLayerDrag(ev, n, row));
@@ -1201,7 +1203,10 @@
   function renderMkSel() { const P = $('#mkSelPanel'), n = mkSel, G = n && ng(n); $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     P.classList.toggle('idle', !G); $$('#mkSelPanel button, #mkSelPanel input').forEach(b => b.disabled = !G);
     if (!G) { $('#mkWarpNote').style.display = 'none'; $('#mkSelName').textContent = 'Click a piece to select it. Drag to move, drag the round handle to rotate (Shift = 15° steps).'; return; }
-    const i = MK.nodes.indexOf(n), sn = mkSteps().get(n); $('#mkSelName').textContent = `${sn ? `Step #${sn}` : 'Hidden'} · ${G.it.name} · ${fmtShort(G.w)} × ${fmtShort(G.h)} · layer ${MK.nodes.length - i} of ${MK.nodes.length}`;
+    const i = MK.nodes.indexOf(n), sn = mkSteps().get(n); $('#mkSelName').textContent = `${sn ? `Step #${sn}` : 'Hidden'} · ${G.it.name} · ${fmtShort(G.w)} × ${fmtShort(G.h)} · layer ${MK.nodes.length - i} of ${MK.nodes.length}${n.locked ? ' · Anchored' : ''}`;
+    const ank = $('#mkAnchor'); if (ank) { ank.disabled = false; ank.classList.toggle('on', !!n.locked); ank.textContent = n.locked ? 'Anchor on' : 'Anchor'; }
+    if (n.locked) ['#mkAngle', '#mkRotL', '#mkRotR', '#mkRot0', '#mkFlip', '#mkXf', '#mkSkX', '#mkSkY', '#mkXfReset', '#mkSW', '#mkSH', '#mkSPct', '#mkSLink'].forEach(id => { const el = $(id); if (el) el.disabled = true; });
+    if (n.locked) $$('#mkSelPanel .pp[data-p]').forEach(b => { b.disabled = true; });
     if (document.activeElement !== $('#mkAngle')) $('#mkAngle').value = +(+n.rot).toFixed(1);
     const it = G.it; if (it.lockAR == null) it.lockAR = true;
     if (document.activeElement !== $('#mkSW')) $('#mkSW').value = +toU(it.wIn).toFixed(4); if (document.activeElement !== $('#mkSH')) $('#mkSH').value = +toU(it.hIn).toFixed(4); if (document.activeElement !== $('#mkSPct')) $('#mkSPct').value = +pctOf(it).toFixed(1);
@@ -1256,13 +1261,14 @@
   let mkRaf = false; const mkRedraw = () => { if (mkRaf) return; mkRaf = true; requestAnimationFrame(() => { mkRaf = false; renderMockCanvas(); renderMkSel(); }); };
   function bindMock() {
     const cv = $('#mkCanvas');
+    const mkHold = (n) => { if (!n || !n.locked) return false; toast('Anchored. Turn Anchor off to move it.'); return true; };
     cv.addEventListener('pointerdown', ev => { if (ev.button > 0) return; cv.focus({ preventScroll: true }); const pt = mkPt(ev);
       const wh = mkBgAdj ? -1 : mkWarpAt(pt, ev.ctrlKey || ev.metaKey), corner = mkBgAdj || mkXf || wh >= 0 ? null : mkCornerAt(pt);
-      if (wh >= 0) { const n = mkSel, G = ng(n), [lx, ly] = toLocal(n, pt.x, pt.y); mkDrag = { kind: 'warp', n, i: wh, w0: warpClean(n.warp), b0: [lx + G.w / 2, ly + G.h / 2], moved: false }; }
+      if (wh >= 0) { if (mkHold(mkSel)) return; const n = mkSel, G = ng(n), [lx, ly] = toLocal(n, pt.x, pt.y); mkDrag = { kind: 'warp', n, i: wh, w0: warpClean(n.warp), b0: [lx + G.w / 2, ly + G.h / 2], moved: false }; }
       else if (mkBgAdj && mkBgReady()) mkDrag = { kind: 'bg', px: pt.x, py: pt.y, ox: +MK.bg.ox || 0, oy: +MK.bg.oy || 0, moved: false };
-      else if (corner) { const n = mkSel, G = ng(n); mkDrag = { kind: 'size', n, it: G.it, sx: corner[0], sy: corner[1], w: G.w, h: G.h, cx: n.x, cy: n.y, moved: false }; }
-      else if (!mkXf && mkOnHandle(pt)) { const n = mkSel; mkDrag = { kind: 'rot', n, a0: Math.atan2(pt.y - n.y, pt.x - n.x), r0: n.rot }; }
-      else { const n = mkHit(pt.x, pt.y); mkSelect(n); if (!n) return; mkDrag = { kind: 'move', n, dx: pt.x - n.x, dy: pt.y - n.y, moved: false, sx: ev.clientX, sy: ev.clientY }; }
+      else if (corner) { if (mkHold(mkSel)) return; const n = mkSel, G = ng(n); mkDrag = { kind: 'size', n, it: G.it, sx: corner[0], sy: corner[1], w: G.w, h: G.h, cx: n.x, cy: n.y, moved: false }; }
+      else if (!mkXf && mkOnHandle(pt)) { if (mkHold(mkSel)) return; const n = mkSel; mkDrag = { kind: 'rot', n, a0: Math.atan2(pt.y - n.y, pt.x - n.x), r0: n.rot }; }
+      else { const n = mkHit(pt.x, pt.y); mkSelect(n); if (!n || mkHold(n)) return; mkDrag = { kind: 'move', n, dx: pt.x - n.x, dy: pt.y - n.y, moved: false, sx: ev.clientX, sy: ev.clientY }; }
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* synthetic */ } ev.preventDefault(); });
     cv.addEventListener('pointermove', ev => { const pt = mkPt(ev);
       if (!mkDrag && mkBgAdj) { cv.style.cursor = 'move'; return; }
@@ -1296,6 +1302,7 @@
       if (mod && !typing && k.toLowerCase() === 'y') { ev.preventDefault(); mkRedoFn(); return; }
       if (typing || mod) return; const n = mkSel; if (k === 'Escape') { mkSelect(null); return; } if (!n) return;
       const st = (S.unit === 'mm' ? 1 / 25.4 : 1 / 16) * (ev.shiftKey ? 4 : 1), mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[k];
+      if (n.locked && (mv || k === 'r' || k === 'R' || k === 'f' || k === 'F')) { ev.preventDefault(); toast('Anchored. Turn Anchor off to move it.'); return; }
       if (mv) { ev.preventDefault(); n.x += mv[0]; n.y += mv[1]; mkChanged(false); }
       else if (k === 'Delete' || k === 'Backspace') { ev.preventDefault(); mkDelete(n); }
       else if (k === 'r' || k === 'R') { ev.preventDefault(); mkSetRot(n, Math.round((n.rot + (ev.shiftKey ? -15 : 15)) / 15) * 15); mkChanged(false); }
@@ -1305,16 +1312,17 @@
       else if (k === '[' || k === '{') { ev.preventDefault(); mkOrder(n, ev.shiftKey || k === '{' ? 'back' : 'down'); } });
     const sel = (f) => () => { if (mkSel) f(mkSel); };
     $('#mkFront').onclick = sel(n => mkOrder(n, 'front')); $('#mkFwd').onclick = sel(n => mkOrder(n, 'up')); $('#mkBack').onclick = sel(n => mkOrder(n, 'down')); $('#mkToBack').onclick = sel(n => mkOrder(n, 'back'));
-    $('#mkFlip').onclick = sel(n => { n.flip = !n.flip; mkChanged(false); });
-    $('#mkRotL').onclick = sel(n => { mkSetRot(n, n.rot - 15); mkChanged(false); }); $('#mkRotR').onclick = sel(n => { mkSetRot(n, n.rot + 15); mkChanged(false); }); $('#mkRot0').onclick = sel(n => { n.rot = 0; mkChanged(false); });
-    $('#mkAngle').addEventListener('change', sel(n => { const v = parseFloat($('#mkAngle').value); if (isFinite(v)) { mkSetRot(n, v); mkChanged(false); } }));
+    $('#mkAnchor').onclick = sel(n => { n.locked = !n.locked; if (n.locked) mkSetXf(false); mkChanged(true); });
+    $('#mkFlip').onclick = sel(n => { if (n.locked) return; n.flip = !n.flip; mkChanged(false); });
+    $('#mkRotL').onclick = sel(n => { if (n.locked) return; mkSetRot(n, n.rot - 15); mkChanged(false); }); $('#mkRotR').onclick = sel(n => { if (n.locked) return; mkSetRot(n, n.rot + 15); mkChanged(false); }); $('#mkRot0').onclick = sel(n => { if (n.locked) return; n.rot = 0; mkChanged(false); });
+    $('#mkAngle').addEventListener('change', sel(n => { if (n.locked) return; const v = parseFloat($('#mkAngle').value); if (isFinite(v)) { mkSetRot(n, v); mkChanged(false); } }));
     $('#mkDup').onclick = sel(n => { const it = nodeItem(n); if (it) { mkSel = mkAdd(it, n); mkChanged(true); } }); $('#mkDel').onclick = sel(n => mkDelete(n));
     const selIt = () => mkSel && nodeItem(mkSel);
-    $('#mkSW').addEventListener('change', () => { const it = selIt(), v = fromU(parseFloat($('#mkSW').value)); if (!it || !(v > 0)) return; mkSetSize(it, v, it.lockAR !== false ? Math.max(0.1, v) * it.hIn / it.wIn : it.hIn); });
-    $('#mkSH').addEventListener('change', () => { const it = selIt(), v = fromU(parseFloat($('#mkSH').value)); if (!it || !(v > 0)) return; mkSetSize(it, it.lockAR !== false ? Math.max(0.1, v) * it.wIn / it.hIn : it.wIn, v); });
-    $('#mkSPct').addEventListener('change', () => { const it = selIt(), v = parseFloat($('#mkSPct').value); if (!it || !(v > 0)) return; setPct(it, v); mkCommit(); refresh(true); });
-    $$('#mkSelPanel .pp[data-p]').forEach(b => b.onclick = () => { const it = selIt(); if (!it) return; setPct(it, +b.dataset.p); mkCommit(); refresh(true); });
-    $('#mkSLink').onclick = () => { const it = selIt(); if (!it) return; it.lockAR = it.lockAR === false; mkCommit(); refresh(true); };
+    $('#mkSW').addEventListener('change', () => { if (mkSel && mkSel.locked) return; const it = selIt(), v = fromU(parseFloat($('#mkSW').value)); if (!it || !(v > 0)) return; mkSetSize(it, v, it.lockAR !== false ? Math.max(0.1, v) * it.hIn / it.wIn : it.hIn); });
+    $('#mkSH').addEventListener('change', () => { if (mkSel && mkSel.locked) return; const it = selIt(), v = fromU(parseFloat($('#mkSH').value)); if (!it || !(v > 0)) return; mkSetSize(it, it.lockAR !== false ? Math.max(0.1, v) * it.wIn / it.hIn : it.wIn, v); });
+    $('#mkSPct').addEventListener('change', () => { if (mkSel && mkSel.locked) return; const it = selIt(), v = parseFloat($('#mkSPct').value); if (!it || !(v > 0)) return; setPct(it, v); mkCommit(); refresh(true); });
+    $$('#mkSelPanel .pp[data-p]').forEach(b => b.onclick = () => { if (mkSel && mkSel.locked) return; const it = selIt(); if (!it) return; setPct(it, +b.dataset.p); mkCommit(); refresh(true); });
+    $('#mkSLink').onclick = () => { if (mkSel && mkSel.locked) return; const it = selIt(); if (!it) return; it.lockAR = it.lockAR === false; mkCommit(); refresh(true); };
     const md = $('#mkDrop'), mf = $('#mkFile');
     md.addEventListener('click', () => mf.click()); mf.addEventListener('change', () => { mkSelectNew = true; handleFiles(Array.from(mf.files)); mf.value = ''; });
     ['dragenter', 'dragover'].forEach(e => md.addEventListener(e, ev => { ev.preventDefault(); md.classList.add('over'); }));
@@ -1352,7 +1360,7 @@
     $('#mkBgReset').onclick = bgSet(() => { Object.assign(MK.bg, MK_BG_RESET); });
     $('#mkBgAdj').onclick = () => { mkBgAdj = !mkBgAdj; renderMkBg(); renderMockCanvas(); };
     $('#mkBgToSize').onclick = () => mkBgToBackdrop('dpi'); $('#mkBgAspect').onclick = () => mkBgToBackdrop('width');
-    $('#mkFit').onclick = mkFitBackdrop; $('#mkArrange').onclick = () => { const live = mkLive(); MK.nodes = MK.nodes.filter(n => !nodeItem(n)); for (const n of live) { const G = ng(n), c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), sp = mkFreeSpot(G.w * c + G.h * s, G.w * s + G.h * c); n.x = sp.x; n.y = sp.y; MK.nodes.push(n); } mkChanged(true); };
+    $('#mkFit').onclick = mkFitBackdrop; $('#mkArrange').onclick = () => { const live = mkLive(); MK.nodes = MK.nodes.filter(n => !nodeItem(n)); for (const n of live) { if (!n.locked) { const G = ng(n), c = Math.abs(Math.cos(rad(n.rot))), s = Math.abs(Math.sin(rad(n.rot))), sp = mkFreeSpot(G.w * c + G.h * s, G.w * s + G.h * c); n.x = sp.x; n.y = sp.y; } MK.nodes.push(n); } mkChanged(true); };
     bindMkPanels(); bindMkStore();
     $('#mkSend').onclick = mkSendOpen; $('#mkSendCancel').onclick = () => $('#mkSendDlg').close();
     $('#mkSendOk').onclick = () => { const D = $('#mkSendDlg'), P = D._plan; D.close(); mkSendApply(P); };

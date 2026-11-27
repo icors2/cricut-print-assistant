@@ -34,6 +34,8 @@ function serve() {
   await filePage.goto('file://' + path.join(R, 'index.html')); await wait(400);
   const tried = await filePage.evaluate(() => window.CST.pwa ? window.CST.pwa.tried : 'missing');
   ok(tried === false && !ferrs.length, 'file:// does not register a service worker (' + tried + ') errors ' + ferrs.join('; '));
+  const fileInstall = await filePage.evaluate(() => { const b = document.querySelector('#pwaInstall'); return { there: !!b, hidden: !!(b && b.hidden) }; });
+  ok(fileInstall.there && fileInstall.hidden, 'file:// hides Add to Home Screen');
 
   const srv = await serve();
   const p = await b.newPage();
@@ -64,6 +66,10 @@ function serve() {
   await p.reload({ waitUntil: 'domcontentloaded' }); await wait(900);
   const off = await p.evaluate(() => ({ n: window.CST.items.length, pdf: window.CST.items.length ? window.CST.buildPDF().output('arraybuffer').byteLength : 0 }));
   ok(off.n >= 1 && off.pdf > 1000, 'offline reload restores the sheet and exports a PDF (' + off.n + ' images, ' + off.pdf + ' bytes)');
+  const install = await p.evaluate(() => { const b = document.querySelector('#pwaInstall'); if (b) b.click(); const s = document.querySelector('#installSheet'); return { shown: !!(b && !b.hidden), open: !!(s && !s.hidden), text: s ? s.innerText : '' }; });
+  ok(install.shown && install.open && /Share/.test(install.text) && /Add to Home Screen/.test(install.text), 'Add to Home Screen shows the iPad steps');
+  await p.evaluate(() => document.querySelector('#installClose').click());
+  ok(await p.evaluate(() => document.querySelector('#installSheet').hidden), 'Got it closes the steps');
   ok(!errs.length, 'no page errors: ' + errs.join(' | '));
   srv.child.kill();
   await b.close();

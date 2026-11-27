@@ -36,6 +36,11 @@ function serve() {
   ok(built.catalog.assets[0].license === 'LicenseRef-Private' && built.catalog.assets[0].size.w === 2 && built.files['dot.png'], 'the zip carries the PNG at a 2 inch long side');
   const sub = await buildPack(chars, { id: 'mine', thumbs: 'source', write: false });
   ok(sub.catalog.assets[0].category === 'characters' && sub.catalog.assets[0].id === 'mine.characters.bear', 'a characters folder sets the category');
+  const clothes = fs.mkdtempSync(path.join(os.tmpdir(), 'packclothes-'));
+  fs.mkdirSync(path.join(clothes, 'Clothing'));
+  fs.writeFileSync(path.join(clothes, 'Clothing', 'shirt.png'), PNG);
+  const worn = await buildPack(clothes, { id: 'mine', thumbs: 'source', write: false });
+  ok(worn.catalog.assets[0].category === 'clothing' && worn.catalog.assets[0].id === 'mine.clothing.shirt', 'a Clothing folder sets the category');
   const srv = await serve();
   const b = await puppeteer.launch({ executablePath: chrome, headless: 'new', args: ['--no-sandbox'] });
   const p = await b.newPage();

@@ -18,8 +18,14 @@ function serve() {
   await p.goto('http://127.0.0.1:' + srv.port + '/');
   await p.waitForFunction(() => window.CST && window.CST.assets && window.CST.assets.list().length === 5, { timeout: 8000 });
   await p.click('[data-tab=tabAssets]');
+  const beforeBg = await p.evaluate(() => window.CST.items.length);
+  await p.click('.assetTile[data-id="core.rooms.sunny-room"]');
+  await p.waitForFunction(() => document.querySelector('#tabMock').style.display !== 'none', { timeout: 4000 });
+  const bg = await p.evaluate(() => ({ items: window.CST.items.length, name: window.CST.MK.bg.imgName, img: !!(window.CST.MK.bg.img && window.CST.MK.bg.img.length > 20) }));
+  ok(bg.items === beforeBg && bg.img && bg.name === 'Sunny room', 'Sunny room loads as the background and is not a sticker (' + bg.items + ' images, ' + bg.name + ')');
+  await p.click('[data-tab=tabAssets]');
   const order = await p.evaluate(() => [...document.querySelectorAll('#assetCats [data-cat]')].map(b => b.dataset.cat));
-  ok(order[0] === 'rooms' && order.indexOf('furniture') < order.indexOf('items') && order.indexOf('items') < order.indexOf('characters'), 'categories follow catalog order: ' + order.join(','));
+  ok(order[0] === 'rooms' && order.indexOf('furniture') < order.indexOf('items') && order.indexOf('items') < order.indexOf('characters') && order.indexOf('characters') < order.indexOf('clothing'), 'categories follow catalog order: ' + order.join(','));
   await p.type('#assetSearch', 'cafe');
   await p.waitForFunction(() => document.querySelector('.assetTile[data-id="core.furniture.round-sofa"]'), { timeout: 2000 });
   const label = await p.$eval('.assetTile[data-id="core.furniture.round-sofa"]', el => el.getAttribute('aria-label'));
@@ -39,6 +45,32 @@ function serve() {
   ok(ms < 300, '500 tiles paint in ' + ms.toFixed(0) + ' ms');
   await p.evaluate(() => { document.querySelector('#assetSearch').value = ''; window.CST.assets_ui.paint(); });
   await p.click('#assetCats [data-cat=furniture]');
+  const sideBySide = await p.evaluate(() => {
+    const tiles = [...document.querySelectorAll('#assetGrid .assetTile')].slice(0, 2).map(el => el.getBoundingClientRect());
+    return tiles.length === 2 && Math.abs(tiles[0].top - tiles[1].top) < 8 && tiles[0].left !== tiles[1].left;
+  });
+  ok(sideBySide, 'asset tiles sit side by side');
+  await p.click('.assetTile[data-id="core.furniture.round-sofa"]');
+  await p.waitForFunction(() => {
+    const t = document.querySelector('#toast');
+    return t && t.classList.contains('show') && /added to your scene/.test(t.textContent) && !t.querySelector('button');
+  }, { timeout: 4000 });
+  const gone = await p.evaluate(() => new Promise(res => setTimeout(() => res(!document.querySelector('#toast').classList.contains('show')), 1800)));
+  ok(gone, 'adding a sticker shows a note that goes away');
+  await p.click('[data-tab=tabMock]');
+  const beforePick = await p.evaluate(() => window.CST.items.length);
+  await p.click('#mkBgAsset');
+  await p.waitForSelector('#bgPickSheet:not([hidden]) [data-bg="core.furniture.lamp"]', { timeout: 4000 });
+  await p.click('#bgPickSheet [data-bgcat=clothing]');
+  const emptyClothes = await p.$eval('#bgPickGrid', el => /Nothing in this category yet/.test(el.textContent));
+  ok(emptyClothes, 'Clothing is a category and starts empty');
+  await p.click('#bgPickSheet [data-bgcat=""]');
+  await p.waitForSelector('#bgPickSheet [data-bg="core.furniture.lamp"]', { timeout: 4000 });
+  await p.click('#bgPickSheet [data-bg="core.furniture.lamp"]');
+  await p.waitForFunction(() => window.CST.MK.bg.imgName === 'Lamp' && document.querySelector('#bgPickSheet').hidden, { timeout: 4000 });
+  const picked = await p.evaluate(() => ({ items: window.CST.items.length, name: window.CST.MK.bg.imgName }));
+  ok(picked.items === beforePick && picked.name === 'Lamp', 'choosing an asset sets the background and does not add a sticker (' + picked.items + ' images, ' + picked.name + ')');
+  await p.click('[data-tab=tabAssets]');
   const tile = await p.$('.assetTile[data-id="core.furniture.round-sofa"]');
   const point = await tile.boundingBox();
   await p.touchscreen.tap(point.x + 10, point.y + 10).catch(() => {});
