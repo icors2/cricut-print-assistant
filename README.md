@@ -62,10 +62,9 @@ Print Then Cut limits a Letter sheet to about 6.75 × 9.25 in (≈ 62 sq in) and
   - Moving, rotating, flipping and layering in the mockup never change the print/cut files.
 - **How to print & cut** tab: the whole workflow and troubleshooting, inside the tool.
 - **On an iPad:** two-finger pinch and twist on the selected piece, an on-screen action bar, and larger buttons. Add it to the Home Screen to use it offline. Exports can go through the share sheet.
-- **Assets:** a starter set of drawings (rooms, furniture, decor, a teddy) you can drop into the Mockup at a set size. Search, long-press for details, and import a private pack that stays in this browser.
+- **Assets:** a starter set of drawings (rooms, furniture, decor, a teddy) you can drop into the Mockup at a set size. Search, long-press for details, and import a private pack that stays in this browser. **Extract from a picture** saves a named sticker into the shared library on the web version.
 - **Colours:** recolour a drawing. The cut line does not move. **Surprise** picks a palette with a fixed seed.
-- **Avatar:** stack a few body, face, hair and hat parts, then add one sticker to the scene.
-- **Kid mode:** on a touch screen the Layout, Calibrate and How to tabs sit behind a Grown-ups button you hold for 2 seconds.
+- **Kid mode:** on a touch screen the Layout, Calibrate and How to tabs sit behind a Grown-ups button you hold for 2 seconds. Assets and Mockup stay visible.
 
 | Calibrate | Mockup | Send to Layout |
 |---|---|---|

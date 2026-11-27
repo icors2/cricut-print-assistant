@@ -10,7 +10,7 @@ This is the build plan for the next big chunk of work on Cricut Print Assistant.
 
 **Read [AGENT_MEMORY.md](AGENT_MEMORY.md) first.** It has the invariants that must never break and the working rules. [AGENT_HANDOFF.md](AGENT_HANDOFF.md) is the code tour of what exists today.
 
-> **Status:** P1–P4 code is in, with a few original placeholder drawings. Still open: a real catalog of at least 30 assets, a full avatar set (6 options per main slot), and the physical iPad checklist in §12.3.
+> **Status:** P1–P4 code is in, with a few original placeholder drawings. The Avatar tab is hidden. Extracted stickers save to the R2 library (P2·M7). Still open: a real catalog of at least 30 assets and the physical iPad checklist in §12.3.
 
 ---
 
@@ -72,7 +72,7 @@ The parent (and the coding agent) make the image assets; the child uses them.
 
 ### Non-goals (for this plan)
 
-- No accounts, server, cloud sync, analytics or ads. The only network calls allowed are same-origin fetches of `assets/` when the page is served over http(s).
+- No accounts, cloud sync of projects, analytics or ads. Same-origin GETs of `assets/` stay allowed on http(s). The deployed library (D23) adds one write: `POST /api/assets` and `PATCH /api/assets/:id`, token-gated, still same-origin. `file://` makes no network calls.
 - No in-app drawing or painting tool beyond recoloring. The only raster editing is the PNG tint/hue recolor in P3.
 - No asset marketplace, no third-party packs in the public repo, no copyrighted characters.
 - No change to the calibration model, the sheet codes, the 0.25 in anchor or the cut SVG format.
@@ -176,8 +176,9 @@ sequenceDiagram
 ### 3.4 Changes to existing invariants
 
 - **Invariant 8, "Single offline file: no fetches"**, becomes: the **core** (Layout, exports, calibration, Mockup) never needs the network.
-  - The only allowed fetches are same-origin GETs under `assets/` (plus the service worker's precache).
+  - The only allowed fetches are same-origin GETs under `assets/` (plus the service worker's precache), and the library writes `POST /api/assets` and `PATCH /api/assets/:id`.
   - They happen **only** when the page is served over http(s), and they must fail gracefully.
+  - `assets/catalog.json` is network-first in the service worker so a save shows up on the next paint. Other asset files stay cache-first.
   - No CDNs, web fonts, analytics or third-party URLs, ever.
 - Every other invariant in AGENT_MEMORY stays as it is.
 
@@ -189,7 +190,16 @@ sequenceDiagram
 | localStorage `cst.mockup` | unchanged; nodes may point to asset items by name | |
 | IndexedDB `cst-mockups` | unchanged (named saves, autosave) | |
 | IndexedDB `cst-assets` v1 (new) | `packs` {id, meta, catalog, t}, `files` {key `packId/path`, blob, type}, `avatars` {id, name, t, spec, thumb}, `recents` {assetId, t} | `navigator.storage.persist()` is requested on the first write |
-| Cache Storage `cpa-<hash>` | app shell + `assets/**` (service worker) | versioned by the build hash |
+| Cache Storage `cpa-<hash>` | app shell + `assets/**` (service worker) | versioned by the build hash. `catalog.json` is network-first |
+| R2 `LIBRARY` | deployed sticker library: `catalog.json`, pictures, thumbs | not used on `file://`. Writes need `ASSET_WRITE_TOKEN` |
+
+### 3.6 Deployed library (Cloudflare)
+
+`wrangler.jsonc` serves the site and sends `/assets/*` and `/api/*` to `worker/index.js` first. `GET /assets/*` reads the R2 bucket `LIBRARY`, and a missing key falls through to the file in the repo. `POST /api/assets` checks `Authorization: Bearer` against the Worker secret `ASSET_WRITE_TOKEN` (never committed), checks the catalog entry, and writes `png/{id}.png`, `thumbs/{id}.png`, and `catalog.json`. `PATCH /api/assets/:id` changes the name and category only. The pack id is `library`. There are no accounts.
+
+The first save copies the starter catalog into the bucket and rewrites `core.` ids to `library.`, so the starter drawings stay on the paths the site already has. `node tools/seed_r2.js` prints that copy; `node tools/seed_r2.js --put` uploads it with Wrangler. Do not put family photos in this bucket. It is the shared public library (`CC0-1.0`).
+
+Set the secret with `npx wrangler secret put ASSET_WRITE_TOKEN`. The app asks for it once per visit and keeps it in `sessionStorage`.
 
 ## 4. Data schemas
 
@@ -487,7 +497,7 @@ or a single **JSON** file, which is easier to make with scripts:
 ```
 
 - **Kid mode** (on by default on touch devices; toggle it in ⋯):
-  - only **Assets · Mockup · Avatar** show;
+  - only **Assets · Mockup** show (the Avatar tab is hidden until the builder comes back);
   - Layout, Calibrate and How to sit behind a **"Grown-ups" button you hold for 2 s**. It's a guardrail against accidents, not security.
 - Tab order: Assets first in Kid mode, Layout first otherwise.
 
@@ -932,6 +942,8 @@ Acceptance
 
 ### P4 · M2 – Builder UI + gallery
 
+The Avatar tab is hidden. `avatar_ui.js` does not mount the screen. The compositor in `avatar.js` still loads, so a sticker that was already composed still prints. The tasks below stay here for when the tab comes back.
+
 Tasks
 1. An "Avatar" screen (wireframe §5.5). It's a tab in Kid mode, and reached from the Avatars category otherwise.
 2. Slot tabs show part thumbnails, which the build script pre-renders into `assets/thumbs/avatar/…`. Tap one to choose it; optional slots also offer "✕ none".
@@ -1318,7 +1330,11 @@ self.addEventListener('fetch', (e) => {
     const reg = await navigator.serviceWorker.register('sw.js');
     reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return;
       w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) C.bus.emit('pwa:update', () => w.postMessage('skipWaiting')); }); });
-    let reloading = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+    // Reload only when a new worker replaces an old one. The first install's clients.claim()
+    // also fires controllerchange, and reloading then would interrupt the first visit.
+    let reloading = false;
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloading) { reloading = true; location.reload(); } });
     return reg;
   }
   /** iPad: share sheet (Save to Files / AirDrop) when possible, else the normal download */
@@ -1583,12 +1599,13 @@ Update this table (status + commit) in the PR that finishes a milestone.
 | P2·M4 add to Mockup | done | | catalog size; project asset field |
 | P2·M5 private packs | done | | zip and json, IndexedDB only |
 | P2·M6 docs + first art | code done | | docs written. ≥ 30 real assets still open |
+| P2·M7 extract to R2 | done | | Assets → Extract from a picture. Worker + R2, write token, no accounts |
 | P3·M1 recolor engine | done | | paint only; alpha unchanged |
 | P3·M2 color editor | done | | cut SVG stays byte-identical |
 | P3·M3 PNG tint | done | | mask tint and hue; alpha copied |
 | P3·M4 palettes + docs | done | | Surprise is seeded. No palette editor |
 | P4·M1 compositor | done | | placeholder parts; pairs, hides, swap |
-| P4·M2 builder + gallery | done | | own undo, locks, IndexedDB gallery |
+| P4·M2 builder + gallery | paused | | tab stays hidden. Compositor and export tests still run |
 | P4·M3 export | done | | one 2×3 in contour sticker |
 | P4·M4 docs + art | code done | | guide written. Full avatar set still open |
 

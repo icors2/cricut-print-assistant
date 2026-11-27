@@ -16,7 +16,7 @@ This guide walks through the whole job: lay out a sheet, calibrate once, print, 
 - [12. Use it on an iPad](#12-use-it-on-an-ipad)
 - [13. Assets](#13-assets)
 - [14. Change colours](#14-change-colours)
-- [15. Make an avatar](#15-make-an-avatar)
+- [15. Avatars](#15-avatars)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -269,13 +269,15 @@ Open the site in Safari, then Share → Add to Home Screen. The icon is "Sticker
 - A very large picture is printed at a lower dpi instead of crashing the tab. The note under the dpi field says so.
 - A HEIC photo is not accepted. Use a PNG or JPG (on iPhone: Settings → Camera → Formats → Most Compatible).
 
-Kid mode, which turns on by itself on a touch screen, shows Assets, Mockup and Avatar. Hold **Grown-ups** for 2 seconds to get Layout, Calibrate and How to back.
+Kid mode, which turns on by itself on a touch screen, shows Assets and Mockup. Hold **Grown-ups** for 2 seconds to get Layout, Calibrate and How to back.
 
 ## 13. Assets
 
 The Assets tab lists starter drawings. Tap one to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. Long-press for the size, the licence and **Add to scene**.
 
 Search ignores accents, so "cafe" finds "café". Rooms can be the Mockup background.
+
+**Extract from a picture** is on the web version. Choose a picture, drag a box around one thing, and optionally remove a plain background. Type a name, pick a category, and type the write token the first time. **Save to library** puts it in the shared catalog. It does not land on the sheet until you tap the new tile. Family photos do not belong in this library.
 
 **+ Import pack** reads a `.cpapack.zip` or `.cpapack.json`. A private pack stays in this browser and can be exported or deleted. It is never part of the public site.
 
@@ -289,13 +291,9 @@ Open **🎨** on a drawing that has colour parts (from its details, from the Moc
 
 The cut line does not move. Undo puts the previous colours back.
 
-## 15. Make an avatar
+## 15. Avatars
 
-The Avatar tab stacks a body, a face, eyes, a mouth, hair and an optional hat. A lock keeps that slot when you press **Randomize**. **Save** stores it in this browser. **Add to scene** makes one 2 × 3 in contour sticker.
-
-If the parts do not overlap, the tool warns that the sticker would cut as more than one piece. Editing an avatar from the Mockup updates that sticker in place.
-
-The part list here is a small placeholder set.
+The Avatar tab is turned off for now. A sticker that was already made from it still prints and cuts.
 
 ## Troubleshooting
 

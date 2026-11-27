@@ -12,7 +12,7 @@ const cls = (px) => Object.entries(COL).map(([k, c]) => [k, Math.hypot(...c.map(
 const blend = (c, under, a) => c.map((v, i) => Math.round(v * a + under[i] * (1 - a)));
 (async () => {
   if (!fs.existsSync(path.join(SC, 'bear_headset.png'))) execFileSync('python3', [path.join(__dirname, 'make_scene.py')]);
-  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-features=WebShare', '--allow-file-access-from-files'] });
   const p = await b.newPage(); await p.setViewport({ width: 1500, height: 1100 });
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); p.on('dialog', d => { errs.push('dialog: ' + d.message()); d.accept(); });
   await p.goto('file://' + R + '/index.html'); await p.evaluate(() => { localStorage.clear(); sessionStorage.clear(); window.name = ''; }); await p.reload();

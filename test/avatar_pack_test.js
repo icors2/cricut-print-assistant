@@ -129,30 +129,7 @@ const badZip = zip({ 'pack.json': Buffer.from(JSON.stringify(Object.assign({}, c
   ok(r.pal && r.pal.includes('#553322'), 'pack palettes are merged');
   ok(r.avCount === 7, 'the pack lists its avatar parts (' + r.avCount + ')');
 
-  await p.click('[data-tab=tabAvatar]');
-  await p.waitForSelector('#avatarSlots [data-preset]');
-  const ui = await p.evaluate(async () => {
-    const btn = [...document.querySelectorAll('#avatarSlots [data-preset]')].find(x => x.dataset.preset === 'preset-sunny');
-    btn.click(); await new Promise(r => setTimeout(r, 300));
-    const sw = [...document.querySelectorAll('#avatarSlots [data-color="skin"]')].map(x => x.dataset.hex);
-    const dark = document.querySelector('#avatarSlots [data-color="skin"][data-hex="#553322"]'); dark.click(); await new Promise(r => setTimeout(r, 300));
-    const hiddenListed = !!document.querySelector('#avatarSlots [data-part="core.avatar.hair-bob-back"]');
-    return { sw, preview: document.querySelector('#avatarPreview').innerHTML, hiddenListed, partBtn: !!document.querySelector('#avatarSlots [data-part="tpk.avatar.hat-a"]') };
-  });
-  ok(ui.partBtn && ui.preview.includes('data-part="tpk.avatar.body-a"'), 'the builder lists pack parts and the preset button loads the pack character');
-  ok(ui.sw.includes('#553322') && ui.preview.includes('#553322'), 'skin swatches come from the pack palette and recolour the preview');
-  ok(!ui.hiddenListed, 'hiddenInPicker parts are not offered as buttons');
-
-  const ex = await p.evaluate(async () => {
-    const C = window.CST, n0 = C.items.length;
-    document.querySelector('#avAdd').click();
-    for (let i = 0; i < 50 && C.items.length === n0; i++) await new Promise(r => setTimeout(r, 100));
-    const it = C.items[C.items.length - 1], q = C.processed(it, false);
-    return { added: C.items.length - n0, w: it.wIn, h: it.hIn, kind: it.asset.kind, body: it.asset.avatar.parts.body, loops: q.loops.length };
-  });
-  ok(ex.added === 1 && ex.w === 2 && ex.h === 3 && ex.kind === 'avatar' && ex.body === 'tpk.avatar.body-a', 'Add to scene exports a 2×3 in avatar sticker from the pack');
-  ok(ex.loops === 1, 'the exported pack avatar cuts as one piece (' + ex.loops + ' loops)');
-
+  // The Avatar tab stays hidden, so the builder screen is not mounted. Composition is checked above.
   await p.reload();
   await p.waitForFunction(() => window.CST && window.CST.assets && window.CST.assets.avatarParts() && window.CST.assets.avatarParts().parts.some(x => x._pack === 'tpk'), { timeout: 8000 }).catch(() => {});
   ok(await p.evaluate(() => !!(window.CST.assets.avatarParts() || { parts: [] }).parts.find(x => x.id === 'tpk.avatar.hat-a')), 'pack avatar parts come back from IndexedDB after a reload');

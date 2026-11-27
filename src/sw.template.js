@@ -18,6 +18,10 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(fetch(e.request).then(r => put(e.request, r)).catch(() => caches.match(e.request).then(r => r || caches.match('index.html'))));
     return;
   }
+  if (u.pathname.endsWith('/assets/catalog.json')) {
+    e.respondWith(fetch(e.request).then(r => put(e.request, r)).catch(() => caches.match(e.request)));
+    return;
+  }
   if (u.pathname.includes('/assets/')) {
     e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => put(e.request, res))));
   }

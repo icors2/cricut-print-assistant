@@ -66,6 +66,9 @@
     } catch (e) { box.innerHTML = ''; }
   }
   function boot() {
+    // Paused (see AGENT_MEMORY D24). The tab stays hidden and this screen is not mounted.
+    // avatar.js still loads, so a sticker that was already composed still prints.
+    return;
     const root = $('#tabAvatar'); if (!root) return;
     const tab = $('#tabAvatarBtn'); if (tab) tab.hidden = false;
     root.innerHTML = '<div class="avatarWrap"><div id="avatarPreview" aria-label="Avatar preview"></div><div id="avatarSlots"></div><p>'

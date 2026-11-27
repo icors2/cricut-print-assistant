@@ -115,30 +115,7 @@ for (const [k, v] of Object.entries(files)) zf['avatar/' + k] = v;
   ok(c.mixed.top === null && c.mixed.hat === null, 'clean() clears clothes that do not fit the new body');
   ok(c.dropped.length === 1, 'compose ignores a part that does not fit the chosen body');
 
-  await p.click('[data-tab=tabAvatar]');
-  await p.waitForSelector('#avatarSlots [data-preset="rpk-blob"]');
-  const sel = (q) => p.evaluate((q) => { const e = document.querySelector(q); if (e) e.click(); return !!e; }, q);
-  const parts2 = () => p.evaluate(() => [...document.querySelectorAll('#avatarSlots [data-part]')].map(x => x.dataset.part));
-  const wait = () => new Promise(r => setTimeout(r, 400));
-  await sel('#avatarSlots [data-preset="rpk-blob"]'); await wait();
-  let shown = await parts2();
-  ok(shown.includes('rpk.avatar.blob-shirt') && shown.includes('rpk.avatar.blob-cup') && !shown.includes('rpk.avatar.tall-hat') && !shown.some(x => x.startsWith('core.') && !x.includes('body')), 'with Blob chosen only Blob clothing (and the bodies) are offered');
-  const thumbOk = await p.evaluate(async () => { await new Promise(r => setTimeout(r, 300)); const i = document.querySelector('#avatarSlots img[data-thumb="rpk-blob"]'); return !!(i && /^data:image\/png/.test(i.src)); });
-  ok(thumbOk, 'preset thumbnails load from the pack');
-  await sel('#avatarSlots [data-part="rpk.avatar.blob-shirt"]'); await wait();
-  await sel('#avatarSlots [data-part="rpk.avatar.blob-hat"]'); await wait();
-  let st = await p.evaluate(() => ({ parts: window.CST.avatar_ui.spec.parts, prev: (document.querySelector('#avatarPreview').innerHTML.match(/<image /g) || []).length }));
-  ok(st.parts.top === 'rpk.avatar.blob-shirt' && st.parts.hat === 'rpk.avatar.blob-hat' && st.prev === 3, 'toggling clothes on shows them in the preview');
-  await sel('#avatarSlots [data-part="rpk.avatar.blob-hat"]'); await wait();
-  st = await p.evaluate(() => window.CST.avatar_ui.spec.parts);
-  ok(!st.hat, 'tapping a chosen item again takes it off');
-  await sel('#avatarSlots [data-clear="top"]'); await wait();
-  ok(!(await p.evaluate(() => window.CST.avatar_ui.spec.parts.top)), '"None" clears a slot');
-  await sel('#avatarSlots [data-part="rpk.avatar.blob-shirt"]'); await wait();
-  await sel('#avatarSlots [data-part="rpk.avatar.body-tall"]'); await wait();
-  st = await p.evaluate(() => window.CST.avatar_ui.spec.parts); shown = await parts2();
-  ok(!st.top && shown.includes('rpk.avatar.tall-hat') && !shown.includes('rpk.avatar.blob-shirt'), 'switching to Tall clears the Blob shirt and offers only Tall clothing');
-
+  // The Avatar tab stays hidden, so the builder screen is not mounted. Composition and export are checked here.
   const ex = await p.evaluate(async () => {
     const C = window.CST, A = C.avatar, bbox = (q) => { let y0 = Infinity, y1 = -Infinity; for (const l of q.loops) for (const s of l) if (s[0] !== 'Z') { y0 = Math.min(y0, s[2]); y1 = Math.max(y1, s[2]); } return [y0, y1]; };
     const n0 = C.items.length;

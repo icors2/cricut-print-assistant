@@ -11,17 +11,20 @@ A single, self-contained, offline HTML file. It lays out images on a printer she
 - a print PDF made with the embedded jsPDF;
 - a matching cut SVG for Cricut Design Space.
 
-It also holds a print/cut calibration, a view-only Mockup, an asset library, a colour editor and an avatar builder. The downloaded file makes no network calls. The web version loads `assets/` from the same site and can install a service worker.
+It also holds a print/cut calibration, a view-only Mockup, an asset library and a colour editor. The avatar builder is still in the file, and its tab is hidden. The downloaded file makes no network calls. The web version loads `assets/` from the same site and can install a service worker. On the Cloudflare deploy, that `assets/` prefix is the R2 library, and Extract from a picture can add to it.
 
 ## File map
 
 ```
 build.py                    # inlines everything into index.html + app/cricut_print_assistant.html
 src/modules/ORDER            # module load order (one file name per line)
-src/modules/*.js             # bus, touch, pwa, assets, recolor, avatar, and the tab UIs
+src/modules/*.js             # bus, touch, pwa, assets, recolor, avatar, extract, and the tab UIs
 src/sw.template.js           # service worker source; build.py writes sw.js
+worker/index.js              # Cloudflare Worker: R2 library reads and token-gated writes
+wrangler.jsonc               # Worker config. No account id and no token in this file
 assets/                      # catalog, palettes, placeholder art, avatar parts (CC0)
 tools/build_assets.js        # catalog validator and thumbnail renderer
+tools/seed_r2.js             # copy the starter catalog into the library bucket
 tools/serve.js               # localhost static server for PWA and asset tests
 index.html                  # BUILT (GitHub Pages entry point). Don't edit by hand.
 app/cricut_print_assistant.html   # BUILT, identical copy for download
@@ -169,8 +172,9 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `recolor_test.js` | Paint-only recolor; alpha and cut loops unchanged |
 | `color_ui_test.js` | Cut SVG byte-identical, PDF changes, undo, PNG tint, seeded Surprise |
 | `avatar_compose_test.js` | Pairs, hides, swap, prefixed ids, locked randomize |
-| `avatar_ui_test.js` | Named buttons, 44 px targets, live preview |
+| `avatar_ui_test.js` | The Avatar tab stays hidden; the compositor is still loaded |
 | `avatar_export_test.js` | One 2×3 in contour sticker, alignment, in-place edit |
+| `extract_test.js` | Knockout, a valid library entry, a mocked save, and the Worker against a fake bucket |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
 Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene), plus the committed background test images in `samples/bg/`. All the art is made up.

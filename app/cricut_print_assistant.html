@@ -63,7 +63,7 @@ html.touchui #touchBar{display:flex}
 #touchCtx{position:fixed;z-index:45;display:flex;flex-wrap:wrap;gap:8px;max-width:min(420px,92vw);background:#fff;border:1px solid var(--b);border-radius:10px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 #touchCtx[hidden]{display:none !important}
 .legend span{display:inline-block;width:12px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
-#tabAssets{display:flex;gap:12px;padding:12px;min-height:70dvh}.assetSide{width:200px;flex:none;display:flex;flex-direction:column;gap:4px}.assetSide button{text-align:left}.assetMain{flex:1;min-width:0}.assetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start;overflow:auto;max-height:70dvh}.assetTile{min-width:88px;min-height:88px;border:1px solid var(--b);border-radius:8px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}.assetTile img{width:100%;height:72px;object-fit:contain}.assetTile span,.assetTile small{display:block}.swatch{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;padding:0}#assetSheet,#colorSheet{position:fixed;inset:0;background:rgba(20,25,35,.35);z-index:60;display:flex;align-items:center;justify-content:center}#assetSheet[hidden],#colorSheet[hidden]{display:none!important}.sheet{background:#fff;border-radius:12px;padding:16px;max-width:640px;width:min(640px,94vw);max-height:90dvh;overflow:auto}.avatarWrap{display:flex;gap:16px;padding:12px;flex-wrap:wrap}#avatarPreview svg{width:240px;height:auto;background:#fff;border-radius:12px}.avatarSlot button{margin:2px}.avatarSlot img{vertical-align:middle;object-fit:contain}@media (max-width:900px){#tabAssets{flex-direction:column}.assetSide{width:auto;flex-direction:row;overflow:auto}}
+#tabAssets{display:flex;gap:12px;padding:12px;min-height:70dvh}.assetSide{width:200px;flex:none;display:flex;flex-direction:column;gap:4px}.assetSide button{text-align:left}.assetMain{flex:1;min-width:0}.assetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start;overflow:auto;max-height:70dvh}.assetTile{min-width:88px;min-height:88px;border:1px solid var(--b);border-radius:8px;background:#fff;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}.assetTile img{width:100%;height:72px;object-fit:contain}.assetTile span,.assetTile small{display:block}.swatch{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;padding:0}#assetSheet,#colorSheet,#extractSheet{position:fixed;inset:0;background:rgba(20,25,35,.35);z-index:60;display:flex;align-items:center;justify-content:center}#assetSheet[hidden],#colorSheet[hidden],#extractSheet[hidden]{display:none!important}#extractCanvas{max-width:100%;height:auto;touch-action:none;background:#ddd;cursor:crosshair}#extractPreview{width:160px;height:160px;object-fit:contain;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px}#extractSheet .sheet label{display:flex;flex-direction:column;gap:2px;margin:8px 0;font-size:12px}#extractOpen,#extractSave,#extractPick{min-height:44px}.sheet{background:#fff;border-radius:12px;padding:16px;max-width:640px;width:min(640px,94vw);max-height:90dvh;overflow:auto}.avatarWrap{display:flex;gap:16px;padding:12px;flex-wrap:wrap}#avatarPreview svg{width:240px;height:auto;background:#fff;border-radius:12px}.avatarSlot button{margin:2px}.avatarSlot img{vertical-align:middle;object-fit:contain}@media (max-width:900px){#tabAssets{flex-direction:column}.assetSide{width:auto;flex-direction:row;overflow:auto}}
 </style></head><body>
 <div id="storageNudge" hidden role="status">Your browser may clear saved work. Use 💾 Save mockup or add the app to your Home Screen. <button type="button" id="storageNudgeHide">Dismiss</button></div>
 <div id="dpiNote" hidden role="status"></div>
@@ -3085,13 +3085,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
   }
 
-  function addPack(cat, src, resolver) {
+  function addPack(cat, src, resolver, live) {
     const errs = validateCatalog(cat, { publicRepo: src === 'public' });
     if (errs.length) {
       if (src !== 'public') throw Object.assign(new Error('Invalid pack'), { errors: errs });
       state.warnings.push.apply(state.warnings, errs.map(e => 'catalog: ' + e.path + ' ' + e.msg));
     }
-    const pack = { id: cat.pack.id, meta: cat.pack, src, resolver, categories: cat.categories || [] };
+    const pack = { id: cat.pack.id, meta: cat.pack, src, resolver, categories: cat.categories || [], live: !!live };
     state.packs = state.packs.filter(p => !(p.id === pack.id && p.src === src));
     state.packs.push(pack);
     if (src !== 'public') pack.ready = loadPackExtras(cat, resolver, false).catch(e => { state.warnings.push(pack.id + ': ' + e.message); });
@@ -3122,7 +3122,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       try {
         const r = await fetch('assets/catalog.json', { cache: 'no-cache' });
         if (r.ok) {
-          addPack(await r.json(), 'public', (p) => 'assets/' + p);
+          addPack(await r.json(), 'public', (p) => 'assets/' + p, true);
           state.source = 'fetch';
           try { const pal = await fetch('assets/palettes.json', { cache: 'no-cache' }); if (pal.ok) { const P = await pal.json(); state.palettes = P.palettes || []; } } catch (e) { /* no palettes */ }
           try { const av = await fetch('assets/avatar/parts.json', { cache: 'no-cache' }); if (av.ok) addAvatar(await av.json(), 'core', (p) => 'assets/' + p, ''); } catch (e) { /* no avatar parts */ }
@@ -3202,6 +3202,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (C.rememberAsset) C.rememberAsset(asset.id);
     return it;
   }
+  function dropPack(id) {
+    state.packs = state.packs.filter(p => p.id !== id);
+    for (const [k, a] of state.byId) if (a.pack === id) state.byId.delete(k);
+  }
+  async function reloadFetched() {
+    if (!/^https?:$/.test(location.protocol) || state.source === 'bundled') return false;
+    const r = await fetch('assets/catalog.json', { cache: 'no-cache' });
+    if (!r.ok) return false;
+    const cat = await r.json();
+    state.packs.filter(p => p.live).forEach(p => dropPack(p.id));
+    addPack(cat, 'public', (p) => 'assets/' + p, true);
+    state.source = 'fetch';
+    C.bus.emit('assets:ready', { source: state.source, count: state.byId.size });
+    return true;
+  }
+
   async function packFile(asset, path) {
     const pack = state.packs.find(p => p.id === asset.pack);
     const url = pack && await pack.resolver(path);
@@ -3211,7 +3227,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   C.assets = C.registerModule('assets', {
-    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate,
+    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate, reloadFetched,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
     // One button per category id, even when several packs declare the same category.
@@ -3468,6 +3484,119 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   C.avatar = C.registerModule('avatar', { compose, validate, resolve, randomize, toItem, followOffset, outTemplate, fits, clean, requiredSlots, isRaster });
 })();
 
+/* Crop one object out of a picture and describe it as a library catalog entry. Pixel buffers only. */
+(function () {
+  'use strict';
+  const C = window.CST;
+  const TOL = 28;
+  const AUTHOR = 'Cricut Print Assistant contributors';
+
+  function crop(data, w, h, rect) {
+    const x0 = Math.max(0, Math.min(w - 1, Math.floor(rect.x)));
+    const y0 = Math.max(0, Math.min(h - 1, Math.floor(rect.y)));
+    const x1 = Math.max(x0, Math.min(w, Math.ceil(rect.x + rect.w)));
+    const y1 = Math.max(y0, Math.min(h, Math.ceil(rect.y + rect.h)));
+    const tw = Math.max(1, x1 - x0), th = Math.max(1, y1 - y0);
+    const out = new Uint8ClampedArray(tw * th * 4);
+    for (let y = 0; y < th; y++) out.set(data.subarray(((y + y0) * w + x0) * 4, ((y + y0) * w + x0) * 4 + tw * 4), y * tw * 4);
+    return { data: out, w: tw, h: th };
+  }
+
+  function knockOut(data, w, h, tol) {
+    const src = data instanceof Uint8ClampedArray ? data : new Uint8ClampedArray(data);
+    const out = new Uint8ClampedArray(src);
+    const limit = tol == null ? TOL : tol;
+    const corners = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + (w - 1)) * 4];
+    let cr = 0, cg = 0, cb = 0;
+    corners.forEach(i => { cr += out[i]; cg += out[i + 1]; cb += out[i + 2]; });
+    cr /= 4; cg /= 4; cb /= 4;
+    const close = (i) => Math.abs(out[i] - cr) <= limit && Math.abs(out[i + 1] - cg) <= limit && Math.abs(out[i + 2] - cb) <= limit;
+    const seen = new Uint8Array(w * h), q = [];
+    const push = (x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return;
+      const p = y * w + x;
+      if (seen[p] || !close(p * 4)) return;
+      seen[p] = 1; q.push(p);
+    };
+    for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+    for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+    for (let k = 0; k < q.length; k++) {
+      const p = q[k], x = p % w, y = (p / w) | 0;
+      out[p * 4 + 3] = 0;
+      push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
+    }
+    return out;
+  }
+
+  function trim(data, w, h) {
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] > 0) {
+        if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0) return null;
+    const tw = x1 - x0 + 1, th = y1 - y0 + 1, out = new Uint8ClampedArray(tw * th * 4);
+    for (let y = 0; y < th; y++) out.set(data.subarray(((y + y0) * w + x0) * 4, ((y + y0) * w + x0) * 4 + tw * 4), y * tw * 4);
+    return { data: out, w: tw, h: th };
+  }
+
+  function prepare(data, w, h, rect, knock) {
+    const cropped = crop(data, w, h, rect);
+    let cur = cropped, flat = true;
+    if (knock) {
+      const cleared = knockOut(cropped.data, cropped.w, cropped.h);
+      const t = trim(cleared, cropped.w, cropped.h);
+      if (!t) flat = false;
+      else cur = t;
+    } else {
+      const t = trim(cropped.data, cropped.w, cropped.h);
+      if (t) cur = t;
+    }
+    let alpha = 0;
+    const n = cur.w * cur.h;
+    for (let i = 3; i < cur.data.length; i += 4) if (cur.data[i] < 250) alpha++;
+    return { data: cur.data, w: cur.w, h: cur.h, hasAlpha: alpha > n * 0.005, flat };
+  }
+
+  function slug(name) {
+    const s = String(name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+    return s || 'sticker';
+  }
+
+  function sizeIn(pxW, pxH) {
+    let w = pxW >= pxH ? 2 : 2 * pxW / pxH;
+    let h = pxW >= pxH ? 2 * pxH / pxW : 2;
+    let k = Math.min(1, 11 / w, 11 / h);
+    w *= k; h *= k;
+    k = Math.max(1, 0.25 / w, 0.25 / h);
+    w *= k; h *= k;
+    if (w > 11 || h > 11) { k = Math.min(11 / w, 11 / h); w *= k; h *= k; }
+    const r = (n) => Math.round(n * 1000) / 1000;
+    return { w: r(w), h: r(h) };
+  }
+
+  function entry(opt) {
+    const name = String(opt.name || '').trim();
+    const category = opt.category;
+    const base = slug(name);
+    let id = 'library.' + category + '.' + base, n = 2;
+    const taken = opt.taken || (() => false);
+    while (taken(id) && n < 50) { id = 'library.' + category + '.' + base + '-' + n; n++; }
+    const shape = opt.hasAlpha ? 'contour' : 'rect';
+    return {
+      id: id, name: name, category: category, tags: [],
+      size: sizeIn(opt.pxW, opt.pxH),
+      files: { png: 'png/' + id + '.png', thumb: 'thumbs/' + id + '.png' },
+      cut: { shape: shape, offset: shape === 'contour' ? 0.04 : 0 },
+      license: 'CC0-1.0', author: AUTHOR, source: 'original',
+      added: opt.added || new Date().toISOString().slice(0, 10)
+    };
+  }
+
+  C.extract = C.registerModule('extract', { TOL: TOL, AUTHOR: AUTHOR, crop, knockOut, trim, prepare, slug, sizeIn, entry });
+})();
+
 /* Assets tab: categories, search, details, kid mode, private packs. */
 (function () {
   'use strict';
@@ -3557,12 +3686,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const packs = C.assets.packs.filter(p => p.src === 'pack');
     grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
   }
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   async function openDetails(asset) {
     const sheet = $('#assetSheet'); if (!sheet) return;
     const svg = asset.files.svg ? await C.assets.file(asset, 'svg') : '';
-    $('#assetSheetBody').innerHTML = `<h2>${asset.name}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
-      + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => r.name).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
-      + `<p class="muted">License: ${asset.license}${asset.license === 'LicenseRef-Private' ? ' 🔒' : ''} · ${asset.author || ''}</p>`
+    const cats = [];
+    const seen = new Set();
+    (C.assets.categories() || []).forEach(c => { if (c.id && !seen.has(c.id)) { seen.add(c.id); cats.push(c); } });
+    if (asset.category && !seen.has(asset.category)) cats.push({ id: asset.category, name: asset.category });
+    const library = asset.pack === 'library' ? '<p><label>Name <input id="libName" maxlength="40" value="' + esc(asset.name) + '"></label> '
+      + '<label>Category <select id="libCat">' + cats.map(c => '<option value="' + esc(c.id) + '"' + (c.id === asset.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label> '
+      + '<label>Write token <input id="libToken" type="password" autocomplete="off"></label> '
+      + '<button type="button" id="libRename">Save label</button></p>' : '';
+    $('#assetSheetBody').innerHTML = `<h2>${esc(asset.name)}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
+      + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => esc(r.name)).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
+      + `<p class="muted">License: ${esc(asset.license)}${asset.license === 'LicenseRef-Private' ? ' 🔒' : ''} · ${esc(asset.author || '')}</p>`
+      + library
       + '<p><button type="button" id="assetAdd">Add to scene</button> <button type="button" id="assetAdd2">Add 2</button>'
       + (asset.role === 'backdrop' ? ' <button type="button" id="assetBg">Use as background</button>' : '') + '</p>';
     sheet.hidden = false;
@@ -3570,6 +3709,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $('#assetAdd2').onclick = async () => { await C.assets.addAsset(asset); await C.assets.addAsset(asset); toastAdded(asset); };
     const bg = $('#assetBg'); if (bg) bg.onclick = () => useBackdrop(asset);
     const ed = $('#assetRecolor'); if (ed) ed.onclick = () => { sheet.hidden = true; C.bus.emit('color:open', { asset }); };
+    const ren = $('#libRename');
+    if (ren) ren.onclick = async () => {
+      const name = ($('#libName').value || '').trim(), category = $('#libCat').value;
+      const tok = $('#libToken');
+      if (tok && tok.value && $('#extractToken')) $('#extractToken').value = tok.value;
+      try {
+        await C.extract_ui.rename(asset.id, name, category);
+        sheet.hidden = true;
+        C.toast('Saved');
+      } catch (e) { alert(e.message); }
+    };
     if (svg && C.recolor) { /* preview uses the file as stored */ }
   }
   async function useBackdrop(asset) {
@@ -3886,6 +4036,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     } catch (e) { box.innerHTML = ''; }
   }
   function boot() {
+    // Paused (see AGENT_MEMORY D24). The tab stays hidden and this screen is not mounted.
+    // avatar.js still loads, so a sticker that was already composed still prints.
+    return;
     const root = $('#tabAvatar'); if (!root) return;
     const tab = $('#tabAvatarBtn'); if (tab) tab.hidden = false;
     root.innerHTML = '<div class="avatarWrap"><div id="avatarPreview" aria-label="Avatar preview"></div><div id="avatarSlots"></div><p>'
@@ -3957,6 +4110,199 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
   }
   C.avatar_ui = C.registerModule('avatar_ui', { boot, get spec() { return spec; } });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+
+/* Extract one sticker from a picture and save it to the shared library. */
+(function () {
+  'use strict';
+  const C = window.CST;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const TOKEN_KEY = 'cst.assetWriteToken';
+  const CATS = [
+    { id: 'rooms', name: 'Rooms' },
+    { id: 'furniture', name: 'Furniture' },
+    { id: 'decor', name: 'Decor' },
+    { id: 'items', name: 'Items' }
+  ];
+  let work = null, box = null, drag = null, result = null;
+
+  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(v) { try { if (v) sessionStorage.setItem(TOKEN_KEY, v); } catch (e) { /* private mode */ } }
+  function categories() {
+    const seen = new Set(), out = [];
+    (C.assets ? C.assets.categories() : []).forEach(c => { if (c.id && !seen.has(c.id) && c.id.charAt(0) !== '_') { seen.add(c.id); out.push(c); } });
+    return out.length ? out : CATS;
+  }
+  function say(msg) { const el = $('#extractMsg'); if (el) el.textContent = msg || ''; }
+  function canvasPoint(e, canvas) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * canvas.width / Math.max(1, r.width), y: (e.clientY - r.top) * canvas.height / Math.max(1, r.height) };
+  }
+  function paintBox() {
+    const canvas = $('#extractCanvas'); if (!canvas || !work) return;
+    const g = canvas.getContext('2d');
+    g.drawImage(work, 0, 0);
+    if (!box) return;
+    g.strokeStyle = '#1f6feb'; g.lineWidth = Math.max(2, canvas.width / 200);
+    g.strokeRect(box.x + 0.5, box.y + 0.5, box.w, box.h);
+  }
+  function refreshPreview() {
+    const preview = $('#extractPreview');
+    if (!work || !box || box.w < 4 || box.h < 4) { result = null; if (preview) preview.width = 0; return; }
+    const src = work.getContext('2d').getImageData(0, 0, work.width, work.height);
+    const knock = $('#extractKnock') && $('#extractKnock').checked;
+    result = C.extract.prepare(src.data, work.width, work.height, box, knock);
+    if (knock && !result.flat) say('The background was not a flat color. The box is kept as it is.');
+    else if (!say.busy) say('');
+    const c = preview;
+    c.width = result.w; c.height = result.h;
+    c.getContext('2d').putImageData(new ImageData(result.data, result.w, result.h), 0, 0);
+  }
+  function pngURL(canvas) { return canvas.toDataURL('image/png'); }
+  function thumbURL(src) {
+    const long = Math.max(src.width, src.height), s = Math.min(1, 256 / long);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(src.width * s)); c.height = Math.max(1, Math.round(src.height * s));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    const url = pngURL(c); c.width = 0; return url;
+  }
+  async function readResponse(res) {
+    if (res.status === 401) throw new Error('That write token was not accepted.');
+    if (res.status === 404) throw new Error('This page has no library to save into. Open the web version.');
+    if (!res.ok) throw new Error((await res.text()) || ('Could not save (' + res.status + ').'));
+  }
+  async function postJSON(url, method, body) {
+    const tok = ($('#extractToken') && $('#extractToken').value.trim()) || token();
+    if (!tok) throw new Error('Type the write token to save.');
+    setToken(tok);
+    let res;
+    try {
+      res = await fetch(url, { method: method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(body) });
+    } catch (e) {
+      throw new Error('This page has no library to save into. Open the web version.');
+    }
+    await readResponse(res);
+    if (C.assets && C.assets.reloadFetched) await C.assets.reloadFetched();
+  }
+  async function save() {
+    const name = ($('#extractName').value || '').trim();
+    if (!result) { say('Drag a box around one thing first.'); return; }
+    if (!name || name.length > 40) { say('Give it a name, up to 40 characters.'); return; }
+    const category = $('#extractCat').value;
+    const taken = (id) => !!(C.assets && C.assets.get(id));
+    const row = C.extract.entry({ name: name, category: category, pxW: result.w, pxH: result.h, hasAlpha: result.hasAlpha, taken: taken });
+    const c = document.createElement('canvas');
+    c.width = result.w; c.height = result.h;
+    c.getContext('2d').putImageData(new ImageData(result.data, result.w, result.h), 0, 0);
+    const png = pngURL(c), thumb = thumbURL(c);
+    c.width = 0;
+    say('Saving…'); say.busy = true;
+    try {
+      await postJSON('/api/assets', 'POST', { entry: row, png: png, thumb: thumb });
+      say(row.name + ' is in the library.');
+      say.busy = false;
+    } catch (e) { say.busy = false; say(e.message); }
+  }
+  async function rename(id, name, category) {
+    await postJSON('/api/assets/' + id, 'PATCH', { name: name, category: category });
+  }
+  function fillCats(selected) {
+    const sel = $('#extractCat'); if (!sel) return;
+    const cats = categories();
+    sel.innerHTML = cats.map(c => '<option value="' + c.id + '">' + c.name + '</option>').join('');
+    if (selected && cats.some(c => c.id === selected)) sel.value = selected;
+  }
+  function openSheet() {
+    const sheet = $('#extractSheet'); if (!sheet) return;
+    sheet.hidden = false;
+    fillCats();
+    const tok = $('#extractToken'); if (tok && !tok.value) tok.value = token();
+  }
+  function useCanvas(canvas) {
+    work = canvas;
+    const view = $('#extractCanvas');
+    view.width = canvas.width; view.height = canvas.height;
+    box = null; result = null; paintBox();
+    const preview = $('#extractPreview'); if (preview) preview.width = 0;
+    openSheet();
+  }
+  function loadImage(img) {
+    const max = 1600, s = Math.min(1, max / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round((img.naturalWidth || img.width) * s));
+    c.height = Math.max(1, Math.round((img.naturalHeight || img.height) * s));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    useCanvas(c);
+  }
+  function loadFile(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); loadImage(img); res(); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Use a PNG or JPG.')); };
+      img.src = url;
+    });
+  }
+  function loadPixels(data, w, h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').putImageData(new ImageData(data, w, h), 0, 0);
+    useCanvas(c);
+  }
+  function setBox(next) {
+    box = { x: next.x, y: next.y, w: next.w, h: next.h };
+    paintBox(); refreshPreview();
+  }
+  function boot() {
+    const side = document.querySelector('.assetSide'); if (!side || $('#extractOpen')) return;
+    const btn = document.createElement('button');
+    btn.id = 'extractOpen'; btn.type = 'button'; btn.textContent = 'Extract from a picture';
+    const imp = $('#packImport'); side.insertBefore(btn, imp || null);
+    btn.onclick = () => openSheet();
+    const sheet = document.createElement('div');
+    sheet.id = 'extractSheet'; sheet.hidden = true;
+    sheet.innerHTML = '<div class="sheet"><h2>Extract a sticker</h2>'
+      + '<p><button type="button" id="extractPick">Choose a picture</button> <input id="extractFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></p>'
+      + '<p class="muted">Drag a box around one thing.</p>'
+      + '<canvas id="extractCanvas" aria-label="Picture"></canvas>'
+      + '<p><canvas id="extractPreview" aria-label="Sticker preview"></canvas></p>'
+      + '<label class="chk"><input type="checkbox" id="extractKnock" checked> Remove plain background</label>'
+      + '<label>Name <input id="extractName" maxlength="40" autocomplete="off"></label>'
+      + '<label>Category <select id="extractCat"></select></label>'
+      + '<label>Write token <input id="extractToken" type="password" autocomplete="off"></label>'
+      + '<p><button type="button" class="btn" id="extractSave">Save to library</button></p>'
+      + '<p id="extractMsg" role="status"></p></div>';
+    document.body.appendChild(sheet);
+    fillCats();
+    $('#extractPick').onclick = () => $('#extractFile').click();
+    $('#extractFile').onchange = async (e) => {
+      const f = e.target.files && e.target.files[0]; e.target.value = '';
+      if (!f) return;
+      try { await loadFile(f); say(''); } catch (err) { say(err.message); }
+    };
+    const canvas = $('#extractCanvas');
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!work) return;
+      canvas.setPointerCapture(e.pointerId);
+      drag = canvasPoint(e, canvas);
+      box = { x: drag.x, y: drag.y, w: 0, h: 0 };
+      paintBox();
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const p = canvasPoint(e, canvas);
+      box = { x: Math.min(drag.x, p.x), y: Math.min(drag.y, p.y), w: Math.abs(p.x - drag.x), h: Math.abs(p.y - drag.y) };
+      paintBox();
+    });
+    const end = () => { if (!drag) return; drag = null; refreshPreview(); };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    $('#extractKnock').onchange = () => refreshPreview();
+    $('#extractSave').onclick = () => save();
+    sheet.addEventListener('click', (e) => { if (e.target.id === 'extractSheet') sheet.hidden = true; });
+  }
+  C.extract_ui = C.registerModule('extract_ui', { boot, openSheet, loadFile, loadPixels, setBox, rename, save, get result() { return result; } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 

@@ -43,7 +43,7 @@ The art is made separately by the "image builders" to BUILD.md §17. The agent w
 1. **Single offline file.**
    - `index.html` and `app/cricut_print_assistant.html` are self-contained: no CDN, web fonts or third-party requests.
    - jsPDF is vendored, along with its LICENSE.
-   - *Amendment (BUILD.md §3.4):* same-origin, read-only fetches of `assets/…` and the service worker are allowed, and only when served over http(s). The file still works fully from `file://` without assets.
+   - *Amendment (BUILD.md §3.4):* same-origin fetches of `assets/…`, the service worker, and the library writes `POST /api/assets` and `PATCH /api/assets/:id` are allowed, and only when served over http(s). The file still works fully from `file://` without assets.
 2. **Cut geometry.**
    - The cut canvas is the sheet minus 0.25 in per side; cut coordinates = sheet − 0.25 in anchor (Design Space places uploads 0.25 in from the mat corner).
    - Four 1 mm **pin squares** sit in the canvas corners.
@@ -139,6 +139,8 @@ node docs_shots.js                   # regenerate docs/images/*.png when the UI 
 | D21 | Kid mode is on by default only for a coarse pointer, and it only hides tabs | Layout, Calibrate and How to come back after a 2 second hold. It is a guardrail, not a lock |
 | D22 | Remote pack sync (`remote_packs.js`) is off unless the build sets `<meta name="cpa-pack-index">` (`build.py --pack-index`) or localStorage `cst.packIndex`; same-origin only; skips packs by id + version; verifies bytes/sha256; imports through the normal pack import | Lets a private deployment (deploy/cloudflare-pages) auto-load family packs behind a sign-in, while the public build makes no extra requests |
 | D23 | The service worker reloads the page on `controllerchange` only when a previous worker controlled it | The first install's `clients.claim()` also fires it, which reloaded the first visit mid-use (and raced the headless tests) |
+| D24 | The Avatar tab stays hidden. `avatar.js` still loads | A full part set is more work than the library needs right now. A sticker that was already composed still prints |
+| D25 | The deployed library lives in R2. The extractor writes it with `ASSET_WRITE_TOKEN`. No accounts (amends the "no server" line in BUILD.md for this one same-origin write) | One household shares one catalog. A login system is more than that needs. Private pictures stay out of the bucket; an imported `.cpapack` still stays on the device |
 
 Add new rows when you make a design decision, with the reason, and never rewrite old rows. If you reverse a decision, add a new row that refers to the old one.
 
@@ -150,15 +152,15 @@ Add new rows when you make a design decision, with the reason, and never rewrite
   - the Mockup panels collapse;
   - saves.
 - The milestone tests for P1–P4 pass in headless Chrome. Re-run `test/run_all.sh` on a machine with Pillow, NumPy and poppler before a release.
-- BUILD.md §14: P1–P4 code is done. Still open: at least 30 real catalog assets, a full avatar set, and the physical iPad checklist (§12.3).
-- `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, the three UI modules, and `remote_packs.js` (optional pack sync, off in the public build).
-- `deploy/cloudflare-pages/` has an optional private deployment (Pages + private R2 bucket + Access, with a fail-closed `/packs` Function) and `scripts/upload_pack.sh` adds packs to it. Never commit real pack files, bucket contents, emails or account IDs.
+- BUILD.md §14: P1–P4 code is done. The Avatar tab is hidden (D24). P2·M7 saves an extracted sticker to the shared library (D25). Still open: at least 30 real catalog assets and the physical iPad checklist (§12.3).
+- `src/modules/` loads through `src/modules/ORDER`: bus, touch, pwa, assets, recolor, avatar, extract, the UI modules, and `remote_packs.js` (optional pack sync, off in the public build).
+- `deploy/cloudflare-pages/` has an optional private deployment (Pages + private R2 bucket + Access, with a fail-closed `/packs` Function) and `scripts/upload_pack.sh` adds packs to it. The shared sticker library is a separate Worker (`worker/index.js`, `wrangler.jsonc`); `node tools/seed_r2.js --put` uploads the starter catalog. Never commit real pack files, bucket contents, emails, tokens or account IDs.
 - `assets/` holds five original CC0 placeholders, palettes, and a few avatar parts. Avatar parts are on the 1000 × 1500 kid-v1 artboard; `avatar.js` supports per-source templates and `follows`, and `assets.js` merges avatar parts/presets/palettes from imported packs (`test/avatar_pack_test.js`). `tools/build_assets.js --private --root <outside folder>` validates private packs. Raster (PNG) parts, per-body `canvas` {px, dpi}, `bodies`/`exclusive` body-specific clothing: `test/avatar_raster_test.js`. `sw.js` is generated. Do not hand-edit `index.html`, `app/*.html`, `sw.js`, or `assets/thumbs/`.
 
 ## 7. Where to start
 
 1. Read BUILD.md §1–§3 and the status table in §14.
-2. The code for P1–P4 is in. The next human jobs are the art counts (P2·M6.2 and P4·M4.1) and the iPad checklist in §12.3.
+2. The code for P1–P4 is in. The Avatar tab is paused. The next human jobs are the art counts (P2·M6.2) and the iPad checklist in §12.3. The library deploy is `wrangler.jsonc` plus `node tools/seed_r2.js --put`.
 3. New behaviour goes in `src/modules/`. Rebuild with `python3 build.py`. Projects that have no asset must stay byte-identical.
 
 ## 8. Working rules for agents

@@ -87,12 +87,22 @@
     const packs = C.assets.packs.filter(p => p.src === 'pack');
     grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
   }
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   async function openDetails(asset) {
     const sheet = $('#assetSheet'); if (!sheet) return;
     const svg = asset.files.svg ? await C.assets.file(asset, 'svg') : '';
-    $('#assetSheetBody').innerHTML = `<h2>${asset.name}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
-      + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => r.name).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
-      + `<p class="muted">License: ${asset.license}${asset.license === 'LicenseRef-Private' ? ' 🔒' : ''} · ${asset.author || ''}</p>`
+    const cats = [];
+    const seen = new Set();
+    (C.assets.categories() || []).forEach(c => { if (c.id && !seen.has(c.id)) { seen.add(c.id); cats.push(c); } });
+    if (asset.category && !seen.has(asset.category)) cats.push({ id: asset.category, name: asset.category });
+    const library = asset.pack === 'library' ? '<p><label>Name <input id="libName" maxlength="40" value="' + esc(asset.name) + '"></label> '
+      + '<label>Category <select id="libCat">' + cats.map(c => '<option value="' + esc(c.id) + '"' + (c.id === asset.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label> '
+      + '<label>Write token <input id="libToken" type="password" autocomplete="off"></label> '
+      + '<button type="button" id="libRename">Save label</button></p>' : '';
+    $('#assetSheetBody').innerHTML = `<h2>${esc(asset.name)}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
+      + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => esc(r.name)).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
+      + `<p class="muted">License: ${esc(asset.license)}${asset.license === 'LicenseRef-Private' ? ' 🔒' : ''} · ${esc(asset.author || '')}</p>`
+      + library
       + '<p><button type="button" id="assetAdd">Add to scene</button> <button type="button" id="assetAdd2">Add 2</button>'
       + (asset.role === 'backdrop' ? ' <button type="button" id="assetBg">Use as background</button>' : '') + '</p>';
     sheet.hidden = false;
@@ -100,6 +110,17 @@
     $('#assetAdd2').onclick = async () => { await C.assets.addAsset(asset); await C.assets.addAsset(asset); toastAdded(asset); };
     const bg = $('#assetBg'); if (bg) bg.onclick = () => useBackdrop(asset);
     const ed = $('#assetRecolor'); if (ed) ed.onclick = () => { sheet.hidden = true; C.bus.emit('color:open', { asset }); };
+    const ren = $('#libRename');
+    if (ren) ren.onclick = async () => {
+      const name = ($('#libName').value || '').trim(), category = $('#libCat').value;
+      const tok = $('#libToken');
+      if (tok && tok.value && $('#extractToken')) $('#extractToken').value = tok.value;
+      try {
+        await C.extract_ui.rename(asset.id, name, category);
+        sheet.hidden = true;
+        C.toast('Saved');
+      } catch (e) { alert(e.message); }
+    };
     if (svg && C.recolor) { /* preview uses the file as stored */ }
   }
   async function useBackdrop(asset) {

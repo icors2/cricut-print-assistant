@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cricut-print-assistant",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-27",
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/assets/*", "/api/*"]
+  },
+  "r2_buckets": [
+    { "binding": "LIBRARY", "bucket_name": "cricut-print-assistant-library" }
+  ]
+}

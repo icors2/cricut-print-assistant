@@ -6,7 +6,9 @@ pwa.js
 assets.js
 recolor.js
 avatar.js
+extract.js
 assets_ui.js
 color_ui.js
 avatar_ui.js
+extract_ui.js
 remote_packs.js

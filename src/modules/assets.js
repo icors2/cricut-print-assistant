@@ -176,13 +176,13 @@
     }
   }
 
-  function addPack(cat, src, resolver) {
+  function addPack(cat, src, resolver, live) {
     const errs = validateCatalog(cat, { publicRepo: src === 'public' });
     if (errs.length) {
       if (src !== 'public') throw Object.assign(new Error('Invalid pack'), { errors: errs });
       state.warnings.push.apply(state.warnings, errs.map(e => 'catalog: ' + e.path + ' ' + e.msg));
     }
-    const pack = { id: cat.pack.id, meta: cat.pack, src, resolver, categories: cat.categories || [] };
+    const pack = { id: cat.pack.id, meta: cat.pack, src, resolver, categories: cat.categories || [], live: !!live };
     state.packs = state.packs.filter(p => !(p.id === pack.id && p.src === src));
     state.packs.push(pack);
     if (src !== 'public') pack.ready = loadPackExtras(cat, resolver, false).catch(e => { state.warnings.push(pack.id + ': ' + e.message); });
@@ -213,7 +213,7 @@
       try {
         const r = await fetch('assets/catalog.json', { cache: 'no-cache' });
         if (r.ok) {
-          addPack(await r.json(), 'public', (p) => 'assets/' + p);
+          addPack(await r.json(), 'public', (p) => 'assets/' + p, true);
           state.source = 'fetch';
           try { const pal = await fetch('assets/palettes.json', { cache: 'no-cache' }); if (pal.ok) { const P = await pal.json(); state.palettes = P.palettes || []; } } catch (e) { /* no palettes */ }
           try { const av = await fetch('assets/avatar/parts.json', { cache: 'no-cache' }); if (av.ok) addAvatar(await av.json(), 'core', (p) => 'assets/' + p, ''); } catch (e) { /* no avatar parts */ }
@@ -293,6 +293,22 @@
     if (C.rememberAsset) C.rememberAsset(asset.id);
     return it;
   }
+  function dropPack(id) {
+    state.packs = state.packs.filter(p => p.id !== id);
+    for (const [k, a] of state.byId) if (a.pack === id) state.byId.delete(k);
+  }
+  async function reloadFetched() {
+    if (!/^https?:$/.test(location.protocol) || state.source === 'bundled') return false;
+    const r = await fetch('assets/catalog.json', { cache: 'no-cache' });
+    if (!r.ok) return false;
+    const cat = await r.json();
+    state.packs.filter(p => p.live).forEach(p => dropPack(p.id));
+    addPack(cat, 'public', (p) => 'assets/' + p, true);
+    state.source = 'fetch';
+    C.bus.emit('assets:ready', { source: state.source, count: state.byId.size });
+    return true;
+  }
+
   async function packFile(asset, path) {
     const pack = state.packs.find(p => p.id === asset.pack);
     const url = pack && await pack.resolver(path);
@@ -302,7 +318,7 @@
   }
 
   C.assets = C.registerModule('assets', {
-    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate,
+    load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate, partDataURL, avatarThumb, canvasTemplate, reloadFetched,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
     // One button per category id, even when several packs declare the same category.

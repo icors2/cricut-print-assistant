@@ -4,14 +4,14 @@
 // a compensated code whose paper is still short is caught as "compensation didn't reach the paper" (no compounding adjust);
 // and a state saved by the previous version's "retry + Adjust" path verifies on a correct next pass.
 const puppeteer = require('puppeteer-core'), fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
-const R = path.resolve(__dirname, '..'), MM = 25.4, DL = fs.mkdtempSync('/tmp/cstdl-');
+const R = path.resolve(__dirname, '..'), MM = 25.4, DL = fs.realpathSync(fs.mkdtempSync('/tmp/cstdl-'));
 const PASS1 = { T1: [-2.25, -5.5], T2: [2, -4.5], T3: [-1, -1.75], T4: [-3.75, 0.75], T5: [0.25, 2] };
 const PASS2_OLD_SHEET = { T1: [-3, -5], T2: [1.25, -3.75], T3: [-1.75, -1.25], T4: [-4.5, 1.25], T5: [-0.5, 2.5] };
 const WORLD = { shrinkX: 0.0255, shrinkY: 0.028, rotDeg: 0.4, matOff: [-0.95, -1.85] };
 let fails = 0; const ok = (c, s) => { console.log((c ? 'PASS ' : 'FAIL ') + s); if (!c) fails++; };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 (async () => {
-  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] }); const p = await b.newPage(); await p.setViewport({ width: 1300, height: 1000 });
+  const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-features=WebShare'] }); const p = await b.newPage(); await p.setViewport({ width: 1300, height: 1000 });
   const cdp = await p.target().createCDPSession(); await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: DL });
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
   await p.goto('file://' + R + '/index.html'); await p.evaluate(() => (localStorage.clear(), window.name = '')); await p.reload(); await wait(500);

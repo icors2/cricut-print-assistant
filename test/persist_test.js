@@ -5,7 +5,7 @@ const R = path.resolve(__dirname, '..'), HTML = path.join(R, 'index.html');
 const PASS1 = { T1: [-2.25, -5.5], T2: [2, -4.5], T3: [-1, -1.75], T4: [-3.75, 0.75], T5: [0.25, 2] };
 let fails = 0; const ok = (c, s) => { console.log((c ? 'PASS ' : 'FAIL ') + s); if (!c) fails++; };
 const wait = (ms) => new Promise(r => setTimeout(r, ms)), tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), p));
-async function launch(profile) { return puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', userDataDir: profile, args: ['--no-sandbox', '--allow-file-access-from-files'] }); }
+async function launch(profile) { return puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', userDataDir: profile, args: ['--no-sandbox', '--allow-file-access-from-files', '--disable-features=WebShare'] }); }
 async function open(b, url, dl, pre) { const p = await b.newPage(); await p.setViewport({ width: 1300, height: 1000 }); if (pre) await p.evaluateOnNewDocument(pre);
   p.errs = []; p.on('pageerror', e => p.errs.push(e.message)); p.on('dialog', d => d.accept());
   if (dl) { const cdp = await p.target().createCDPSession(); await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dl }); }

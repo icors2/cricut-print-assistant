@@ -8,5 +8,6 @@ sample_output/*
 *.log
 .DS_Store
 /tmp/
+.wrangler/
 __pycache__/
 *.pyc

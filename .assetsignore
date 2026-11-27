@@ -1,0 +1,10 @@
+node_modules
+.git
+.wrangler
+private
+test/node_modules
+sample_output
+tmp
+**/*.md
+*.cpapack.zip
+*.cpapack.json
