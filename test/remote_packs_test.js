@@ -17,8 +17,18 @@ function pack(id, version) {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#c33"/></svg>';
   const catalog = { schema: 'cpa-catalog/1', pack: { id, name: 'Pack ' + id, version, license: 'LicenseRef-Private' }, categories: [{ id: 'items', name: 'Items', order: 1 }],
     assets: [{ id: id + '.items.box', name: 'Box ' + id, category: 'items', size: { w: 1, h: 1 }, files: { svg: 'box.svg', thumb: 'box.svg' }, cut: { shape: 'contour', offset: 0 }, license: 'LicenseRef-Private', author: 'Owner', source: 'original', added: '2026-11-26' }] };
-  return zip({ 'pack.json': Buffer.from(JSON.stringify(catalog)), 'box.svg': Buffer.from(svg + '<!--' + 'x'.repeat(3000) + '-->') });
+  catalog.categories.push({ id: 'decor', name: 'Decor', order: 2 });
+  catalog.assets.push({ id: id + '.decor.dot', name: 'Dot ' + id, category: 'decor', size: { w: 1, h: 1 }, files: { png: 'decor/dot.png', thumb: 'thumbs/dot.webp' }, cut: { shape: 'contour', offset: 0 }, license: 'LicenseRef-Private', author: 'Owner', source: 'original', added: '2026-11-26' });
+  return zip({ 'pack.json': Buffer.from(JSON.stringify(catalog)), 'box.svg': Buffer.from(svg + '<!--' + 'x'.repeat(3000) + '-->'), 'decor/dot.png': PNG, 'thumbs/dot.webp': PNG });
 }
+function png(w, h) {
+  const crcB = (b) => { const c = Buffer.alloc(4); c.writeUInt32BE(crc32(b)); return c; };
+  const chunk = (t, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(t), d]); return Buffer.concat([l, td, crcB(td)]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
+  const raw = Buffer.alloc((w * 4 + 1) * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const o = y * (w * 4 + 1) + 1 + x * 4; raw[o] = 200; raw[o + 3] = 255; }
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+const PNG = png(8, 8);
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const files = {}; let index = null; const hits = [];
 function setIndex(alpha, beta, opt) {
@@ -79,6 +89,18 @@ const server = http.createServer((req, res) => {
   ok(auto.a && auto.b, 'auto-sync on start imports both packs (split and whole)');
   ok(hits.filter(h => h.includes('alpha.cpapack.zip.')).length === 3, 'the split pack was fetched in 3 parts');
 
+  await p.click('[data-tab=tabAssets]'); await p.click('#assetCats [data-cat=items]');
+  await p.waitForFunction(() => { const i = document.querySelector('.assetTile[data-id="alpha.items.box"] img'); return i && i.getAttribute('src'); }, { timeout: 5000 }).catch(() => {});
+  const tile = await p.evaluate(async () => { const i = document.querySelector('.assetTile[data-id="alpha.items.box"] img'); if (!i) return 'no tile'; const src = i.getAttribute('src') || ''; const im = new Image(); im.src = src || 'x:'; try { await im.decode(); return src.startsWith('assets/') ? 'static path ' + src : 'ok'; } catch (e) { return 'broken ' + src.slice(0, 40); } });
+  ok(tile === 'ok', 'a synced pack tile shows its thumbnail from IndexedDB (' + tile + ')');
+  const cats = await p.evaluate(() => [...document.querySelectorAll('#assetCats [data-cat]')].map(b => b.dataset.cat).filter(c => !c.startsWith('__')));
+  ok(cats.length === new Set(cats).size && cats.includes('items') && cats.includes('decor'), 'categories shared by several packs show once: ' + cats.join(','));
+  await p.click('#assetCats [data-cat=decor]');
+  await p.waitForFunction(() => { const i = document.querySelector('.assetTile[data-id="beta.decor.dot"] img'); return i && i.getAttribute('src'); }, { timeout: 5000 }).catch(() => {});
+  const webp = await p.evaluate(() => (document.querySelector('.assetTile[data-id="beta.decor.dot"] img').getAttribute('src') || '').slice(0, 16));
+  ok(webp === 'data:image/webp;', 'a .webp thumbnail gets an image MIME type (' + webp + ')');
+  const added = await p.evaluate(async () => { const a = window.CST.assets.get('beta.decor.dot'); const it = await window.CST.assets.addAsset(a); return { natW: it && it.natW, w: it && it.wIn }; });
+  ok(added.natW === 8 && added.w === 1, 'a synced PNG sticker adds to the Mockup with its real image (' + JSON.stringify(added) + ')');
   hits.length = 0;
   await p.reload();
   await p.waitForFunction(() => window.CST && window.CST.remotePacks && window.CST.assets, { timeout: 8000 });

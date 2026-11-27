@@ -26,11 +26,15 @@
       return rows;
     } catch (e) { return []; }
   }
+  function mimeFor(name) {
+    const ext = String(name).toLowerCase().split('.').pop();
+    return { svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', json: 'application/json' }[ext] || 'application/octet-stream';
+  }
   async function idbFileURL(packId, path) {
     const d = await db(), t = d.transaction('files', 'readonly'), g = t.objectStore('files').get(packId + '/' + path);
     const row = await new Promise((res, rej) => { g.onsuccess = () => res(g.result); g.onerror = () => rej(g.error); });
     if (!row) return null;
-    if (typeof row.blob === 'string') return row.blob;
+    if (typeof row.blob === 'string') return row.blob.startsWith('data:application/octet-stream') ? 'data:' + mimeFor(path) + row.blob.slice(29) : row.blob;
     return URL.createObjectURL(row.blob);
   }
   C.idbPacks = idbPacks; C.idbFileURL = idbFileURL;
@@ -38,6 +42,17 @@
     try { const d = await db(), t = d.transaction('recents', 'readwrite'); t.objectStore('recents').put({ assetId: id, t: Date.now() }); await txDone(t); } catch (e) { /* ignore */ }
   };
 
+  function direct(a) {
+    if (C.assets.source !== 'fetch') return false;
+    const pk = C.assets.packs.find(p => p.id === a.pack);
+    return !!pk && pk.src === 'public';
+  }
+  async function tileThumb(a) {
+    let u = a.files.thumb ? await C.assets.file(a, 'thumb') : null;
+    if (!u && a.files.png) u = await C.assets.file(a, 'png');
+    if (!u && a.files.svg) { const t = await C.assets.file(a, 'svg'); if (t) u = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t))); }
+    return u;
+  }
   function inches(n) { return (Math.round(n * 100) / 100) + ''; }
   function paint() {
     const root = $('#tabAssets'); if (!root || !C.assets) return;
@@ -55,10 +70,16 @@
       : (q && !list.length ? 'No “' + q + '” found. Try another word.' : (!list.length ? 'Nothing in this category yet.' : ''));
     grid.innerHTML = empty ? '<p class="muted">' + empty + '</p>' : list.map(a => {
       const label = a.name + ', ' + inches(a.size.w) + ' by ' + inches(a.size.h) + ' inches';
-      const thumb = 'assets/' + (a.files.thumb || '');
-      return `<button type="button" class="assetTile" role="button" data-id="${a.id}" aria-label="${label}"><img alt="" loading="lazy" src="${C.assets.source === 'bundled' ? '' : thumb}"><span>${a.name}</span><small>${inches(a.size.w)} × ${inches(a.size.h)} in</small></button>`;
+      const thumb = direct(a) ? 'assets/' + (a.files.thumb || '') : '';
+      return `<button type="button" class="assetTile" role="button" data-id="${a.id}" aria-label="${label}"><img alt="" loading="lazy" src="${thumb}"><span>${a.name}</span><small>${inches(a.size.w)} × ${inches(a.size.h)} in</small></button>`;
     }).join('');
-    if (C.assets.source === 'bundled') list.forEach(a => { const img = grid.querySelector('[data-id="' + a.id + '"] img'); if (img) C.assets.file(a, 'thumb').then(u => { if (u) img.src = u; }); });
+    // Only the served public catalog has files under assets/. Bundled files and imported or
+    // synced private packs resolve through their pack (IndexedDB), falling back to the art itself.
+    list.forEach(a => {
+      if (direct(a)) return;
+      const img = grid.querySelector('[data-id="' + a.id + '"] img'); if (!img) return;
+      tileThumb(a).then(u => { if (u) img.src = u; }).catch(() => { /* leave blank */ });
+    });
     $('#assetHead').textContent = (cats.find(c => c.id === cur) || { name: cur === '__recent' ? 'Recent' : 'All' }).name + ' · ' + list.length;
   }
   function renderPacks() {
@@ -130,7 +151,7 @@
         if (name === 'pack.json') continue;
         let bin = ''; const chunk = 0x8000;
         for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-        const mime = name.endsWith('.svg') ? 'image/svg+xml' : name.endsWith('.png') ? 'image/png' : name.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+        const mime = mimeFor(name);
         files[name] = 'data:' + mime + ';base64,' + btoa(bin);
       }
     }

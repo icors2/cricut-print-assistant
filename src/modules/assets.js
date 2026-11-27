@@ -259,7 +259,17 @@
     load, file, search, addAsset, validateCatalog, validateAvatar, addPack, loadPackExtras, avatarTemplate,
     get: (id) => state.byId.get(id),
     list: () => [...state.byId.values()],
-    categories: () => state.packs.flatMap(p => p.categories).sort((a, b) => (a.order || 0) - (b.order || 0)),
+    // One button per category id, even when several packs declare the same category.
+    categories: () => {
+      const byId = new Map();
+      for (const c of state.packs.flatMap(p => p.categories || [])) {
+        if (!c || !c.id) continue;
+        const prev = byId.get(c.id);
+        if (!prev) byId.set(c.id, Object.assign({}, c));
+        else if ((c.order != null) && (prev.order == null || c.order < prev.order)) prev.order = c.order;
+      }
+      return [...byId.values()].sort((a, b) => (a.order || 0) - (b.order || 0));
+    },
     palettes: () => state.palettes.slice(),
     avatarParts: () => mergedAvatar(),
     partFile: async (part) => {

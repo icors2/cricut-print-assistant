@@ -22,25 +22,30 @@ async function jwks(team) {
 }
 async function verifyAccess(request, env) {
   const team = (env.ACCESS_TEAM_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
-  if (!team || !env.ACCESS_AUD) return false;
+  if (!team || !env.ACCESS_AUD) return 'no-access-config';
   let token = request.headers.get('Cf-Access-Jwt-Assertion');
   if (!token) { const m = /(?:^|;\s*)CF_Authorization=([^;]+)/.exec(request.headers.get('Cookie') || ''); token = m && m[1]; }
-  if (!token) return false;
-  const [h, p, s] = token.split('.'); if (!h || !p || !s) return false;
+  if (!token) return 'no-token';
+  const [h, p, s] = token.split('.'); if (!h || !p || !s) return 'malformed';
   const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)));
   const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)));
   const now = Math.floor(Date.now() / 1000);
   const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (header.alg !== 'RS256' || !aud.includes(env.ACCESS_AUD) || payload.iss !== `https://${team}` || !(payload.exp > now) || (payload.nbf && payload.nbf > now + 60)) return false;
-  const jwk = (await jwks(team)).find(k => k.kid === header.kid); if (!jwk) return false;
+  if (header.alg !== 'RS256') return 'alg';
+  if (!aud.includes(env.ACCESS_AUD)) return 'aud';
+  if (payload.iss !== `https://${team}`) return 'iss:' + String(payload.iss).slice(0, 80);
+  if (!(payload.exp > now)) return 'expired';
+  if (payload.nbf && payload.nbf > now + 60) return 'nbf';
+  const jwk = (await jwks(team)).find(k => k.kid === header.kid); if (!jwk) return 'kid';
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-  return crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlToBytes(s), new TextEncoder().encode(h + '.' + p));
+  return (await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlToBytes(s), new TextEncoder().encode(h + '.' + p))) ? 'ok' : 'signature';
 }
 
 export async function onRequest({ request, env, params }) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
-  let ok = false; try { ok = await verifyAccess(request, env); } catch (e) { ok = false; }
-  if (!ok) return new Response('Sign-in required', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  let why = 'error'; try { why = await verifyAccess(request, env); } catch (e) { why = 'error:' + String(e && e.message || e).slice(0, 120); }
+  if (why !== 'ok') console.log(JSON.stringify({ packs: 'denied', why, path: new URL(request.url).pathname, header: !!request.headers.get('Cf-Access-Jwt-Assertion'), cookie: /CF_Authorization=/.test(request.headers.get('Cookie') || '') }));
+  if (why !== 'ok') return new Response('Sign-in required', { status: 403, headers: { 'Cache-Control': 'no-store' } });
   const key = (Array.isArray(params.path) ? params.path.join('/') : String(params.path || '')) || 'index.json';
   if (key.includes('..') || key.startsWith('/')) return new Response('Bad path', { status: 400 });
   const obj = request.method === 'HEAD' ? await env.PACKS.head(key) : await env.PACKS.get(key);
