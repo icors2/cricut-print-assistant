@@ -657,7 +657,7 @@
       $('.rad', card).style.display = it.shape === 'rounded' ? '' : 'none';
       const bs = $('[data-f=border]', card); bs.value = it.border; bs.onchange = () => { it.border = bs.value; refresh(true); };
       const rc = $('[data-f=rot]', card); rc.checked = it.rotate; rc.onchange = () => { it.rotate = rc.checked; refresh(true); };
-      $('.x', card).onclick = (ev) => { ev.stopPropagation(); items = items.filter(i => i !== it); if (sel.itemId === it.id) sel = { key: null, itemId: null }; refresh(true); };
+      $('.x', card).onclick = (ev) => { ev.stopPropagation(); removeImage(it); };
       $('.chev', card).onclick = (ev) => { ev.stopPropagation(); setCollapsed(it, card, !it.collapsed); };
       $('.ihead', card).onclick = (ev) => { if (ev.target.closest('button')) return; selectItem(it); };
       list.append(card);
@@ -710,11 +710,27 @@
 
   // ---------- undo / redo (item sizes, quantities, options and piece positions) ----------
   const UNDO_FIELDS = ['wIn', 'hIn', 'pct', 'qty', 'shape', 'radiusIn', 'offsetIn', 'border', 'rotate', 'lockAR'];
-  let undoStack = [], redoStack = [], curSnap = null, follow = null;
+  let undoStack = [], redoStack = [], curSnap = null, follow = null, pendingMock = null;
+  function cloneMkNode(n) { return { uid: n.uid, name: n.name, itemId: n.itemId, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: !!n.hidden, noNum: !!n.noNum, warp: n.warp ? JSON.parse(JSON.stringify(n.warp)) : null }; }
   function snapshot() { const its = items.map(it => [it, Object.fromEntries(UNDO_FIELDS.map(f => [f, it[f]]))]), man = manual ? JSON.parse(JSON.stringify(manual)) : null;
     return { its, man, sig: JSON.stringify([its.map(([it, f]) => [it.id, f]), man]) }; }
-  function recordUndo() { const s = snapshot(); if (curSnap && s.sig === curSnap.sig) return; if (curSnap) { undoStack.push(curSnap); if (undoStack.length > 100) undoStack.shift(); redoStack = []; } curSnap = s; }
-  function applySnap(s) { items = s.its.map(([it, f]) => Object.assign(it, f)); manual = s.man ? JSON.parse(JSON.stringify(s.man)) : null; curSnap = s; refresh(true); }
+  function recordUndo() { const s = snapshot();
+    if (pendingMock) { s.mockDrop = pendingMock.map(n => n.uid); if (curSnap) curSnap.mockRestore = pendingMock; pendingMock = null; }
+    if (curSnap && s.sig === curSnap.sig && !s.mockDrop) return; if (curSnap) { undoStack.push(curSnap); if (undoStack.length > 100) undoStack.shift(); redoStack = []; } curSnap = s; }
+  function applySnap(s) { items = s.its.map(([it, f]) => Object.assign(it, f)); manual = s.man ? JSON.parse(JSON.stringify(s.man)) : null;
+    if (s.mockRestore) for (const n of s.mockRestore) { if (!MK.nodes.some(m => m.uid === n.uid)) MK.nodes.push(cloneMkNode(n)); if (n.name) delete MK.skip[n.name]; }
+    if (s.mockDrop) MK.nodes = MK.nodes.filter(n => !s.mockDrop.includes(n.uid));
+    if (mkSel && !MK.nodes.includes(mkSel)) mkSel = null;
+    curSnap = s; mkAutosave(); refresh(true); }
+  function removeImage(it) {
+    if (!it) return;
+    pendingMock = MK.nodes.filter(n => nodeItem(n) === it).map(cloneMkNode);
+    MK.nodes = MK.nodes.filter(n => nodeItem(n) !== it);
+    if (mkSel && !MK.nodes.includes(mkSel)) mkSel = null;
+    items = items.filter(i => i !== it);
+    if (sel.itemId === it.id) sel = { key: null, itemId: null };
+    mkAutosave(); refresh(true);
+  }
   function undo() { if (!undoStack.length) return; redoStack.push(curSnap); applySnap(undoStack.pop()); toast('Undone'); }
   function redo() { if (!redoStack.length) return; undoStack.push(curSnap); applySnap(redoStack.pop()); toast('Redone'); }
 
@@ -1178,8 +1194,9 @@
     const A = $('#mkAdd'); A.innerHTML = '';
     if (!items.length) A.innerHTML = '<div class="empty">Add images on the Layout tab first.</div>';
     for (const it of items) { const k = MK.nodes.filter(n => nodeItem(n) === it).length, p = processed(it, false), r = document.createElement('div'); r.className = 'arow';
-      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/#/g, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
-      $('button', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); }; A.append(r); }
+      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/#/g, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini add">+ Add${k ? ' another' : ''}</button><button class="x" title="Remove this picture from the list, the scene, and the Layout">✕</button>`;
+      $('.add', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); };
+      $('.x', r).onclick = (ev) => { ev.stopPropagation(); removeImage(it); }; A.append(r); }
     renderMkSel(); renderMockCanvas(); mkPanelSums(); }
   function renderMkSel() { const P = $('#mkSelPanel'), n = mkSel, G = n && ng(n); $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     P.classList.toggle('idle', !G); $$('#mkSelPanel button, #mkSelPanel input').forEach(b => b.disabled = !G);

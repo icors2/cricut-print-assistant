@@ -5,8 +5,17 @@ const CATEGORIES = [
   { id: 'rooms', name: 'Rooms', icon: '🏠', order: 1 },
   { id: 'furniture', name: 'Furniture', icon: '🛋️', order: 2 },
   { id: 'decor', name: 'Decor', icon: '🖼️', order: 3 },
-  { id: 'items', name: 'Items', icon: '🧸', order: 4 }
+  { id: 'items', name: 'Items', icon: '🧸', order: 4 },
+  { id: 'characters', name: 'Characters', icon: '🐻', order: 5 }
 ];
+
+function ensureCategories(cat) {
+  if (!cat.categories) cat.categories = [];
+  const have = new Set(cat.categories.map(c => c && c.id));
+  let added = false;
+  for (const c of CATEGORIES) if (!have.has(c.id)) { cat.categories.push(Object.assign({}, c)); added = true; }
+  return added;
+}
 
 function emptyCatalog() {
   return {
@@ -95,6 +104,7 @@ async function starterFromAssets(env, request) {
     };
     (cat.assets || []).forEach(a => { if (String(a.id || '').startsWith('core.')) a.id = 'library.' + a.id.slice(5); });
     if (!cat.categories || !cat.categories.length) cat.categories = CATEGORIES.map(c => Object.assign({}, c));
+    ensureCategories(cat);
     return cat;
   } catch (e) { return emptyCatalog(); }
 }
@@ -104,7 +114,10 @@ async function readCatalog(env, request) {
   if (obj) {
     try {
       const cat = JSON.parse(await obj.text());
-      if (cat && cat.schema === 'cpa-catalog/1' && cat.pack && cat.pack.id === 'library') return cat;
+      if (cat && cat.schema === 'cpa-catalog/1' && cat.pack && cat.pack.id === 'library') {
+        if (ensureCategories(cat)) await writeCatalog(env.LIBRARY, cat);
+        return cat;
+      }
     } catch (e) { /* replace an unreadable catalog */ }
   }
   return starterFromAssets(env, request);
@@ -182,11 +195,26 @@ function assetKey(pathname) {
 async function getAsset(request, env, key) {
   const obj = await env.LIBRARY.get(key);
   if (!obj) return env.ASSETS.fetch(request);
+  if (key === 'catalog.json') {
+    let cat = null;
+    try { cat = JSON.parse(await obj.text()); } catch (e) {}
+    if (cat && cat.schema === 'cpa-catalog/1' && cat.pack && cat.pack.id === 'library') {
+      if (ensureCategories(cat)) await writeCatalog(env.LIBRARY, cat);
+      return json(200, cat, { 'cache-control': 'no-cache' });
+    }
+    const again = await env.LIBRARY.get(key);
+    if (!again) return env.ASSETS.fetch(request);
+    const headers = new Headers();
+    if (again.writeHttpMetadata) again.writeHttpMetadata(headers);
+    if (again.httpEtag) headers.set('etag', again.httpEtag);
+    if (!headers.has('content-type')) headers.set('content-type', typeFor(key));
+    headers.set('cache-control', 'no-cache');
+    return new Response(again.body, { headers });
+  }
   const headers = new Headers();
   if (obj.writeHttpMetadata) obj.writeHttpMetadata(headers);
   if (obj.httpEtag) headers.set('etag', obj.httpEtag);
   if (!headers.has('content-type')) headers.set('content-type', typeFor(key));
-  if (key === 'catalog.json') headers.set('cache-control', 'no-cache');
   return new Response(obj.body, { headers });
 }
 
@@ -201,6 +229,6 @@ async function handleRequest(request, env) {
   return env.ASSETS.fetch(request);
 }
 
-export { validateEntry, cleanEntry, emptyCatalog, decodePng, handleRequest, CATEGORIES };
+export { validateEntry, cleanEntry, emptyCatalog, decodePng, handleRequest, CATEGORIES, ensureCategories };
 
 export default { fetch: (request, env) => handleRequest(request, env) };

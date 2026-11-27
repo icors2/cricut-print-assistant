@@ -5,7 +5,8 @@
     { "id": "rooms", "name": "Rooms", "icon": "🏠", "order": 1 },
     { "id": "furniture", "name": "Furniture", "icon": "🛋️", "order": 2 },
     { "id": "decor", "name": "Decor", "icon": "🖼️", "order": 3 },
-    { "id": "items", "name": "Items", "icon": "🧸", "order": 4 }
+    { "id": "items", "name": "Items", "icon": "🧸", "order": 4 },
+    { "id": "characters", "name": "Characters", "icon": "🐻", "order": 5 }
   ],
   "assets": [
     {

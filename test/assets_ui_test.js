@@ -19,7 +19,7 @@ function serve() {
   await p.waitForFunction(() => window.CST && window.CST.assets && window.CST.assets.list().length === 5, { timeout: 8000 });
   await p.click('[data-tab=tabAssets]');
   const order = await p.evaluate(() => [...document.querySelectorAll('#assetCats [data-cat]')].map(b => b.dataset.cat));
-  ok(order[0] === 'rooms' && order.indexOf('furniture') < order.indexOf('items'), 'categories follow catalog order: ' + order.join(','));
+  ok(order[0] === 'rooms' && order.indexOf('furniture') < order.indexOf('items') && order.indexOf('items') < order.indexOf('characters'), 'categories follow catalog order: ' + order.join(','));
   await p.type('#assetSearch', 'cafe');
   await p.waitForFunction(() => document.querySelector('.assetTile[data-id="core.furniture.round-sofa"]'), { timeout: 2000 });
   const label = await p.$eval('.assetTile[data-id="core.furniture.round-sofa"]', el => el.getAttribute('aria-label'));

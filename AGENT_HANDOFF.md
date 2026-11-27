@@ -25,6 +25,7 @@ wrangler.jsonc               # Worker config. No account id and no token in this
 assets/                      # catalog, palettes, placeholder art, avatar parts (CC0)
 tools/build_assets.js        # catalog validator and thumbnail renderer
 tools/seed_r2.js             # copy the starter catalog into the library bucket
+tools/make_pack.js           # folder of PNG/JPG files → a private .cpapack.zip
 tools/serve.js               # localhost static server for PWA and asset tests
 index.html                  # BUILT (GitHub Pages entry point). Don't edit by hand.
 app/cricut_print_assistant.html   # BUILT, identical copy for download
@@ -156,7 +157,7 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `cal_safeguard_test.js`, `cal_swap_test.js`, `cal_scale_test.js` | Stale codes, swapped X/Y detection, old-state migration, ±8 mm scales |
 | `persist_test.js`, `proj_test.js` | Storage, export/import, the embedded calibration, project save/open |
 | `drag_test.js` | Hand placement, snapping, undo, pins in exports |
-| `mock_test.js`, `mock_resize_test.js`, `mock_bg_test.js`, `mock_send_test.js` | The Mockup and its byte-identity guarantees |
+| `mock_test.js`, `mock_resize_test.js`, `mock_bg_test.js`, `mock_send_test.js` | The Mockup and its byte-identity guarantees. `mock_test.js` also checks that the Images ✕ removes a picture and Undo puts it back |
 | `mock_steps_test.js` | Assembly-step numbering, number hiding (view/PNG/PDF), undo/persist, cut-sheet labels = guide steps |
 | `mock_warp_test.js` | Transform: corner distort / side skew / typed skew, warped render (pixels), Guide PDF + PNG outlines follow the warp. Layout takes the warp live (cut size = warped bbox). Print raster vs cut path aligned (processed alpha vs loops for rect + contour pieces; exported PDF render vs cut SVG). Other images byte-identical; Reset gives byte-identical exports; undo/redo; per-copy warps split on Send to Layout (and Layout undo); saves |
 | `mock_save_test.js` | Collapsible Mockup panels; file save → fresh page → open gives an identical state and exports; IndexedDB named saves, Ctrl+S, rename/delete; image autosave across reloads; low-storage warning |
@@ -169,12 +170,13 @@ node docs_shots.js              # regenerate docs/images/*.png
 | `assets_ui_test.js` | Category order, search, details, kid mode, 500-tile paint |
 | `assets_add_test.js` | Catalog size, a second copy is a node, project `asset` field, cut alignment |
 | `packs_test.js` | A private zip imports into IndexedDB and is not a git file |
+| `make_pack_test.js` | A folder of pictures becomes a valid pack, and Save to library posts one PNG |
 | `recolor_test.js` | Paint-only recolor; alpha and cut loops unchanged |
 | `color_ui_test.js` | Cut SVG byte-identical, PDF changes, undo, PNG tint, seeded Surprise |
 | `avatar_compose_test.js` | Pairs, hides, swap, prefixed ids, locked randomize |
 | `avatar_ui_test.js` | The Avatar tab stays hidden; the compositor is still loaded |
 | `avatar_export_test.js` | One 2×3 in contour sticker, alignment, in-place edit |
-| `extract_test.js` | Knockout, a valid library entry, a mocked save, and the Worker against a fake bucket |
+| `extract_test.js` | Knockout, a valid library entry, a mocked save, and the Worker against a fake bucket, including Characters on an older catalog |
 | `shot.js` | UI screenshots for a quick visual check (`sample_output/`) |
 
 Sample generators: `make_samples.py` (stickers), `make_scene.py` (mockup scene), plus the committed background test images in `samples/bg/`. All the art is made up.

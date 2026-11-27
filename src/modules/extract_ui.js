@@ -8,7 +8,8 @@
     { id: 'rooms', name: 'Rooms' },
     { id: 'furniture', name: 'Furniture' },
     { id: 'decor', name: 'Decor' },
-    { id: 'items', name: 'Items' }
+    { id: 'items', name: 'Items' },
+    { id: 'characters', name: 'Characters' }
   ];
   let work = null, box = null, drag = null, result = null;
 
@@ -156,6 +157,7 @@
       + '<label>Name <input id="extractName" maxlength="40" autocomplete="off"></label>'
       + '<label>Category <select id="extractCat"></select></label>'
       + '<label>Write token <input id="extractToken" type="password" autocomplete="off"></label>'
+      + '<p class="muted">The secret you set with wrangler secret put ASSET_WRITE_TOKEN. Kept for this visit only.</p>'
       + '<p><button type="button" class="btn" id="extractSave">Save to library</button></p>'
       + '<p id="extractMsg" role="status"></p></div>';
     document.body.appendChild(sheet);

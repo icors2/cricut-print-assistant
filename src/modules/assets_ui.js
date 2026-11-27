@@ -82,10 +82,74 @@
     });
     $('#assetHead').textContent = (cats.find(c => c.id === cur) || { name: cur === '__recent' ? 'Recent' : 'All' }).name + ' · ' + list.length;
   }
+  const LIB_CATS = new Set(['rooms', 'furniture', 'decor', 'items', 'characters']);
+  const TOKEN_KEY = 'cst.assetWriteToken';
+  let packNote = '';
+  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(v) { try { if (v) sessionStorage.setItem(TOKEN_KEY, v); } catch (e) { /* private mode */ } }
+  function note(s) { packNote = s; const el = $('#packSaveMsg'); if (el) el.textContent = s; }
   function renderPacks() {
     const grid = $('#assetGrid');
     const packs = C.assets.packs.filter(p => p.src === 'pack');
-    grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
+    const rows = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-save="${p.id}">Save to library</button><button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
+    grid.innerHTML = '<p><label>Write token <input id="packToken" type="password" autocomplete="off"></label> <span class="muted">The secret you set with wrangler secret put ASSET_WRITE_TOKEN. Kept for this visit only. Saving publishes the pictures for anyone who opens the site.</span></p><p id="packSaveMsg" class="muted"></p>' + rows;
+    const tok = $('#packToken'); if (tok) tok.value = token();
+    const msg = $('#packSaveMsg'); if (msg) msg.textContent = packNote;
+  }
+  async function pngPair(url) {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read the picture')); i.src = url; });
+    let long = 1600, png = '', thumb = '', w = 1, h = 1, hasAlpha = false;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const scale = Math.min(1, long / Math.max(img.naturalWidth, img.naturalHeight));
+      w = Math.max(1, Math.round(img.naturalWidth * scale));
+      h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0, w, h);
+      const data = g.getImageData(0, 0, w, h).data;
+      let alpha = 0;
+      for (let i = 3; i < data.length; i += 16) if (data[i] < 250) alpha++;
+      hasAlpha = alpha > (w * h / 4) * 0.005;
+      png = c.toDataURL('image/png');
+      const t = document.createElement('canvas');
+      const ts = Math.min(1, 256 / Math.max(w, h));
+      t.width = Math.max(1, Math.round(w * ts)); t.height = Math.max(1, Math.round(h * ts));
+      t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      thumb = t.toDataURL('image/png');
+      c.width = 0; t.width = 0;
+      if (png.length + thumb.length < 1.8e6) break;
+      long = Math.round(long * 0.75);
+    }
+    if (png.length + thumb.length >= 1.8e6) throw new Error('still over 2 MB');
+    return { png, thumb, w, h, hasAlpha };
+  }
+  async function savePackToLibrary(packId, tok) {
+    if (!/^https?:$/.test(location.protocol)) { note('This page has no library to save into. Open the web version.'); return; }
+    const pics = C.assets.list().filter(a => a.pack === packId && a.files && a.files.png);
+    const seen = new Set(C.assets.list().map(a => a.id));
+    let saved = 0, exists = 0; const failed = [], skipped = [];
+    for (let n = 0; n < pics.length; n++) {
+      const asset = pics[n];
+      note('Saving ' + (n + 1) + ' of ' + pics.length + '…');
+      if (!LIB_CATS.has(asset.category)) { skipped.push(asset.name); continue; }
+      try {
+        const url = await C.assets.file(asset, 'png');
+        if (!url) throw new Error('missing file');
+        const pic = await pngPair(url);
+        const row = C.extract.entry({ name: asset.name, category: asset.category, pxW: pic.w, pxH: pic.h, hasAlpha: pic.hasAlpha, taken: (id) => seen.has(id) });
+        seen.add(row.id);
+        const res = await fetch('/api/assets', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ entry: row, png: pic.png, thumb: pic.thumb }) });
+        if (res.status === 409) { exists++; continue; }
+        if (!res.ok) { let err = 'Save failed (' + res.status + ')'; try { err = (await res.json()).error || err; } catch (e) { /* keep status */ } throw new Error(err); }
+        saved++;
+      } catch (e) { failed.push(asset.name + ' (' + e.message + ')'); }
+    }
+    if (saved && C.assets.reloadFetched) await C.assets.reloadFetched();
+    const bits = ['Saved ' + saved + ' of ' + pics.length + '.'];
+    if (exists) bits.push(exists + ' already in the library.');
+    if (skipped.length) bits.push('Skipped: ' + skipped.join(', ') + '.');
+    if (failed.length) bits.push('Failed: ' + failed.join(', ') + '.');
+    note(bits.join(' '));
+    if (cat === '__packs') renderPacks();
   }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   async function openDetails(asset) {
@@ -98,6 +162,7 @@
     const library = asset.pack === 'library' ? '<p><label>Name <input id="libName" maxlength="40" value="' + esc(asset.name) + '"></label> '
       + '<label>Category <select id="libCat">' + cats.map(c => '<option value="' + esc(c.id) + '"' + (c.id === asset.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label> '
       + '<label>Write token <input id="libToken" type="password" autocomplete="off"></label> '
+      + '<span class="muted">Same secret as wrangler secret put ASSET_WRITE_TOKEN.</span> '
       + '<button type="button" id="libRename">Save label</button></p>' : '';
     $('#assetSheetBody').innerHTML = `<h2>${esc(asset.name)}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
       + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => esc(r.name)).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
@@ -236,6 +301,17 @@
     $('#packFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await importPack(f); cat = '__packs'; paint(); C.toast('Pack imported'); } catch (err) { alert(err.message); } };
     $('#assetGrid').addEventListener('click', async (e) => {
       const del = e.target.dataset && e.target.dataset.del, exp = e.target.dataset && e.target.dataset.export;
+      const saveId = e.target.dataset && e.target.dataset.save;
+      if (saveId) {
+        const input = $('#packToken');
+        const tok = (input && input.value.trim()) || token();
+        if (!tok) { note('Type the write token to save.'); return; }
+        setToken(tok);
+        const ex = $('#extractToken'); if (ex) ex.value = tok;
+        e.target.disabled = true;
+        try { await savePackToLibrary(saveId, tok); } catch (err) { note(err.message); }
+        return;
+      }
       if (del && confirm('Delete this pack? You can undo for 10 seconds by importing it again from a copy.')) deletePack(del);
       if (exp) {
         const rows = await idbPacks(), row = rows.find(r => r.id === exp); if (!row) return;
@@ -265,6 +341,6 @@
     C.bus.on('tab:shown', (id) => { if (id === 'tabAssets') paint(); });
     if (C.assets && C.assets.list().length) paint();
   }
-  C.assets_ui = C.registerModule('assets_ui', { boot, kidMode, importPack, paint });
+  C.assets_ui = C.registerModule('assets_ui', { boot, kidMode, importPack, paint, savePackToLibrary });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

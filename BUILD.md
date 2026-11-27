@@ -10,7 +10,7 @@ This is the build plan for the next big chunk of work on Cricut Print Assistant.
 
 **Read [AGENT_MEMORY.md](AGENT_MEMORY.md) first.** It has the invariants that must never break and the working rules. [AGENT_HANDOFF.md](AGENT_HANDOFF.md) is the code tour of what exists today.
 
-> **Status:** P1–P4 code is in, with a few original placeholder drawings. The Avatar tab is hidden. Extracted stickers save to the R2 library (P2·M7). Still open: a real catalog of at least 30 assets and the physical iPad checklist in §12.3.
+> **Status:** P1–P4 code is in, with a few original placeholder drawings. The Avatar tab is hidden. Extracted stickers save to the R2 library (P2·M7), which includes a Characters category. The Mockup Images ✕ removes that picture from the list, the scene, and the Layout. `tools/make_pack.js` packs a folder of pictures, and My packs → Save to library copies that pack into R2. Still open: a real catalog of at least 30 assets and the physical iPad checklist in §12.3.
 
 ---
 
@@ -1599,7 +1599,7 @@ Update this table (status + commit) in the PR that finishes a milestone.
 | P2·M4 add to Mockup | done | | catalog size; project asset field |
 | P2·M5 private packs | done | | zip and json, IndexedDB only |
 | P2·M6 docs + first art | code done | | docs written. ≥ 30 real assets still open |
-| P2·M7 extract to R2 | done | | Assets → Extract from a picture. Worker + R2, write token, no accounts |
+| P2·M7 extract to R2 | done | | Assets → Extract from a picture. Worker + R2, write token (the secret from `wrangler secret put`), Characters category, no accounts |
 | P3·M1 recolor engine | done | | paint only; alpha unchanged |
 | P3·M2 color editor | done | | cut SVG stays byte-identical |
 | P3·M3 PNG tint | done | | mask tint and hue; alpha copied |

@@ -189,6 +189,32 @@ const FILES = ['wall_panel.png', 'floor_boards.png', 'window.png', 'sofa.png', '
   await p.evaluate(() => { const C = window.CST; C.saveCal(Object.assign(C.getCal(), { Q: { v: 2, a11: 1, a12: 0, a21: 0, a22: 1, tx: 0, ty: 0 }, ex: 1, ey: 1 })); C.refresh(false); }); await wait(600);
   const e3 = await p.evaluate(() => window.T.exports());
   ok(!(await p.evaluate(() => window.CST.S.numberPieces)) && e3.svgs.join('\n') === e0.svgs.join('\n'), 'numbers OFF again: cut SVG back to the baseline');
+  await p.click('[data-tab=tabMock]'); await wait(800);
+  const beforeRm = await p.evaluate(() => {
+    const C = window.CST, it = C.items.find(i => i.name === 'rug.png');
+    const n = it && C.MK.nodes.find(nd => nd.itemId === it.id);
+    return { uid: n && n.uid, x: n && n.x, y: n && n.y };
+  });
+  ok(beforeRm.uid != null, 'rug is on the mockup before the Images remove');
+  await p.evaluate(() => {
+    const row = [...document.querySelectorAll('#mkAdd .arow')].find(r => r.querySelector('.lname') && r.querySelector('.lname').textContent.startsWith('rug.png'));
+    row.querySelector('.x').click();
+  });
+  await wait(800);
+  const midRm = await p.evaluate(() => ({
+    gone: !window.CST.items.some(i => i.name === 'rug.png'),
+    nodes: window.CST.MK.nodes.filter(n => n.name === 'rug.png').length,
+    row: [...document.querySelectorAll('#mkAdd .lname')].some(e => e.textContent.startsWith('rug.png')),
+    sheet: window.CST.layout.sheets.flat().some(e => e.it && e.it.name === 'rug.png')
+  }));
+  ok(midRm.gone && midRm.nodes === 0 && !midRm.row && !midRm.sheet, 'the Images X removes the picture from the list, the scene, and the Layout');
+  await p.evaluate(() => window.CST.undo()); await wait(800);
+  const afterRm = await p.evaluate((uid) => {
+    const C = window.CST, it = C.items.find(i => i.name === 'rug.png');
+    const n = C.MK.nodes.find(nd => nd.uid === uid);
+    return { back: !!it, x: n && n.x, y: n && n.y, onLayout: !!(it && C.layout.sheets.flat().some(e => e.it === it)), listed: [...document.querySelectorAll('#mkAdd .lname')].some(e => e.textContent.startsWith('rug.png')) };
+  }, beforeRm.uid);
+  ok(afterRm.back && afterRm.x === beforeRm.x && afterRm.y === beforeRm.y && afterRm.onLayout && afterRm.listed, 'Undo puts the picture back on Images, the scene, and the Layout');
   ok(!errs.length, 'no page errors ' + JSON.stringify(errs));
   await b.close(); console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

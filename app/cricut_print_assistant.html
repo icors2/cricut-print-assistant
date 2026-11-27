@@ -1826,7 +1826,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       $('.rad', card).style.display = it.shape === 'rounded' ? '' : 'none';
       const bs = $('[data-f=border]', card); bs.value = it.border; bs.onchange = () => { it.border = bs.value; refresh(true); };
       const rc = $('[data-f=rot]', card); rc.checked = it.rotate; rc.onchange = () => { it.rotate = rc.checked; refresh(true); };
-      $('.x', card).onclick = (ev) => { ev.stopPropagation(); items = items.filter(i => i !== it); if (sel.itemId === it.id) sel = { key: null, itemId: null }; refresh(true); };
+      $('.x', card).onclick = (ev) => { ev.stopPropagation(); removeImage(it); };
       $('.chev', card).onclick = (ev) => { ev.stopPropagation(); setCollapsed(it, card, !it.collapsed); };
       $('.ihead', card).onclick = (ev) => { if (ev.target.closest('button')) return; selectItem(it); };
       list.append(card);
@@ -1879,11 +1879,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   // ---------- undo / redo (item sizes, quantities, options and piece positions) ----------
   const UNDO_FIELDS = ['wIn', 'hIn', 'pct', 'qty', 'shape', 'radiusIn', 'offsetIn', 'border', 'rotate', 'lockAR'];
-  let undoStack = [], redoStack = [], curSnap = null, follow = null;
+  let undoStack = [], redoStack = [], curSnap = null, follow = null, pendingMock = null;
+  function cloneMkNode(n) { return { uid: n.uid, name: n.name, itemId: n.itemId, x: n.x, y: n.y, rot: n.rot, flip: n.flip, hidden: !!n.hidden, noNum: !!n.noNum, warp: n.warp ? JSON.parse(JSON.stringify(n.warp)) : null }; }
   function snapshot() { const its = items.map(it => [it, Object.fromEntries(UNDO_FIELDS.map(f => [f, it[f]]))]), man = manual ? JSON.parse(JSON.stringify(manual)) : null;
     return { its, man, sig: JSON.stringify([its.map(([it, f]) => [it.id, f]), man]) }; }
-  function recordUndo() { const s = snapshot(); if (curSnap && s.sig === curSnap.sig) return; if (curSnap) { undoStack.push(curSnap); if (undoStack.length > 100) undoStack.shift(); redoStack = []; } curSnap = s; }
-  function applySnap(s) { items = s.its.map(([it, f]) => Object.assign(it, f)); manual = s.man ? JSON.parse(JSON.stringify(s.man)) : null; curSnap = s; refresh(true); }
+  function recordUndo() { const s = snapshot();
+    if (pendingMock) { s.mockDrop = pendingMock.map(n => n.uid); if (curSnap) curSnap.mockRestore = pendingMock; pendingMock = null; }
+    if (curSnap && s.sig === curSnap.sig && !s.mockDrop) return; if (curSnap) { undoStack.push(curSnap); if (undoStack.length > 100) undoStack.shift(); redoStack = []; } curSnap = s; }
+  function applySnap(s) { items = s.its.map(([it, f]) => Object.assign(it, f)); manual = s.man ? JSON.parse(JSON.stringify(s.man)) : null;
+    if (s.mockRestore) for (const n of s.mockRestore) { if (!MK.nodes.some(m => m.uid === n.uid)) MK.nodes.push(cloneMkNode(n)); if (n.name) delete MK.skip[n.name]; }
+    if (s.mockDrop) MK.nodes = MK.nodes.filter(n => !s.mockDrop.includes(n.uid));
+    if (mkSel && !MK.nodes.includes(mkSel)) mkSel = null;
+    curSnap = s; mkAutosave(); refresh(true); }
+  function removeImage(it) {
+    if (!it) return;
+    pendingMock = MK.nodes.filter(n => nodeItem(n) === it).map(cloneMkNode);
+    MK.nodes = MK.nodes.filter(n => nodeItem(n) !== it);
+    if (mkSel && !MK.nodes.includes(mkSel)) mkSel = null;
+    items = items.filter(i => i !== it);
+    if (sel.itemId === it.id) sel = { key: null, itemId: null };
+    mkAutosave(); refresh(true);
+  }
   function undo() { if (!undoStack.length) return; redoStack.push(curSnap); applySnap(undoStack.pop()); toast('Undone'); }
   function redo() { if (!redoStack.length) return; undoStack.push(curSnap); applySnap(redoStack.pop()); toast('Redone'); }
 
@@ -2347,8 +2363,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const A = $('#mkAdd'); A.innerHTML = '';
     if (!items.length) A.innerHTML = '<div class="empty">Add images on the Layout tab first.</div>';
     for (const it of items) { const k = MK.nodes.filter(n => nodeItem(n) === it).length, p = processed(it, false), r = document.createElement('div'); r.className = 'arow';
-      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/#/g, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini">+ Add${k ? ' another' : ''}</button>`;
-      $('button', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); }; A.append(r); }
+      const bd = stepBadge(it, st); r.innerHTML = `<span class="lnum" title="${esc(bd.tip)}">${esc(bd.t.replace(/#/g, ''))}</span><img src="${it.dataURL}" alt=""><span class="lname">${esc(it.name)}<br><span class="muted">${fmtShort(p.cutW)} × ${fmtShort(p.cutH)} · ${k} in mockup</span></span><button class="mini add">+ Add${k ? ' another' : ''}</button><button class="x" title="Remove this picture from the list, the scene, and the Layout">✕</button>`;
+      $('.add', r).onclick = () => { const n = mkAdd(it); mkSel = n; mkChanged(true); };
+      $('.x', r).onclick = (ev) => { ev.stopPropagation(); removeImage(it); }; A.append(r); }
     renderMkSel(); renderMockCanvas(); mkPanelSums(); }
   function renderMkSel() { const P = $('#mkSelPanel'), n = mkSel, G = n && ng(n); $('#mkUndo').disabled = !mkUndo.length; $('#mkRedo').disabled = !mkRedo.length;
     P.classList.toggle('idle', !G); $$('#mkSelPanel button, #mkSelPanel input').forEach(b => b.disabled = !G);
@@ -3681,10 +3698,74 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
     $('#assetHead').textContent = (cats.find(c => c.id === cur) || { name: cur === '__recent' ? 'Recent' : 'All' }).name + ' · ' + list.length;
   }
+  const LIB_CATS = new Set(['rooms', 'furniture', 'decor', 'items', 'characters']);
+  const TOKEN_KEY = 'cst.assetWriteToken';
+  let packNote = '';
+  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(v) { try { if (v) sessionStorage.setItem(TOKEN_KEY, v); } catch (e) { /* private mode */ } }
+  function note(s) { packNote = s; const el = $('#packSaveMsg'); if (el) el.textContent = s; }
   function renderPacks() {
     const grid = $('#assetGrid');
     const packs = C.assets.packs.filter(p => p.src === 'pack');
-    grid.innerHTML = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
+    const rows = packs.map(p => `<div class="assetPack"><b>${p.meta.name}</b> <span class="muted">${p.meta.version} · ${p.count}${p.avatarParts ? ' · ' + p.avatarParts + ' avatar parts' : ''}</span> ${p.meta.license === 'LicenseRef-Private' ? '🔒' : ''}<button type="button" data-save="${p.id}">Save to library</button><button type="button" data-export="${p.id}">Export</button><button type="button" data-del="${p.id}">Delete</button></div>`).join('') || '<p class="muted">No private packs yet.</p>';
+    grid.innerHTML = '<p><label>Write token <input id="packToken" type="password" autocomplete="off"></label> <span class="muted">The secret you set with wrangler secret put ASSET_WRITE_TOKEN. Kept for this visit only. Saving publishes the pictures for anyone who opens the site.</span></p><p id="packSaveMsg" class="muted"></p>' + rows;
+    const tok = $('#packToken'); if (tok) tok.value = token();
+    const msg = $('#packSaveMsg'); if (msg) msg.textContent = packNote;
+  }
+  async function pngPair(url) {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read the picture')); i.src = url; });
+    let long = 1600, png = '', thumb = '', w = 1, h = 1, hasAlpha = false;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const scale = Math.min(1, long / Math.max(img.naturalWidth, img.naturalHeight));
+      w = Math.max(1, Math.round(img.naturalWidth * scale));
+      h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0, w, h);
+      const data = g.getImageData(0, 0, w, h).data;
+      let alpha = 0;
+      for (let i = 3; i < data.length; i += 16) if (data[i] < 250) alpha++;
+      hasAlpha = alpha > (w * h / 4) * 0.005;
+      png = c.toDataURL('image/png');
+      const t = document.createElement('canvas');
+      const ts = Math.min(1, 256 / Math.max(w, h));
+      t.width = Math.max(1, Math.round(w * ts)); t.height = Math.max(1, Math.round(h * ts));
+      t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      thumb = t.toDataURL('image/png');
+      c.width = 0; t.width = 0;
+      if (png.length + thumb.length < 1.8e6) break;
+      long = Math.round(long * 0.75);
+    }
+    if (png.length + thumb.length >= 1.8e6) throw new Error('still over 2 MB');
+    return { png, thumb, w, h, hasAlpha };
+  }
+  async function savePackToLibrary(packId, tok) {
+    if (!/^https?:$/.test(location.protocol)) { note('This page has no library to save into. Open the web version.'); return; }
+    const pics = C.assets.list().filter(a => a.pack === packId && a.files && a.files.png);
+    const seen = new Set(C.assets.list().map(a => a.id));
+    let saved = 0, exists = 0; const failed = [], skipped = [];
+    for (let n = 0; n < pics.length; n++) {
+      const asset = pics[n];
+      note('Saving ' + (n + 1) + ' of ' + pics.length + '…');
+      if (!LIB_CATS.has(asset.category)) { skipped.push(asset.name); continue; }
+      try {
+        const url = await C.assets.file(asset, 'png');
+        if (!url) throw new Error('missing file');
+        const pic = await pngPair(url);
+        const row = C.extract.entry({ name: asset.name, category: asset.category, pxW: pic.w, pxH: pic.h, hasAlpha: pic.hasAlpha, taken: (id) => seen.has(id) });
+        seen.add(row.id);
+        const res = await fetch('/api/assets', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ entry: row, png: pic.png, thumb: pic.thumb }) });
+        if (res.status === 409) { exists++; continue; }
+        if (!res.ok) { let err = 'Save failed (' + res.status + ')'; try { err = (await res.json()).error || err; } catch (e) { /* keep status */ } throw new Error(err); }
+        saved++;
+      } catch (e) { failed.push(asset.name + ' (' + e.message + ')'); }
+    }
+    if (saved && C.assets.reloadFetched) await C.assets.reloadFetched();
+    const bits = ['Saved ' + saved + ' of ' + pics.length + '.'];
+    if (exists) bits.push(exists + ' already in the library.');
+    if (skipped.length) bits.push('Skipped: ' + skipped.join(', ') + '.');
+    if (failed.length) bits.push('Failed: ' + failed.join(', ') + '.');
+    note(bits.join(' '));
+    if (cat === '__packs') renderPacks();
   }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   async function openDetails(asset) {
@@ -3697,6 +3778,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const library = asset.pack === 'library' ? '<p><label>Name <input id="libName" maxlength="40" value="' + esc(asset.name) + '"></label> '
       + '<label>Category <select id="libCat">' + cats.map(c => '<option value="' + esc(c.id) + '"' + (c.id === asset.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label> '
       + '<label>Write token <input id="libToken" type="password" autocomplete="off"></label> '
+      + '<span class="muted">Same secret as wrangler secret put ASSET_WRITE_TOKEN.</span> '
       + '<button type="button" id="libRename">Save label</button></p>' : '';
     $('#assetSheetBody').innerHTML = `<h2>${esc(asset.name)}</h2><p>Size: ${inches(asset.size.w)} × ${inches(asset.size.h)} in</p>`
       + (asset.regions && asset.regions.length ? '<p>Colors: ' + asset.regions.map(r => esc(r.name)).join(', ') + ' <button type="button" id="assetRecolor">🎨 Edit</button></p>' : '')
@@ -3835,6 +3917,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $('#packFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await importPack(f); cat = '__packs'; paint(); C.toast('Pack imported'); } catch (err) { alert(err.message); } };
     $('#assetGrid').addEventListener('click', async (e) => {
       const del = e.target.dataset && e.target.dataset.del, exp = e.target.dataset && e.target.dataset.export;
+      const saveId = e.target.dataset && e.target.dataset.save;
+      if (saveId) {
+        const input = $('#packToken');
+        const tok = (input && input.value.trim()) || token();
+        if (!tok) { note('Type the write token to save.'); return; }
+        setToken(tok);
+        const ex = $('#extractToken'); if (ex) ex.value = tok;
+        e.target.disabled = true;
+        try { await savePackToLibrary(saveId, tok); } catch (err) { note(err.message); }
+        return;
+      }
       if (del && confirm('Delete this pack? You can undo for 10 seconds by importing it again from a copy.')) deletePack(del);
       if (exp) {
         const rows = await idbPacks(), row = rows.find(r => r.id === exp); if (!row) return;
@@ -3864,7 +3957,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     C.bus.on('tab:shown', (id) => { if (id === 'tabAssets') paint(); });
     if (C.assets && C.assets.list().length) paint();
   }
-  C.assets_ui = C.registerModule('assets_ui', { boot, kidMode, importPack, paint });
+  C.assets_ui = C.registerModule('assets_ui', { boot, kidMode, importPack, paint, savePackToLibrary });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 
@@ -4123,7 +4216,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     { id: 'rooms', name: 'Rooms' },
     { id: 'furniture', name: 'Furniture' },
     { id: 'decor', name: 'Decor' },
-    { id: 'items', name: 'Items' }
+    { id: 'items', name: 'Items' },
+    { id: 'characters', name: 'Characters' }
   ];
   let work = null, box = null, drag = null, result = null;
 
@@ -4271,6 +4365,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       + '<label>Name <input id="extractName" maxlength="40" autocomplete="off"></label>'
       + '<label>Category <select id="extractCat"></select></label>'
       + '<label>Write token <input id="extractToken" type="password" autocomplete="off"></label>'
+      + '<p class="muted">The secret you set with wrangler secret put ASSET_WRITE_TOKEN. Kept for this visit only.</p>'
       + '<p><button type="button" class="btn" id="extractSave">Save to library</button></p>'
       + '<p id="extractMsg" role="status"></p></div>';
     document.body.appendChild(sheet);

@@ -156,6 +156,7 @@ The **Mockup** tab shows how the stickers go together, for example a dollhouse r
 - **Rotate**: drag the round handle (Shift = 15° steps), or use the angle box and buttons. **⇋ Flip** mirrors a piece.
 - **Layers**: To front / Forward / Backward / To back, or drag the ⋮⋮ handle in the Layers list. 👁 hides a piece.
 - **+ Add another** places more copies. The Images panel also has its own drop zone; new images join the Layout tab with qty 1.
+- **✕** on an Images row removes that picture from the list, the scene, and the Layout. Undo puts the picture and its copies back. The ✕ on a layer removes only that one copy from the scene.
 - **Resize**: drag a corner square of the selected piece. The ratio is locked; Shift or the 🔗 button unlocks it. Or type Width / Height / Scale %. A size is shared: it applies to every copy, to the Layout tab and to the cut sheet.
 
   ![Resizing in the mockup](images/15_mockup_resize.png)
@@ -273,13 +274,17 @@ Kid mode, which turns on by itself on a touch screen, shows Assets and Mockup. H
 
 ## 13. Assets
 
-The Assets tab lists starter drawings. Tap one to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. Long-press for the size, the licence and **Add to scene**.
+The Assets tab lists starter drawings in Rooms, Furniture, Decor, Items, and Characters. Tap one to add it to the Mockup at its catalog size. A second tap of the same drawing adds another copy, not a new file. Long-press for the size, the licence and **Add to scene**.
 
 Search ignores accents, so "cafe" finds "café". Rooms can be the Mockup background.
 
-**Extract from a picture** is on the web version. Choose a picture, drag a box around one thing, and optionally remove a plain background. Type a name, pick a category, and type the write token the first time. **Save to library** puts it in the shared catalog. It does not land on the sheet until you tap the new tile. Family photos do not belong in this library.
+**Extract from a picture** is on the web version. Choose a picture, drag a box around one thing, and optionally remove a plain background. Type a name, pick a category, and type the write token the first time. That token is the secret you chose with `npx wrangler secret put ASSET_WRITE_TOKEN`. The same string goes in the rename field. It is kept for this visit only. **Save to library** puts it in the shared catalog. It does not land on the sheet until you tap the new tile. Family photos do not belong in this library.
 
 **+ Import pack** reads a `.cpapack.zip` or `.cpapack.json`. A private pack stays in this browser and can be exported or deleted. It is never part of the public site.
+
+To pack a folder of finished PNGs or JPGs, run `node tools/make_pack.js` in that folder (or pass the folder path). A subfolder named Rooms, Furniture, Decor, Items, or Characters files the pictures there. Loose pictures go to Items. `--category characters` puts every picture in Characters. The command writes `<id>.cpapack.zip` in the folder.
+
+On **My packs**, **Save to library** copies that pack into the live library. Type the same write token. The pictures are then visible to anyone who opens the site. The token only stops other people from uploading.
 
 The five drawings here are placeholders. A larger set is still to come.
 

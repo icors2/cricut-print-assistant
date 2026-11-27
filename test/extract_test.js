@@ -41,6 +41,7 @@ function serve() {
   const { buildLibraryCatalog } = require('../tools/seed_r2.js');
   const seeded = buildLibraryCatalog(R);
   ok(seeded.catalog.pack.id === 'library' && seeded.catalog.assets.every(a => a.id.startsWith('library.')), 'seed rewrites the starter catalog into the library pack');
+  ok(seeded.catalog.categories.some(c => c.id === 'characters' && c.order === 5), 'the starter catalog has a Characters category');
   ok(seeded.files.length > 5 && seeded.files.every(f => f.key === 'catalog.json' || f.abs), 'seed points at real files (' + seeded.files.length + ')');
 
   const worker = await import('../worker/index.js');
@@ -67,6 +68,11 @@ function serve() {
   const got = await worker.handleRequest(call('GET', '/assets/catalog.json'), env);
   const cat = JSON.parse(await got.text());
   ok(cat.assets.length === 1 && cat.assets[0].name === 'Red dot' && cat.assets[0].files.png === 'png/library.items.red-dot.png', 'the catalog in the bucket has the new sticker');
+  const blue = Object.assign({}, entry, { id: 'library.items.blue-dot', name: 'Blue dot' });
+  const saved2 = await worker.handleRequest(call('POST', '/api/assets', { entry: blue, png: PNG, thumb: PNG }, 'test-token'), env);
+  ok(saved2.status === 200, 'a second save is stored (' + saved2.status + ')');
+  const both = JSON.parse(await (await worker.handleRequest(call('GET', '/assets/catalog.json'), env)).text());
+  ok(both.assets.length === 2 && both.assets.some(a => a.id === 'library.items.red-dot') && both.assets.some(a => a.id === 'library.items.blue-dot'), 'two sequential saves both remain');
   const patched = await worker.handleRequest(call('PATCH', '/api/assets/library.items.red-dot', { name: 'Crimson dot', category: 'decor' }, 'test-token'), env);
   ok(patched.status === 200 && cat.assets[0].id === 'library.items.red-dot', 'a rename keeps the id');
   const after = JSON.parse(await (await worker.handleRequest(call('GET', '/assets/catalog.json'), env)).text());
@@ -77,6 +83,17 @@ function serve() {
   ok(bad.status === 400, 'a path that climbs out of assets is refused');
   const huge = new Request('http://127.0.0.1/api/assets', { method: 'POST', headers: { authorization: 'Bearer test-token', 'content-type': 'application/json' }, body: ' '.repeat(2 * 1024 * 1024 + 1) });
   ok((await worker.handleRequest(huge, env)).status === 413, 'a body over 2 MB is refused');
+  const old = bucket();
+  old.map.set('catalog.json', { body: JSON.stringify({
+    schema: 'cpa-catalog/1', pack: { id: 'library', name: 'Library', version: '1' },
+    categories: [{ id: 'items', name: 'Items', icon: '🧸', order: 4 }], assets: []
+  }), type: 'application/json' });
+  const env2 = { LIBRARY: old, ASSET_WRITE_TOKEN: 'test-token', ASSETS: env.ASSETS };
+  const listed = JSON.parse(await (await worker.handleRequest(call('GET', '/assets/catalog.json'), env2)).text());
+  ok(listed.categories.some(c => c.id === 'characters') && listed.assets.length === 0, 'an older library catalog gains Characters');
+  ok(JSON.parse(old.map.get('catalog.json').body).categories.some(c => c.id === 'characters'), 'the merged catalog is written back');
+  const bear = Object.assign({}, entry, { id: 'library.characters.bear', category: 'characters', name: 'Bear' });
+  ok((await worker.handleRequest(call('POST', '/api/assets', { entry: bear, png: PNG, thumb: PNG }, 'test-token'), env2)).status === 200, 'a save in Characters is accepted');
 
   const srv = await serve();
   const b = await puppeteer.launch({ executablePath: process.env.CHROME || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : '/usr/bin/google-chrome'), headless: 'new', args: ['--no-sandbox'] });

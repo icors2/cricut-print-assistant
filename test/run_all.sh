@@ -46,6 +46,7 @@ run node avatar_export_test.js
 run node avatar_pack_test.js
 run node avatar_raster_test.js
 run node extract_test.js
+run node make_pack_test.js
 if git ls-files | grep -E 'cpapack|private/' ; then echo 'private pack files must not be committed'; exit 1; fi
 run node shot.js
 echo "ALL TESTS PASSED"
